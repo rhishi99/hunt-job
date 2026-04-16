@@ -1,0 +1,45 @@
+{
+  "claude": {
+    "model": "claude-3-5-sonnet-20241022",
+    "scanningModel": "claude-3-5-haiku-20241022",
+    "temperature": 0.7,
+    "timeout": 30000
+  },
+  "resume": {
+    "template": "modern",
+    "maxLength": 1,
+    "enabledSections": [
+      "summary",
+      "experience",
+      "skills",
+      "education",
+      "projects"
+    ],
+    "keywordLimit": 20
+  },
+  "evaluation": {
+    "minimumApplyScore": 4.0,
+    "dimensions": [
+      "salary_alignment",
+      "tech_stack_compatibility",
+      "company_culture_fit",
+      "growth_opportunities",
+      "location_remote",
+      "team_dynamics",
+      "product_market_fit",
+      "work_life_balance",
+      "career_progression",
+      "dealbreaker_compliance"
+    ]
+  },
+  "dashboard": {
+    "refreshInterval": 5000,
+    "theme": "dark",
+    "showMetrics": true
+  },
+  "api": {
+    "maxRetries": 3,
+    "retryDelay": 1000,
+    "requestTimeout": 30000
+  }
+}

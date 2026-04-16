@@ -1,0 +1,139 @@
+{
+  "companies": [
+    {
+      "name": "Anthropic",
+      "url": "https://www.anthropic.com/careers",
+      "careerPageUrl": "https://www.anthropic.com/careers",
+      "jobsApiUrl": null,
+      "description": "AI safety and research",
+      "founded": 2021,
+      "employees": "100-500"
+    },
+    {
+      "name": "OpenAI",
+      "url": "https://openai.com/careers",
+      "careerPageUrl": "https://openai.com/careers",
+      "jobsApiUrl": null,
+      "description": "AI research and deployment",
+      "founded": 2015,
+      "employees": "500-1000"
+    },
+    {
+      "name": "Stripe",
+      "url": "https://stripe.com/jobs",
+      "careerPageUrl": "https://stripe.com/jobs",
+      "jobsApiUrl": "https://stripe.com/jobs/api/search",
+      "description": "Payment infrastructure",
+      "founded": 2010,
+      "employees": "1000-5000"
+    },
+    {
+      "name": "Google",
+      "url": "https://careers.google.com",
+      "careerPageUrl": "https://careers.google.com",
+      "jobsApiUrl": null,
+      "description": "Technology giant",
+      "founded": 1998,
+      "employees": "5000+"
+    },
+    {
+      "name": "Meta",
+      "url": "https://www.metacareers.com",
+      "careerPageUrl": "https://www.metacareers.com",
+      "jobsApiUrl": null,
+      "description": "Social media and metaverse",
+      "founded": 2004,
+      "employees": "5000+"
+    },
+    {
+      "name": "Microsoft",
+      "url": "https://careers.microsoft.com",
+      "careerPageUrl": "https://careers.microsoft.com",
+      "jobsApiUrl": null,
+      "description": "Software and cloud services",
+      "founded": 1975,
+      "employees": "5000+"
+    },
+    {
+      "name": "Apple",
+      "url": "https://www.apple.com/careers",
+      "careerPageUrl": "https://www.apple.com/careers",
+      "jobsApiUrl": null,
+      "description": "Consumer electronics",
+      "founded": 1976,
+      "employees": "5000+"
+    },
+    {
+      "name": "Amazon",
+      "url": "https://www.amazon.jobs",
+      "careerPageUrl": "https://www.amazon.jobs",
+      "jobsApiUrl": null,
+      "description": "E-commerce and cloud",
+      "founded": 1994,
+      "employees": "5000+"
+    },
+    {
+      "name": "Netflix",
+      "url": "https://jobs.netflix.com",
+      "careerPageUrl": "https://jobs.netflix.com",
+      "jobsApiUrl": null,
+      "description": "Streaming entertainment",
+      "founded": 1997,
+      "employees": "1000-5000"
+    },
+    {
+      "name": "Spotify",
+      "url": "https://www.spotifycareers.com",
+      "careerPageUrl": "https://www.spotifycareers.com",
+      "jobsApiUrl": null,
+      "description": "Music streaming",
+      "founded": 2006,
+      "employees": "1000-5000"
+    },
+    {
+      "name": "Airbnb",
+      "url": "https://careers.airbnb.com",
+      "careerPageUrl": "https://careers.airbnb.com",
+      "jobsApiUrl": null,
+      "description": "Travel and accommodation",
+      "founded": 2008,
+      "employees": "1000-5000"
+    },
+    {
+      "name": "Uber",
+      "url": "https://www.uber.com/en-US/careers",
+      "careerPageUrl": "https://www.uber.com/en-US/careers",
+      "jobsApiUrl": null,
+      "description": "Ride-sharing and delivery",
+      "founded": 2009,
+      "employees": "5000+"
+    },
+    {
+      "name": "Tesla",
+      "url": "https://www.tesla.com/careers",
+      "careerPageUrl": "https://www.tesla.com/careers",
+      "jobsApiUrl": null,
+      "description": "Electric vehicles and energy",
+      "founded": 2003,
+      "employees": "5000+"
+    },
+    {
+      "name": "Twitter",
+      "url": "https://careers.twitter.com",
+      "careerPageUrl": "https://careers.twitter.com",
+      "jobsApiUrl": null,
+      "description": "Social networking",
+      "founded": 2006,
+      "employees": "1000-5000"
+    },
+    {
+      "name": "LinkedIn",
+      "url": "https://careers.linkedin.com",
+      "careerPageUrl": "https://careers.linkedin.com",
+      "jobsApiUrl": null,
+      "description": "Professional network",
+      "founded": 2002,
+      "employees": "5000+"
+    }
+  ]
+}

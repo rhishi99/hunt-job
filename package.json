@@ -1,0 +1,38 @@
+{
+  "name": "career-ops",
+  "version": "1.0.0",
+  "description": "AI-powered job search agent built with Claude",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "evaluate-job": "node src/cli/evaluateJob.js",
+    "scan-portals": "node src/cli/scanPortals.js",
+    "generate-resume": "node src/cli/generateResume.js",
+    "dashboard": "go run cmd/dashboard/main.go",
+    "profile:init": "node src/cli/profileInit.js",
+    "profile:edit": "node src/cli/profileEdit.js"
+  },
+  "keywords": [
+    "job-search",
+    "ai-agent",
+    "claude",
+    "resume",
+    "job-application"
+  ],
+  "author": "Career-Ops Contributors",
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.36.0",
+    "playwright": "^1.40.0",
+    "yaml": "^2.3.4",
+    "chalk": "^5.3.0",
+    "inquirer": "^9.2.12",
+    "ejs": "^3.1.9",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "prettier": "^3.1.0",
+    "eslint": "^8.54.0"
+  }
+}
