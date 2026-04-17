@@ -3,6 +3,7 @@ import ProfileManager from './core/profileManager.js';
 import JobEvaluator from './core/jobEvaluator.js';
 import ResumeGenerator from './core/resumeGenerator.js';
 import PortalScanner from './core/portalScanner.js';
+import InterviewPrep from './core/interviewPrep.js';
 
 const client = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -14,6 +15,7 @@ class CareerOpsAgent {
     this.jobEvaluator = new JobEvaluator();
     this.resumeGenerator = new ResumeGenerator();
     this.portalScanner = new PortalScanner();
+    this.interviewPrep = new InterviewPrep();
   }
 
   async initialize() {
@@ -52,6 +54,15 @@ class CareerOpsAgent {
     return resume;
   }
 
+  async prepareInterview(jobDescription) {
+    const profile = await this.profileManager.loadProfile();
+    if (!profile) {
+      throw new Error('Profile not found. Please run onboarding first.');
+    }
+    const plan = await this.interviewPrep.generatePrepPlan(jobDescription, profile);
+    return plan;
+  }
+
   async chat(userMessage) {
     const profile = await this.profileManager.loadProfile();
 
@@ -73,23 +84,25 @@ class CareerOpsAgent {
   }
 
   buildSystemPrompt(profile) {
-    return `You are Career-Ops, an AI job search agent powered by Claude Code. You help users find and apply to jobs intelligently.
+    return `You are Career-Ops, an AI job search agent powered by Claude Code. You help users find and apply to jobs intelligently, focused on Indian tech opportunities.
 
 User Profile:
 - Archetypes: ${profile?.archetypes?.join(', ') || 'Not configured'}
-- Salary Range: ${profile?.salary?.min || 'Not set'} - ${profile?.salary?.max || 'Not set'}
+- Salary Range: ₹${profile?.salary?.min || 'Not set'} - ₹${profile?.salary?.max || 'Not set'}
 - Preferred Tech Stack: ${profile?.techStack?.join(', ') || 'Not configured'}
 - Remote Preference: ${profile?.remotePreference || 'Not specified'}
 
 You have access to these capabilities:
 1. evaluate-job: Score a job posting across 10 dimensions
-2. scan-portals: Search 45+ company career pages
+2. scan-portals: Search 45+ Indian company career pages
 3. generate-resume: Create ATS-optimized tailored resumes
-4. profile: Manage user profile and preferences
-5. dashboard: Track applications and scores
+4. prepare-interview: Generate interview prep with YouTube resources
+5. profile: Manage user profile and preferences
+6. dashboard: Track applications and scores
 
 Always act as a helpful advisor. Score jobs on a scale of 1-5, only recommending applications for scores ≥4.0.
-Be conversational and provide detailed analysis of why jobs score the way they do.`;
+Be conversational and provide detailed analysis of why jobs score the way they do.
+Help users prepare for interviews with structured, actionable prep plans including YouTube links.`;
   }
 }
 

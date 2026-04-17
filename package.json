@@ -9,6 +9,7 @@
     "evaluate-job": "node src/cli/evaluateJob.js",
     "scan-portals": "node src/cli/scanPortals.js",
     "generate-resume": "node src/cli/generateResume.js",
+    "prepare-interview": "node src/cli/prepareInterview.js",
     "dashboard": "go run cmd/dashboard/main.go",
     "profile:init": "node src/cli/profileInit.js",
     "profile:edit": "node src/cli/profileEdit.js"

@@ -26,12 +26,16 @@ Analyzes job postings across 10 dimensions:
 - `Score the Data Engineer role at [Company]`
 
 ### 2. **Portal Scanning Mode** (`/scan-portals`)
-Scans 45+ pre-configured company career pages for matching roles.
+Scans 45+ pre-configured company career pages for matching roles in India.
 
-**Pre-configured Companies:**
-- Anthropic, OpenAI, Stripe, Airbnb, Google, AWS
-- Meta, Microsoft, Apple, Netflix, Spotify
-- And 35+ more in `config/company-portals.json`
+**Pre-configured Indian Companies (30+):**
+- **Tech Giants:** Google, Microsoft, Amazon, Apple, Meta
+- **Unicorns:** Flipkart, Swiggy, Zomato, OYO, Byju's, Unacademy
+- **Fintech:** Razorpay, PhonePe, CRED
+- **IT Services:** Infosys, TCS, Wipro, HCL, Tech Mahindra, Cognizant, Accenture
+- **SaaS:** Freshworks, Stripe India, Atlassian, GitLab, MuleSoft
+- **Emerging:** Ola Electric, Accelyst
+- And more in `config/company-portals.json`
 
 **Usage:**
 - `Scan for new roles matching my [Archetype]`
@@ -66,7 +70,25 @@ Manages your candidate profile stored locally.
 - `Add a new archetype`
 - `Set my salary expectations`
 
-### 5. **Dashboard Mode** (`/dashboard`)
+### 5. **Interview Preparation Mode** (`/prepare-interview`)
+Generates comprehensive interview preparation guides based on job descriptions.
+
+**Features:**
+- Bullet-point prep guide for specific role
+- 10+ key focus areas tailored to job
+- Tech stack concepts to master
+- System design topics
+- 10+ behavioral interview questions
+- 4-week preparation schedule
+- Common interview mistake warnings
+- YouTube links for theory, tutorials, and practice problems
+- Curated channels for each topic
+
+**Usage:**
+- `Prepare for this interview: [Job Description Text]`
+- `Generate prep plan from job_description.txt`
+
+### 6. **Dashboard Mode** (`/dashboard`)
 Terminal-based dashboard for tracking applications (requires Go).
 
 **Features:**
@@ -91,14 +113,17 @@ career-ops/
 │   ├── agents/
 │   │   ├── evaluationAgent.js        # Claude agent for evaluation
 │   │   ├── scanningAgent.js          # Claude agent for scanning
-│   │   └── resumeAgent.js            # Claude agent for resume gen
+│   │   ├── resumeAgent.js            # Claude agent for resume gen
+│   │   └── interviewPrepAgent.js     # Claude agent for prep guide
 │   ├── templates/
 │   │   ├── resume.ejs                # Resume HTML template
-│   │   └── evaluation-report.ejs     # Evaluation report template
+│   │   ├── evaluation-report.ejs     # Evaluation report template
+│   │   └── interview-prep.ejs        # Interview prep template
 │   └── cli/
 │       ├── evaluateJob.js            # CLI: evaluate job
 │       ├── scanPortals.js            # CLI: scan portals
 │       ├── generateResume.js         # CLI: generate resume
+│       ├── prepareInterview.js       # CLI: generate interview prep
 │       ├── profileInit.js            # CLI: initialize profile
 │       └── profileEdit.js            # CLI: edit profile
 ├── config/
@@ -110,7 +135,8 @@ career-ops/
 ├── data/
 │   ├── evaluated-jobs.json           # History of evaluated jobs
 │   ├── applications.json             # Application tracking
-│   └── resumes/                      # Generated resume PDFs
+│   ├── resumes/                      # Generated resume PDFs
+│   └── interview-prep/               # Generated prep plans
 ├── cmd/
 │   └── dashboard/
 │       └── main.go                   # Terminal dashboard (Go)
@@ -140,6 +166,12 @@ node src/cli/scanPortals.js --archetype "Data Engineer" --company "Stripe"
 ### Generate Tailored Resume
 ```bash
 node src/cli/generateResume.js --job-id "job_123"
+```
+
+### Prepare for Interview
+```bash
+node src/cli/prepareInterview.js "Paste job description here" 
+node src/cli/prepareInterview.js job_description.txt
 ```
 
 ## 🔑 Key Files
@@ -184,16 +216,20 @@ See `config/settings.json` for Claude Code customization:
 2. **Scanning** → Get alerts when new matching jobs appear
 3. **Evaluation** → Review scores and analytical reports
 4. **Generation** → Create tailored resumes for high-scoring jobs
-5. **Review & Submit** → You remain the final human gatekeeper
-6. **Tracking** → Monitor application status in dashboard
+5. **Interview Prep** → Generate personalized prep plans with YouTube links
+6. **Review & Submit** → You remain the final human gatekeeper
+7. **Tracking** → Monitor application status in dashboard
 
 ## 💡 Pro Tips
 
 - **Be specific during onboarding:** Input detailed projects, metrics, and accomplishments
 - **Monitor token usage:** Use Haiku for scanning, Sonnet for resume generation
 - **Set realistic thresholds:** Don't apply to jobs below 4.0 score
+- **Prep early:** Generate interview prep guides 2-4 weeks before interviews
+- **Follow YouTube schedule:** Use the 4-week prep plan with curated YouTube channels
 - **Review before submitting:** Always verify AI-generated content
 - **Keep profiles updated:** Refresh your profile quarterly with new projects
+- **India Focus:** All 30+ companies are hiring in India with established offices
 
 ## 🔒 Privacy & Security
 
@@ -228,6 +264,20 @@ const pdf = await generator.generate(jobPosting, resume);
 const scanner = new PortalScanner(config);
 const jobs = await scanner.scan(['anthropic', 'stripe']);
 // Returns: Array of job postings
+```
+
+### Interview Prep Generator
+```javascript
+const prep = new InterviewPrep();
+const plan = await prep.generatePrepPlan(jobDescription, profile);
+// Returns: {
+//   focusAreas: [...],
+//   conceptsToMaster: [...],
+//   interviewRounds: [...],
+//   weeklyPlan: {...},
+//   behavioralQuestions: [...],
+//   youtubeResources: {...}
+// }
 ```
 
 ## 🤝 Contributing

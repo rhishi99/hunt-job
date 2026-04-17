@@ -32,11 +32,15 @@ npm run profile:init
 # Evaluate a job posting
 npm run evaluate-job -- "https://example.com/job-posting"
 
-# Scan company portals
+# Scan Indian company portals
 npm run scan-portals -- --archetype "Data Engineer"
 
 # Generate tailored resume
 npm run generate-resume -- job_123
+
+# Prepare for interview with YouTube links
+npm run prepare-interview -- "Paste job description here"
+npm run prepare-interview -- job_description.txt
 ```
 
 ## 📚 Features
@@ -56,10 +60,13 @@ Scores jobs across 10 dimensions:
 
 Only apply to jobs scoring 4.0 or higher.
 
-### 2. Portal Scanning
-Scans 45+ pre-configured company career pages:
-- Anthropic, OpenAI, Stripe, Google, Meta, Microsoft, Apple
-- Amazon, Netflix, Spotify, Airbnb, Tesla, LinkedIn, and more
+### 2. Portal Scanning - India Focused
+Scans 30+ pre-configured Indian company career pages:
+- **Tech Giants:** Google, Microsoft, Amazon, Apple, Meta
+- **Unicorns:** Flipkart, Swiggy, Zomato, OYO, Byju's, Unacademy
+- **Fintech:** Razorpay, PhonePe, CRED
+- **IT Services:** Infosys, TCS, Wipro, HCL, Tech Mahindra
+- **SaaS:** Freshworks, Stripe India, Atlassian, GitLab
 
 ### 3. Resume Generation
 Generates ATS-optimized PDFs:
@@ -68,7 +75,18 @@ Generates ATS-optimized PDFs:
 - Highlights quantifiable achievements
 - Professional, scannable format
 
-### 4. Profile Management
+### 4. Interview Preparation
+Generates personalized prep guides with YouTube resources:
+- 5-8 critical focus areas for the specific role
+- Tech stack concepts to master by difficulty
+- 10+ tailored behavioral questions
+- System design topics
+- 4-week preparation schedule
+- Common interview mistakes to avoid
+- **YouTube links** for theory, tutorials, practice problems
+- **Curated channels** for each topic
+
+### 5. Profile Management
 Stores your information locally:
 - Work experience and projects
 - Skills and certifications
@@ -100,13 +118,13 @@ Returns:
 - Key matches and mismatches
 - Recommendation (Apply/Maybe/Skip)
 
-### Scan Job Portals
+### Scan Job Portals (India)
 ```bash
-# Scan for Data Engineer roles
+# Scan for Data Engineer roles in Indian companies
 npm run scan-portals -- --archetype "Data Engineer"
 
-# Scan specific companies
-npm run scan-portals -- --archetype "Product Manager" --companies "Stripe,Anthropic"
+# Scan specific Indian companies
+npm run scan-portals -- --archetype "Backend Engineer" --companies "Flipkart,Amazon India,Microsoft India"
 ```
 
 ### Generate Tailored Resume
@@ -119,6 +137,24 @@ Creates PDF with:
 - Experience reordered by relevance
 - Achievement-focused bullet points
 
+### Generate Interview Prep Plan
+```bash
+# Paste job description directly
+npm run prepare-interview -- "Senior Backend Engineer at Flipkart..."
+
+# Or use a file
+npm run prepare-interview -- job_description.txt
+```
+
+Output includes:
+- 5-8 focus areas for the role
+- Concept breakdown by category
+- Interview round expectations
+- 4-week study schedule
+- YouTube links for each topic
+- Behavioral questions
+- Common mistakes to avoid
+
 ## 🏗️ Architecture
 
 ### Core Modules
@@ -126,7 +162,8 @@ Creates PDF with:
 - **ProfileManager** - Manages your candidate profile
 - **JobEvaluator** - Scores jobs across 10 dimensions
 - **ResumeGenerator** - Creates tailored resumes with Playwright
-- **PortalScanner** - Scans 45+ company career pages
+- **PortalScanner** - Scans 30+ Indian company career pages
+- **InterviewPrep** - Generates prep plans with YouTube resources
 
 ### Data Storage
 
@@ -156,9 +193,12 @@ SCANNING_MODEL=claude-3-5-haiku   # Optional, faster for scanning
 
 1. **Quality over Quantity** - Focus on high-scoring jobs (4.0+)
 2. **Monitor Tokens** - Use Haiku for scanning, Sonnet for fine work
-3. **Keep Profile Fresh** - Update quarterly with new projects
-4. **Review PDFs** - Always verify before submitting
-5. **Track Everything** - Review evaluation history for patterns
+3. **Prep Early** - Generate interview prep 2-4 weeks before interviews
+4. **Follow YouTube Schedule** - Use the 4-week plan with curated channels
+5. **Keep Profile Fresh** - Update quarterly with new projects
+6. **Review PDFs** - Always verify before submitting
+7. **Track Everything** - Review evaluation history for patterns
+8. **India Jobs** - All 30+ companies actively hire in India with local offices
 
 ## 📊 Workflow
 
