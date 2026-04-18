@@ -1,4 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
+import 'dotenv/config';
+import { createClient } from './aiClient.js';
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
@@ -9,9 +10,7 @@ const resumesDir = path.join(__dirname, '../../data/resumes');
 
 class ResumeGenerator {
   constructor() {
-    this.client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    this.client = createClient();
     this.ensureResumesDir();
   }
 
@@ -46,8 +45,7 @@ ${jobPosting}
 Return as a JSON array of strings.`;
 
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 500,
+            max_tokens: 500,
       messages: [
         {
           role: 'user',
@@ -89,8 +87,7 @@ Create an ATS-optimized HTML resume that:
 Return the HTML code for the resume.`;
 
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 3000,
+            max_tokens: 3000,
       messages: [
         {
           role: 'user',

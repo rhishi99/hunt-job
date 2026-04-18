@@ -1,4 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
+import 'dotenv/config';
+import { createClient } from './aiClient.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,9 +9,7 @@ const dataDir = path.join(__dirname, '../../data');
 
 class JobEvaluator {
   constructor() {
-    this.client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    this.client = createClient();
     this.evaluatedJobsPath = path.join(dataDir, 'evaluated-jobs.json');
     this.ensureDataDir();
   }
@@ -24,11 +23,24 @@ class JobEvaluator {
     }
   }
 
-  async evaluate(jobUrl, profile) {
-    const evaluationPrompt = this.buildEvaluationPrompt(jobUrl, profile);
+  async evaluate(jobInput, profile) {
+    // If it's a Lever job URL, fetch description via API
+    let jobText = jobInput;
+    const leverMatch = jobInput.match(/jobs\.lever\.co\/([^/]+)\/([a-f0-9-]+)/);
+    if (leverMatch) {
+      try {
+        const r = await fetch(`https://api.lever.co/v0/postings/${leverMatch[1]}/${leverMatch[2]}?mode=json`);
+        if (r.ok) {
+          const job = await r.json();
+          const desc = (job.description || '').replace(/<li>/gi, '\n- ').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
+          jobText = `Job Title: ${job.text}\nCompany: ${leverMatch[1]}\nLocation: ${job.categories?.location || ''}\n\n${desc}`;
+        }
+      } catch {}
+    }
+
+    const evaluationPrompt = this.buildEvaluationPrompt(jobText, profile);
 
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
       max_tokens: 2048,
       messages: [
         {
@@ -39,7 +51,7 @@ class JobEvaluator {
     });
 
     const evaluation = this.parseEvaluationResponse(response.content[0].text);
-    await this.saveEvaluatedJob(jobUrl, evaluation, profile);
+    await this.saveEvaluatedJob(jobInput, evaluation, profile);
 
     return evaluation;
   }

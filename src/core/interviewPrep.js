@@ -1,4 +1,5 @@
-import Anthropic from '@anthropic-ai/sdk';
+import 'dotenv/config';
+import { createClient } from './aiClient.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
@@ -9,9 +10,7 @@ const dataDir = path.join(__dirname, '../../data');
 
 class InterviewPrep {
   constructor() {
-    this.client = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY,
-    });
+    this.client = createClient();
     this.prepDir = path.join(dataDir, 'interview-prep');
     this.ensureDataDir();
   }
@@ -26,8 +25,7 @@ class InterviewPrep {
     const prompt = this.buildPrepPrompt(jobDescription, profile);
 
     const response = await this.client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 4000,
+            max_tokens: 4000,
       messages: [
         {
           role: 'user',
@@ -140,19 +138,20 @@ Format as valid JSON only.`;
   }
 
   getYouTubeLinks(topic, topicToChannels) {
-    const channels = topicToChannels[topic] || topicToChannels[Object.keys(topicToChannels).find(k => topic.toLowerCase().includes(k.toLowerCase()))] || [];
+    const topicStr = typeof topic === 'string' ? topic : String(topic);
+    const channels = topicToChannels[topicStr] || topicToChannels[Object.keys(topicToChannels).find(k => topicStr.toLowerCase().includes(k.toLowerCase()))] || [];
 
     if (channels.length === 0) {
       return {
-        theory: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' tutorial')}`,
-        practice: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' problems solutions')}`,
+        theory: `https://www.youtube.com/results?search_query=${encodeURIComponent(topicStr + ' tutorial')}`,
+        practice: `https://www.youtube.com/results?search_query=${encodeURIComponent(topicStr + ' problems solutions')}`,
         channels: []
       };
     }
 
     return {
-      theory: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' tutorial')}`,
-      practice: `https://www.youtube.com/results?search_query=${encodeURIComponent(topic + ' interview questions')}`,
+      theory: `https://www.youtube.com/results?search_query=${encodeURIComponent(topicStr + ' tutorial')}`,
+      practice: `https://www.youtube.com/results?search_query=${encodeURIComponent(topicStr + ' interview questions')}`,
       channels: channels.map(ch => ({
         name: ch,
         url: `https://www.youtube.com/results?search_query=${encodeURIComponent(ch + ' ' + topic)}`
