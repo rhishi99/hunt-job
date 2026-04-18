@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import ProfileManager from '../core/profileManager.js';
 import JobEvaluator from '../core/jobEvaluator.js';
 import InterviewPrep from '../core/interviewPrep.js';
-import PortalScanner from '../core/portalScanner.js';
+import PortalScanner, { SCANNABLE_COMPANIES } from '../core/portalScanner.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const profileManager = new ProfileManager();
@@ -75,14 +75,16 @@ async function runSetupFlow() {
   section('First-Time Setup');
   console.log(chalk.white('\n  No profile found. Let\'s get you set up in 2 steps.\n'));
 
-  // Step 1: Check API key
-  if (!process.env.GEMINI_API_KEY) {
-    warn('Gemini API key not configured.');
-    hint('Run: npm run setup   to add your API key first, then come back.');
+  // Step 1: Check at least one AI provider key is present
+  const hasAnyKey = ['ANTHROPIC_API_KEY','OPENROUTER_API_KEY','GROQ_API_KEY','NVIDIA_API_KEY','GEMINI_API_KEY']
+    .some(k => !!process.env[k]);
+  if (!hasAnyKey) {
+    warn('No AI provider key configured.');
+    hint('Run: npm run setup   to add an API key first, then come back.');
     await pressEnter();
     return false;
   }
-  success('Gemini API key found.');
+  success('AI provider key found.');
 
   // Step 2: Parse resume
   const { hasResume } = await inquirer.prompt([{
@@ -131,22 +133,27 @@ async function runSetupFlow() {
   return true;
 }
 
-async function runEvaluateFlow(profile) {
+async function runEvaluateFlow(profile, jobDescriptionOrUrl) {
   clear(); banner();
   section('Evaluate a Job');
 
-  const { input } = await inquirer.prompt([{
-    type: 'input',
-    name: 'input',
-    message: 'Paste job URL or job description text:',
-    validate: v => v.trim().length > 10 || 'Please enter a URL or description'
-  }]);
+  let jobInput = jobDescriptionOrUrl;
+
+  if (!jobInput) {
+    const { input } = await inquirer.prompt([{
+      type: 'input',
+      name: 'input',
+      message: 'Paste job URL or job description text:',
+      validate: v => v.trim().length > 10 || 'Please enter a URL or description'
+    }]);
+    jobInput = input.trim();
+  }
 
   console.log(chalk.gray('\n  Evaluating with AI across 10 dimensions...\n'));
 
   try {
     const evaluator = new JobEvaluator();
-    const evaluation = await evaluator.evaluate(input.trim(), profile);
+    const evaluation = await evaluator.evaluate(jobInput, profile);
 
     section('Evaluation Results');
 
@@ -192,13 +199,21 @@ async function runEvaluateFlow(profile) {
           { name: '↩  Back to main menu', value: 'back' }
         ]
       }]);
-      if (next === 'prep') await runInterviewPrepFlow(profile, input.trim());
-      if (next === 'resume') await runResumeGenFlow(profile, input.trim());
+      if (next === 'prep') await runInterviewPrepFlow(profile, jobInput);
+      if (next === 'resume') await runResumeGenFlow(profile, jobInput);
     } else if (score >= 3.0) {
       warn('Borderline match. Consider applying if role aligns with long-term goals.');
+      if (!evaluation.mismatches?.length) {
+        const reason = evaluation.analysis || evaluation.summary || evaluation.reasoning || '';
+        if (reason) console.log(chalk.gray(`\n     Why: ${reason.slice(0, 400)}`));
+      }
       await pressEnter();
     } else {
       err('Weak match. Likely not worth applying.');
+      if (!evaluation.mismatches?.length) {
+        const reason = evaluation.analysis || evaluation.summary || evaluation.reasoning || '';
+        if (reason) console.log(chalk.gray(`\n     Why: ${reason.slice(0, 400)}`));
+      }
       await pressEnter();
     }
   } catch (e) {
@@ -299,14 +314,13 @@ async function runScanFlow(profile) {
     archetype = custom;
   }
 
-  const portalsPath = path.join(__dirname, '../../config/company-portals.json');
-  const companies = JSON.parse(fs.readFileSync(portalsPath, 'utf-8')).companies;
-  const companyNames = companies.map(c => c.name);
+  const scannableNames = SCANNABLE_COMPANIES.map(c => c.name);
+  const total = SCANNABLE_COMPANIES.length;
 
   const { scanAll } = await inquirer.prompt([{
     type: 'confirm',
     name: 'scanAll',
-    message: `Scan all ${companyNames.length} companies? (No = pick specific ones)`,
+    message: `Scan all ${total} companies with public job APIs? (No = pick specific ones)`,
     default: true
   }]);
 
@@ -315,8 +329,12 @@ async function runScanFlow(profile) {
     const { picked } = await inquirer.prompt([{
       type: 'checkbox',
       name: 'picked',
-      message: 'Select companies to scan:',
-      choices: companyNames,
+      message: `Select companies to scan (${total} available via API):`,
+      pageSize: 20,
+      choices: SCANNABLE_COMPANIES.map(c => ({
+        name: `${c.name}  ${chalk.gray(`(${c.api})`)}`,
+        value: c.name
+      })),
       validate: v => v.length > 0 || 'Pick at least one'
     }]);
     selectedCompanies = picked;
@@ -343,13 +361,23 @@ async function runScanFlow(profile) {
       if (job.description) console.log(chalk.gray(`     Summary:  `) + chalk.white(job.description.slice(0, 120)));
     });
 
-    const { jobIndex } = await inquirer.prompt([{
-      type: 'number',
-      name: 'jobIndex',
-      message: `Select a job (1–${jobs.length}):`,
-      validate: v => (v >= 1 && v <= jobs.length) || 'Invalid number'
-    }]);
-    const selected = jobs[jobIndex - 1];
+    let selected;
+    if (jobs.length === 1) {
+      selected = jobs[0];
+      console.log(chalk.gray(`\n  Auto-selected the only result: `) + chalk.cyan.bold(selected.title));
+    } else {
+      const { jobChoice } = await inquirer.prompt([{
+        type: 'list',
+        name: 'jobChoice',
+        message: 'Select a job:',
+        pageSize: 12,
+        choices: jobs.map((job, i) => ({
+          name: `${i + 1}. ${job.title || job.jobTitle}  —  ${job.company}  (${job.location || 'India'})`,
+          value: i
+        }))
+      }]);
+      selected = jobs[jobChoice];
+    }
 
     const { action } = await inquirer.prompt([{
       type: 'list',
@@ -365,11 +393,18 @@ async function runScanFlow(profile) {
       ]
     }]);
 
-    const jobInput = selected.url || selected.description;
+    // Build a rich text context so AI modules receive actual content, not just a URL
+    const jobTitle = selected.title || selected.jobTitle || '';
+    const jobDesc  = selected.description || '';
+    const jobUrl   = selected.url || '';
+    const jobInput = jobDesc
+      ? `Position: ${jobTitle}\nCompany: ${selected.company}\nLocation: ${selected.location || 'India'}\n\n${jobDesc}\n\nJob URL: ${jobUrl}`
+      : jobUrl;
+
     if (action === 'full') {
-      await runEvaluateFlow(profile, jobInput);
-      await runInterviewPrepFlow(profile, jobInput);
-      await runResumeGenFlow(profile, jobInput);
+      try { await runEvaluateFlow(profile, jobInput); } catch (e) { err(`Evaluate failed: ${e.message}`); }
+      try { await runInterviewPrepFlow(profile, jobInput); } catch (e) { err(`Prep failed: ${e.message}`); }
+      try { await runResumeGenFlow(profile, jobInput); } catch (e) { err(`Resume failed: ${e.message}`); }
       await applyToJob(selected, profile);
     }
     if (action === 'evaluate') await runEvaluateFlow(profile, jobInput);
@@ -564,6 +599,7 @@ async function mainMenu(profile) {
       type: 'list',
       name: 'choice',
       message: 'What would you like to do?',
+      pageSize: 35,
       choices: [
         { name: '🚀  Full Apply Workflow  (eval → prep → resume)', value: 'workflow' },
         new inquirer.Separator(),

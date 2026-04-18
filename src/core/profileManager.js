@@ -63,7 +63,8 @@ class ProfileManager {
       salary: {
         min: 0,
         max: 0,
-        currency: 'USD'
+        currency: 'INR',
+        unit: 'LPA'
       },
       remotePreference: 'hybrid',
       techStack: [],
@@ -98,7 +99,7 @@ Last Updated: ${profile.updatedAt}
 
 ## Preferences
 - Remote Preference: ${profile.remotePreference}
-- Salary Range: $${profile.salary?.min || 0} - $${profile.salary?.max || 0} ${profile.salary?.currency || 'USD'}
+- Salary Range: ₹${profile.salary?.min || 0} - ₹${profile.salary?.max || 0} ${profile.salary?.unit || 'LPA'} (${profile.salary?.currency || 'INR'})
 - Tech Stack: ${profile.techStack?.join(', ') || 'Not set'}
 
 ## Dealbreakers

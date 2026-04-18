@@ -1,4 +1,14 @@
 {
+  "providers": {
+    "priorityOrder": ["anthropic", "openrouter", "groq", "nvidia", "gemini"],
+    "models": {
+      "anthropic":  { "heavy": "claude-sonnet-4-6",             "light": "claude-haiku-4-5-20251001" },
+      "openrouter": { "heavy": "google/gemini-2.5-pro-preview", "light": "anthropic/claude-3.5-haiku" },
+      "groq":       { "heavy": "llama-3.3-70b-versatile",       "light": "llama-3.1-8b-instant" },
+      "nvidia":     { "heavy": "meta/llama-3.3-70b-instruct",   "light": "meta/llama-3.1-8b-instruct" },
+      "gemini":     { "heavy": "gemini-flash-latest",            "light": "gemini-flash-lite-latest" }
+    }
+  },
   "claude": {
     "model": "claude-3-5-sonnet-20241022",
     "scanningModel": "claude-3-5-haiku-20241022",

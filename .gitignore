@@ -1,15 +1,32 @@
 node_modules/
 dist/
 build/
+
+# API keys and environment secrets
 .env
 .env.local
 .env.*.local
+*.env
+**/.env
+
+# User profile — personal data
 config/profile.yml
 config/profile.local.json
 modes/_profile.md
+modes/*.md
+
+# Generated job search data — resumes, prep plans, evaluations, applications, logs
 data/
+
+# Temporary files — job descriptions, notes, scratch files
+temp/
+
+# Generated file formats
 *.pdf
 *.log
+*.jsonl
+
+# OS and editor artifacts
 .DS_Store
 .idea/
 .vscode/
@@ -18,3 +35,6 @@ data/
 *~
 .cache/
 .turbo/
+
+# Lock files (optional — comment out if you want to track them)
+# package-lock.json

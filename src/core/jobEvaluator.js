@@ -1,15 +1,18 @@
 import 'dotenv/config';
-import { createClient } from './aiClient.js';
+import { getActiveClient } from './aiClient.js';
+import { createLogger } from './logger.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+const log = createLogger('jobEvaluator');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '../../data');
 
 class JobEvaluator {
   constructor() {
-    this.client = createClient();
+    this.client = getActiveClient('heavy');
     this.evaluatedJobsPath = path.join(dataDir, 'evaluated-jobs.json');
     this.ensureDataDir();
   }
@@ -24,6 +27,7 @@ class JobEvaluator {
   }
 
   async evaluate(jobInput, profile) {
+    log.op('evaluate_start', { input: jobInput.slice(0, 100) });
     // If it's a Lever job URL, fetch description via API
     let jobText = jobInput;
     const leverMatch = jobInput.match(/jobs\.lever\.co\/([^/]+)\/([a-f0-9-]+)/);
@@ -52,6 +56,7 @@ class JobEvaluator {
 
     const evaluation = this.parseEvaluationResponse(response.content[0].text);
     await this.saveEvaluatedJob(jobInput, evaluation, profile);
+    log.op('evaluate_done', { score: evaluation.overallScore, recommendation: evaluation.recommendation });
 
     return evaluation;
   }
@@ -79,24 +84,26 @@ Please evaluate this job across these 10 dimensions on a scale of 1-5:
 9. Career Progression Potential
 10. Dealbreaker Compliance
 
-Provide:
-- Overall Score (1-5)
-- Dimension Breakdown
-- Key Matches
-- Key Mismatches
-- Recommendation (Apply/Maybe/Skip)
+Provide the following as a JSON object with exactly these keys:
+- "overallScore": number 1-5
+- "dimensions": object with each dimension name as key and score 1-5 as value
+- "matches": array of strings (what fits well)
+- "mismatches": array of strings (what doesn't fit or is missing)
+- "reasoning": string (2-3 sentences explaining the score)
+- "recommendation": one of "Apply", "Maybe", or "Skip"
 
-Format your response as JSON.`;
+Return ONLY valid JSON, no markdown fences.`;
   }
 
   parseEvaluationResponse(responseText) {
     try {
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      const stripped = responseText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
     } catch (e) {
-      console.warn('Failed to parse evaluation as JSON, returning text:', e);
+      console.warn('Failed to parse evaluation as JSON, returning text:', e.message);
     }
 
     return {

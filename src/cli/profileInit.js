@@ -58,14 +58,14 @@ async function initProfile() {
     {
       type: 'number',
       name: 'salaryMin',
-      message: 'Minimum salary expectation (USD):',
-      default: 100000
+      message: 'Minimum CTC expectation (in LPA — Lakhs Per Annum):',
+      default: 10
     },
     {
       type: 'number',
       name: 'salaryMax',
-      message: 'Maximum salary expectation (USD):',
-      default: 200000
+      message: 'Maximum CTC expectation (in LPA):',
+      default: 20
     },
     {
       type: 'list',
@@ -96,7 +96,8 @@ async function initProfile() {
     salary: {
       min: answers.salaryMin,
       max: answers.salaryMax,
-      currency: 'USD'
+      currency: 'INR',
+      unit: 'LPA'
     },
     remotePreference: answers.remotePreference,
     techStack: answers.techStack.split(',').map(t => t.trim()).filter(t => t),

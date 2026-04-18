@@ -1,41 +1,71 @@
 import 'dotenv/config';
+import { createLogger } from './logger.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+const log = createLogger('portalScanner');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Indian companies with public Lever job boards
 const LEVER_COMPANIES = [
-  { name: 'Paytm',        slug: 'paytm',        location: 'Noida / Bengaluru' },
-  { name: 'Dunzo',        slug: 'dunzo',         location: 'Bangalore' },
-  { name: 'Postman',      slug: 'postman',       location: 'Bangalore' },
-  { name: 'Sprinklr',     slug: 'sprinklr',      location: 'Gurgaon' },
-  { name: 'Clevertap',    slug: 'clevertap',     location: 'Mumbai / Bangalore' },
-  { name: 'Chargebee',    slug: 'chargebee',     location: 'Chennai / Bangalore' },
-  { name: 'Browserstack', slug: 'browserstack',  location: 'Mumbai' },
-  { name: 'Freshworks',   slug: 'freshworks',    location: 'Chennai / Bangalore' },
-  { name: 'Unacademy',    slug: 'unacademy',     location: 'Bangalore' },
-  { name: 'Groww',        slug: 'groww',         location: 'Bangalore' },
-  { name: 'Meesho',       slug: 'meesho',        location: 'Bangalore' },
-  { name: 'CRED',         slug: 'cred',          location: 'Bangalore' },
-  { name: 'Cashfree',     slug: 'cashfree',      location: 'Bangalore' },
-  { name: 'Darwinbox',    slug: 'darwinbox',     location: 'Hyderabad' },
-  { name: 'Zetwerk',      slug: 'zetwerk',       location: 'Bangalore' },
-  { name: 'Slice',        slug: 'sliceit',       location: 'Bangalore' },
-  { name: 'Leadsquared',  slug: 'leadsquared',   location: 'Bangalore' },
+  { name: 'Paytm',        slug: 'paytm',         location: 'Noida / Bengaluru' },
+  { name: 'Dunzo',        slug: 'dunzo',          location: 'Bangalore' },
+  { name: 'Postman',      slug: 'postman',        location: 'Bangalore' },
+  { name: 'Sprinklr',     slug: 'sprinklr',       location: 'Gurgaon' },
+  { name: 'Clevertap',    slug: 'clevertap',      location: 'Mumbai / Bangalore' },
+  { name: 'Chargebee',    slug: 'chargebee',      location: 'Chennai / Bangalore' },
+  { name: 'Browserstack', slug: 'browserstack',   location: 'Mumbai' },
+  { name: 'Freshworks',   slug: 'freshworks',     location: 'Chennai / Bangalore' },
+  { name: 'Unacademy',    slug: 'unacademy',      location: 'Bangalore' },
+  { name: 'Groww',        slug: 'groww',          location: 'Bangalore' },
+  { name: 'Meesho',       slug: 'meesho',         location: 'Bangalore' },
+  { name: 'CRED',         slug: 'cred',           location: 'Bangalore' },
+  { name: 'Cashfree',     slug: 'cashfree',       location: 'Bangalore' },
+  { name: 'Darwinbox',    slug: 'darwinbox',      location: 'Hyderabad' },
+  { name: 'Zetwerk',      slug: 'zetwerk',        location: 'Bangalore' },
+  { name: 'Slice',        slug: 'sliceit',        location: 'Bangalore' },
+  { name: 'Leadsquared',  slug: 'leadsquared',    location: 'Bangalore' },
+  { name: 'Juspay',       slug: 'juspay',         location: 'Bangalore' },
+  { name: 'Hasura',       slug: 'hasura',         location: 'Bangalore' },
+  { name: 'Exotel',       slug: 'exotel',         location: 'Bangalore' },
+  { name: 'Ninjacart',    slug: 'ninjacart',      location: 'Bangalore' },
+  { name: 'Sharechat',    slug: 'sharechat',      location: 'Bangalore' },
+  { name: 'Niyo',         slug: 'niyo',           location: 'Bangalore' },
+  { name: 'Licious',      slug: 'licious',        location: 'Bangalore' },
+  { name: 'Vedantu',      slug: 'vedantu',        location: 'Bangalore' },
+  { name: 'Pixis',        slug: 'pixis',          location: 'Bangalore' },
+  { name: 'Whatfix',      slug: 'whatfix',        location: 'Bangalore' },
+  { name: 'Setu',         slug: 'setu',           location: 'Bangalore' },
+  { name: 'Jar',          slug: 'jar',            location: 'Bangalore' },
+  { name: 'Rapido',       slug: 'rapido',         location: 'Bangalore' },
 ];
 
 // Greenhouse companies
 const GREENHOUSE_COMPANIES = [
-  { name: 'Razorpay',    slug: 'razorpay',       location: 'Bangalore' },
-  { name: 'Flipkart',    slug: 'flipkart',       location: 'Bangalore' },
-  { name: 'Swiggy',      slug: 'swiggy',         location: 'Bangalore' },
-  { name: 'PhonePe',     slug: 'phonepe',        location: 'Bangalore' },
-  { name: 'Ola',         slug: 'olacabs',        location: 'Bangalore' },
-  { name: 'Zomato',      slug: 'zomato',         location: 'Gurgaon' },
-  { name: 'BigBasket',   slug: 'bigbasket',      location: 'Bangalore' },
-  { name: 'Urban Company', slug: 'urbancompany', location: 'Gurgaon' },
+  { name: 'Razorpay',      slug: 'razorpay',        location: 'Bangalore' },
+  { name: 'Flipkart',      slug: 'flipkart',         location: 'Bangalore' },
+  { name: 'Swiggy',        slug: 'swiggy',           location: 'Bangalore' },
+  { name: 'PhonePe',       slug: 'phonepe',          location: 'Bangalore' },
+  { name: 'Ola',           slug: 'olacabs',          location: 'Bangalore' },
+  { name: 'Zomato',        slug: 'zomato',           location: 'Gurgaon' },
+  { name: 'BigBasket',     slug: 'bigbasket',        location: 'Bangalore' },
+  { name: 'Urban Company', slug: 'urbancompany',     location: 'Gurgaon' },
+  { name: 'Delhivery',     slug: 'delhivery',        location: 'Gurgaon' },
+  { name: 'Dream11',       slug: 'dream11',          location: 'Mumbai' },
+  { name: 'Nykaa',         slug: 'nykaa',            location: 'Mumbai' },
+  { name: 'MPL',           slug: 'mpl',              location: 'Bangalore' },
+  { name: 'InMobi',        slug: 'inmobi',           location: 'Bangalore' },
+  { name: 'Zepto',         slug: 'zepto',            location: 'Mumbai' },
+  { name: 'Pocket FM',     slug: 'pocketfm',         location: 'Bangalore' },
+  { name: 'Thoughtworks',  slug: 'thoughtworks',     location: 'Bangalore' },
+  { name: 'MongoDB',       slug: 'mongodb',          location: 'Gurgaon' },
+  { name: 'Elastic',       slug: 'elastic',          location: 'Bangalore' },
+  { name: 'Confluent',     slug: 'confluent',        location: 'Pune' },
+  { name: 'Nutanix',       slug: 'nutanix',          location: 'Bangalore' },
+  { name: 'Snowflake',     slug: 'snowflake',        location: 'Bangalore' },
+  { name: 'Databricks',    slug: 'databricks',       location: 'Bangalore' },
 ];
 
 const FETCH_TIMEOUT_MS = 30000;
@@ -137,6 +167,12 @@ async function scanGreenhouse(archetype, companies) {
   return results.flat();
 }
 
+// All companies reachable via Lever / Greenhouse public APIs
+export const SCANNABLE_COMPANIES = [
+  ...LEVER_COMPANIES.map(c => ({ ...c, api: 'lever' })),
+  ...GREENHOUSE_COMPANIES.map(c => ({ ...c, api: 'greenhouse' })),
+];
+
 class PortalScanner {
   constructor() {
     const portalsPath = path.join(__dirname, '../../config/company-portals.json');
@@ -168,6 +204,7 @@ class PortalScanner {
 
     const all = [...leverJobs, ...ghJobs];
     process.stdout.write(`  Found ${all.length} matching jobs.\n`);
+    log.op('scan_done', { archetype, total: all.length, lever: leverJobs.length, greenhouse: ghJobs.length });
     return all;
   }
 

@@ -5,14 +5,16 @@
   "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "start": "node src/index.js",
+    "start": "node src/cli/interactive.js",
     "evaluate-job": "node src/cli/evaluateJob.js",
     "scan-portals": "node src/cli/scanPortals.js",
     "generate-resume": "node src/cli/generateResume.js",
     "prepare-interview": "node src/cli/prepareInterview.js",
     "dashboard": "go run cmd/dashboard/main.go",
+    "setup": "node src/cli/setupApiKey.js",
     "profile:init": "node src/cli/profileInit.js",
-    "profile:edit": "node src/cli/profileEdit.js"
+    "profile:edit": "node src/cli/profileEdit.js",
+    "parse-resume": "node src/cli/parseResume.js"
   },
   "keywords": [
     "job-search",
@@ -25,15 +27,18 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.0",
-    "playwright": "^1.40.0",
-    "yaml": "^2.3.4",
+    "@google/genai": "^1.50.1",
     "chalk": "^5.3.0",
-    "inquirer": "^9.2.12",
+    "dotenv": "^17.4.2",
     "ejs": "^3.1.9",
-    "node-fetch": "^3.3.2"
+    "inquirer": "^9.2.12",
+    "node-fetch": "^3.3.2",
+    "pdf-parse": "^1.1.1",
+    "playwright": "^1.40.0",
+    "yaml": "^2.3.4"
   },
   "devDependencies": {
-    "prettier": "^3.1.0",
-    "eslint": "^8.54.0"
+    "eslint": "^8.54.0",
+    "prettier": "^3.1.0"
   }
 }

@@ -1,35 +1,44 @@
 import 'dotenv/config';
-import { createClient } from './aiClient.js';
+import { getActiveClient } from './aiClient.js';
+import { createLogger } from './logger.js';
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+const log = createLogger('resumeGenerator');
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const resumesDir = path.join(__dirname, '../../data/resumes');
+const dataDir = path.join(__dirname, '../../data');
+
+function makeJobSlug(jobDescription) {
+  const titleMatch = jobDescription.match(/^Position:\s*(.+)/m);
+  const companyMatch = jobDescription.match(/^Company:\s*(.+)/m);
+  const title = titleMatch ? titleMatch[1].trim() : 'Unknown-Role';
+  const company = companyMatch ? companyMatch[1].trim() : 'Unknown-Company';
+  const date = new Date().toISOString().split('T')[0];
+  return `${company}_${title}_${date}`.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80);
+}
 
 class ResumeGenerator {
   constructor() {
-    this.client = createClient();
-    this.ensureResumesDir();
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  ensureResumesDir() {
-    if (!fs.existsSync(resumesDir)) {
-      fs.mkdirSync(resumesDir, { recursive: true });
-    }
+  makeJobDir(jobPosting) {
+    const slug = makeJobSlug(jobPosting);
+    const dir = path.join(dataDir, slug);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    return dir;
   }
 
   async generate(jobPosting, userProfile) {
-    // Extract keywords from job posting
+    log.op('resume_start', { input: jobPosting.slice(0, 100) });
     const keywords = await this.extractKeywords(jobPosting);
-
-    // Generate tailored resume content
     const resumeContent = await this.generateResume(jobPosting, userProfile, keywords);
+    const pdfPath = await this.convertToPDF(resumeContent, this.makeJobDir(jobPosting));
 
-    // Convert to PDF using Playwright
-    const pdfPath = await this.convertToPDF(resumeContent);
-
+    log.op('resume_done', { path: pdfPath, keywords: keywords.length });
     return {
       path: pdfPath,
       keywords: keywords,
@@ -42,9 +51,9 @@ class ResumeGenerator {
 
 ${jobPosting}
 
-Return as a JSON array of strings.`;
+Return ONLY a JSON array of strings with no markdown, no explanation. Example: ["Python","AWS","Docker"]`;
 
-    const response = await this.client.messages.create({
+    const response = await getActiveClient('light').messages.create({
             max_tokens: 500,
       messages: [
         {
@@ -55,16 +64,26 @@ Return as a JSON array of strings.`;
     });
 
     try {
-      const text = response.content[0].text;
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        return JSON.parse(jsonMatch[0]);
-      }
+      const text = response.content[0].text
+        .replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+      const jsonArray = this._extractBalancedArray(text);
+      if (jsonArray) return JSON.parse(jsonArray);
     } catch (e) {
-      console.warn('Failed to extract keywords:', e);
+      console.warn('Failed to extract keywords:', e.message);
     }
 
     return [];
+  }
+
+  _extractBalancedArray(text) {
+    const start = text.indexOf('[');
+    if (start === -1) return null;
+    let depth = 0;
+    for (let i = start; i < text.length; i++) {
+      if (text[i] === '[') depth++;
+      else if (text[i] === ']') { depth--; if (depth === 0) return text.slice(start, i + 1); }
+    }
+    return null;
   }
 
   async generateResume(jobPosting, userProfile, keywords) {
@@ -86,7 +105,7 @@ Create an ATS-optimized HTML resume that:
 
 Return the HTML code for the resume.`;
 
-    const response = await this.client.messages.create({
+    const response = await getActiveClient('heavy').messages.create({
             max_tokens: 3000,
       messages: [
         {
@@ -99,14 +118,13 @@ Return the HTML code for the resume.`;
     return response.content[0].text;
   }
 
-  async convertToPDF(htmlContent) {
+  async convertToPDF(htmlContent, destDir) {
     const browser = await chromium.launch();
     const page = await browser.newPage();
 
     await page.setContent(htmlContent, { waitUntil: 'networkidle' });
 
-    const timestamp = Date.now();
-    const pdfPath = path.join(resumesDir, `resume_${timestamp}.pdf`);
+    const pdfPath = path.join(destDir, `resume_${Date.now()}.pdf`);
 
     await page.pdf({ path: pdfPath, format: 'A4' });
 

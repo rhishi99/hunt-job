@@ -1,13 +1,12 @@
-import Anthropic from '@anthropic-ai/sdk';
+import 'dotenv/config';
+import { createClient } from './core/aiClient.js';
 import ProfileManager from './core/profileManager.js';
 import JobEvaluator from './core/jobEvaluator.js';
 import ResumeGenerator from './core/resumeGenerator.js';
 import PortalScanner from './core/portalScanner.js';
 import InterviewPrep from './core/interviewPrep.js';
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const client = createClient();
 
 class CareerOpsAgent {
   constructor() {
