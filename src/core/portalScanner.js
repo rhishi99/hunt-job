@@ -124,29 +124,44 @@ Rules:
   }
 
   _keywordExtract(scrapedPages, archetype) {
-    // Build keywords from archetype (e.g. "DevOps Engineer" → ["devops", "engineer", "sre", "platform"])
-    const archetypeWords = archetype.toLowerCase().split(/\s+/);
-    const synonyms = {
-      devops: ['devops', 'sre', 'site reliability', 'platform engineer', 'infrastructure'],
-      engineer: ['engineer', 'developer', 'dev'],
-      data: ['data', 'analytics', 'bi'],
-      backend: ['backend', 'back-end', 'server-side'],
-      frontend: ['frontend', 'front-end', 'ui engineer'],
+    // Each archetype word expands to synonyms; a line must match ALL groups (AND logic)
+    const synonymGroups = {
+      devops:    ['devops', 'dev ops'],
+      sre:       ['sre', 'site reliability'],
+      platform:  ['platform engineer', 'platform sre'],
+      infra:     ['infrastructure engineer', 'infra engineer'],
+      engineer:  ['engineer', 'developer'],
+      data:      ['data engineer', 'data developer', 'analytics engineer'],
+      backend:   ['backend', 'back-end'],
+      frontend:  ['frontend', 'front-end'],
       fullstack: ['fullstack', 'full-stack', 'full stack'],
+      cloud:     ['cloud engineer', 'cloud architect', 'cloud developer'],
+      ml:        ['machine learning', 'ml engineer', 'ai engineer'],
+      security:  ['security engineer', 'appsec', 'devsecops'],
     };
 
-    const keywords = new Set(archetypeWords);
-    archetypeWords.forEach(w => (synonyms[w] || []).forEach(s => keywords.add(s)));
+    // Build required match groups from archetype words
+    // "DevOps Engineer" → must match ["devops"] AND ["engineer"]
+    const archetypeWords = archetype.toLowerCase().split(/\s+/);
+    const requiredGroups = archetypeWords
+      .map(w => synonymGroups[w] ?? [w])  // unknown words match literally
+      .filter(g => g.length > 0);
+
+    // Also treat full archetype as a single phrase option (e.g. "devops engineer")
+    const fullPhrase = archetype.toLowerCase();
 
     const jobs = [];
     for (const page of scrapedPages) {
       const lines = page.text.split(/[\n.;|·•]/);
+      let countForCompany = 0;
       for (const line of lines) {
         const lower = line.toLowerCase();
-        const matched = [...keywords].some(k => lower.includes(k));
-        if (!matched) continue;
 
-        // Line must look like a job title (2-8 words, no full sentences)
+        // A line matches if it contains the full phrase OR satisfies all required groups
+        const fullMatch = lower.includes(fullPhrase);
+        const groupMatch = requiredGroups.every(group => group.some(kw => lower.includes(kw)));
+        if (!fullMatch && !groupMatch) continue;
+
         const trimmed = line.trim();
         const wordCount = trimmed.split(/\s+/).length;
         if (wordCount < 2 || wordCount > 10) continue;
@@ -159,7 +174,7 @@ Rules:
           url: page.url,
           description: `${page.name} is hiring for this role in ${page.location}.`,
         });
-        if (jobs.filter(j => j.company === page.name).length >= 5) break; // max 5 per company
+        if (++countForCompany >= 5) break;
       }
     }
     return jobs;
