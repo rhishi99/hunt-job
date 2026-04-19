@@ -13,45 +13,97 @@
 
 ### Prerequisites
 - **Node.js 16+** - [Download](https://nodejs.org/)
-- **Anthropic API Key** - [Get free credits](https://console.anthropic.com)
+- **At least one AI provider API key** (see options below)
 - **VS Code or Terminal** - For running commands
-- **(Optional) Go** - For dashboard feature
+
+### AI Provider Options
+
+Choose ANY of these (or combine multiple):
+
+| Provider | Cost | Setup | Use Case |
+|---|---|---|---|
+| **🟢 Gemini (Google)** | FREE tier: 60 req/min, 1500 rpm | [Get API Key](https://aistudio.google.com) | ✅ **Best for starting** — Free, generous limits |
+| **🟢 Groq** | FREE tier: 100+ calls/day | [Get API Key](https://console.groq.com) | ✅ **Fast & free** — Low-cost scanning |
+| **🔵 OpenRouter** | Pay-as-you-go ($0.0005-0.002/1K tokens) | [Get API Key](https://openrouter.ai/keys) | ✅ **Most models** — Access 100+ models |
+| **🟣 NVIDIA NIM** | FREE tier: 1000 tokens/day | [Get API Key](https://integrate.api.nvidia.com) | ✅ **Local inference** — On-device capability |
+| **⭐ Claude (Anthropic)** | Paid: $0.03-0.30/1K tokens | [Get API Key](https://console.anthropic.com) | ✅ **Best quality** — For final resumes/evaluations |
+
+**Recommendation for getting started:**
+1. Start with **Gemini (free tier)** — Instant setup, no payment needed
+2. Add **Groq** for faster scanning (also free)
+3. Add **Claude** later when you need best quality for resumes
 
 ### Step 1: Clone and Install
 
 ```bash
-# Navigate to your projects folder
-cd ~/projects
-
-# Clone the repository
 git clone https://github.com/rhishi99/hunt-job.git
 cd hunt-job
-
-# Install dependencies
 npm install
-
-# Install Playwright for PDF generation
-npx playwright install
+npx playwright install chromium   # for resume PDF + auto-fill
 ```
 
-### Step 2: Configure Environment Variables
+### Step 2: Get Your First API Key (Pick ONE)
 
+**Option A: Gemini (Recommended - Fastest Start)**
 ```bash
-# Create .env file (never commit this!)
+# 1. Go to https://aistudio.google.com
+# 2. Click "Get API Key" (free tier available)
+# 3. Copy your key
+
+export GEMINI_API_KEY="your_key_here"
+npm run setup  # Interactive setup will detect it
+```
+
+**Option B: Groq (Also Free)**
+```bash
+# 1. Go to https://console.groq.com
+# 2. Create account, generate API key
+# 3. Copy your key
+
+export GROQ_API_KEY="your_key_here"
+npm run setup
+```
+
+**Option C: Claude (Paid - Best Quality)**
+```bash
+# 1. Go to https://console.anthropic.com
+# 2. Add payment method (get $5 free credits first)
+# 3. Generate API key
+
+export ANTHROPIC_API_KEY="sk-ant-your_key_here"
+npm run setup
+```
+
+**Option D: Multiple Providers (Recommended Eventually)**
+```bash
+# Set multiple keys - app will use fastest available
+export GEMINI_API_KEY="..."
+export GROQ_API_KEY="..."
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# Or create .env file
 cat > .env << 'EOF'
-ANTHROPIC_API_KEY=sk_ant_your_actual_api_key_here
-CLAUDE_MODEL=claude-3-5-sonnet-20241022
-SCANNING_MODEL=claude-3-5-haiku-20241022
+GEMINI_API_KEY=your_gemini_key
+GROQ_API_KEY=your_groq_key
+ANTHROPIC_API_KEY=sk-ant-your_claude_key
 EOF
 
-# Set in current session
-export ANTHROPIC_API_KEY="sk_ant_your_actual_api_key_here"
-
-# Verify it's set
-echo $ANTHROPIC_API_KEY
+npm run setup
 ```
 
-### Step 3: Initialize Your Profile
+### Step 3: Verify API Key is Set
+
+```bash
+# Check which providers are available
+npm run setup  # Shows detected API keys
+
+# Or manually verify
+echo $GEMINI_API_KEY      # Should show key if set
+echo $GROQ_API_KEY         # Should show key if set
+echo $ANTHROPIC_API_KEY    # Should show key if set
+```
+
+### Step 4: Initialize Your Profile
 
 ```bash
 # Interactive profile setup (takes 5 minutes)
@@ -69,7 +121,37 @@ npm run profile:init
 - **Tech stack preferences** (Python, Java, Go, etc.)
 - **Dealbreakers** (relocation, remote-only, etc.)
 
-### Step 4: Add Your Experience (Optional but Recommended)
+### Step 5: Test Your Setup
+
+```bash
+# Quick test with your configured provider
+npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
+
+# Should show a score (if it works, you're ready!)
+```
+
+### Feature Status: What's Implemented vs What's Not
+
+#### ✅ Fully Implemented & Working
+
+- **Job Evaluation** (10 dimensions) — Works with all providers
+- **Portal Scanning** (60+ companies) — India-focused, cached results
+- **Resume Generation** (ATS-optimized PDF) — Tailored to each job
+- **Interview Prep** (4-week schedule + YouTube links) — Role-specific
+- **Profile Management** (YAML-based) — Local storage
+- **Auto-fill Apply** (Lever & Greenhouse forms) — Browser automation
+- **Application Tracker** (JSON-based) — Manage your applications
+- **Resume Parser** (PDF to profile) — Extract your resume data
+- **Multi-provider AI** (Gemini, Groq, OpenRouter, NVIDIA, Claude) — All working
+
+#### ⏳ Not Implemented (Original Features)
+
+- **Dashboard Mode** (Go-based terminal UI) — Mentioned in original, not implemented in this fork
+- **Slash Commands** (e.g., `/evaluate-job`) — Use `npm run` commands or interactive menu instead
+
+---
+
+### Step 5: Add Your Experience (Optional but Recommended)
 
 Create `config/profile.yml` manually or via CLI:
 
@@ -122,29 +204,31 @@ projects:
     technologies: ["Python", "RabbitMQ", "PostgreSQL"]
 ```
 
-### Step 5: Verify Setup
+### Step 6: Verify Setup
 
 ```bash
-# Check all commands work
+# Test each command
 npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
 npm run scan-portals -- --archetype "Backend Engineer"
 npm run prepare-interview -- "Job Description"
 
-# Should see successful outputs
+# Should see successful outputs without errors
 ```
 
 ---
 
-## Claude Code Integration
+## Claude Code Integration (Optional - For Faster Workflows)
 
-### What is Claude Code?
+### About Claude Code
 
-Claude Code is Anthropic's official CLI tool that lets you interact with Claude directly in your terminal and leverage Claude's capabilities in your workflow.
+Claude Code is Anthropic's official CLI tool that lets you interact with Claude directly in your terminal. It can orchestrate Career-Ops commands, batch process jobs, and provide AI analysis.
 
-### Installation
+**Note:** Claude Code is OPTIONAL. Career-Ops works fine with just the CLI commands. This section is for power users who want faster, more interactive workflows.
+
+### Installation (Optional)
 
 ```bash
-# Install Claude Code globally
+# Install Claude Code globally (optional)
 npm install -g @anthropic-ai/claude-code
 
 # Authenticate
@@ -155,6 +239,8 @@ claude --version
 ```
 
 ### Using Claude Code with Career-Ops
+
+Claude Code works with ANY of your configured AI providers (Gemini, Groq, OpenRouter, NVIDIA, Claude).
 
 #### 1. **Start Claude Code in Project Directory**
 
@@ -704,6 +790,64 @@ claude
 - ✅ Ready for multiple rounds
 
 ---
+
+---
+
+## Provider Selection & Cost Optimization
+
+### Free Model Strategy (Recommended)
+
+Use **Gemini + Groq** for 90% of your work (completely free):
+
+```bash
+export GEMINI_API_KEY="your_gemini_key"
+export GROQ_API_KEY="your_groq_key"
+npm run setup
+```
+
+**Why this works:**
+- **Scanning** (15-20 mins/week) → Use Groq (fast & free)
+- **Evaluation** (5-10 mins/week) → Use Gemini (free tier sufficient)
+- **Resume generation** → Happens rarely, use Gemini (works fine for most)
+- **Interview prep** → Use Gemini (works great)
+
+**Monthly cost: $0**
+
+### When to Add Claude (Optional)
+
+Only add Claude API when you need best-in-class quality:
+- Evaluating your dream job (needs perfect analysis)
+- Final resume for top-tier company (needs polished output)
+- Complex interview prep (needs nuanced guidance)
+
+**Cost: ~$0.30-0.50/month** (very reasonable for occasional use)
+
+### When to Use OpenRouter
+
+If free tiers are exhausted and you want more models:
+```bash
+export OPENROUTER_API_KEY="your_key"
+```
+
+**Cost: $0.0005-0.002 per 1K tokens** (super cheap, pay-as-you-go)
+
+### Multi-Provider Setup (Best Practice)
+
+```bash
+# .env file with multiple providers
+GEMINI_API_KEY=...
+GROQ_API_KEY=...
+OPENROUTER_API_KEY=...
+ANTHROPIC_API_KEY=sk-ant-...
+
+# App automatically selects the best available
+# Priority: Set in PRIORITY_ORDER in config/settings.json
+```
+
+The app will use providers in this order:
+1. First available provider with available quota
+2. Fallback if one hits rate limits
+3. You can force a provider with: `AI_PROVIDER=groq npm run evaluate-job -- ...`
 
 ---
 
