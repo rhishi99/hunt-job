@@ -783,7 +783,7 @@ async function mainMenu(profile) {
       }
       case 'profile': {
         const { spawn } = await import('child_process');
-        await new Promise(r => { const c = spawn('node', [path.join(__dirname, 'parseResume.js')], { stdio: 'inherit' }); c.on('close', r); });
+        await new Promise(r => { const c = spawn('node', [path.join(__dirname, 'profileEdit.js')], { stdio: 'inherit' }); c.on('close', r); });
         // Reload profile
         const { profile: p } = await getProfileStatus();
         if (p) profile = p;
