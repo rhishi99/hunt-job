@@ -42,8 +42,7 @@ async function prepareForInterview() {
   const youtubeSection = interviewPrep.formatYouTubeLinks(plan);
   console.log(chalk.yellow(youtubeSection));
 
-  // Show where the full plan was saved
-  console.log(chalk.green('✅ Full preparation plan saved to: data/interview-prep/\n'));
+  console.log(chalk.green('✅ Full preparation plan saved as HTML in data/\n'));
 }
 
 prepareForInterview().catch(err => {

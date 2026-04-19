@@ -8,67 +8,118 @@ const log = createLogger('portalScanner');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Indian companies with public Lever job boards
+// ── Indian & global companies on Lever's public job board API ────────────────
 const LEVER_COMPANIES = [
-  { name: 'Paytm',        slug: 'paytm',         location: 'Noida / Bengaluru' },
-  { name: 'Dunzo',        slug: 'dunzo',          location: 'Bangalore' },
-  { name: 'Postman',      slug: 'postman',        location: 'Bangalore' },
-  { name: 'Sprinklr',     slug: 'sprinklr',       location: 'Gurgaon' },
-  { name: 'Clevertap',    slug: 'clevertap',      location: 'Mumbai / Bangalore' },
-  { name: 'Chargebee',    slug: 'chargebee',      location: 'Chennai / Bangalore' },
-  { name: 'Browserstack', slug: 'browserstack',   location: 'Mumbai' },
-  { name: 'Freshworks',   slug: 'freshworks',     location: 'Chennai / Bangalore' },
-  { name: 'Unacademy',    slug: 'unacademy',      location: 'Bangalore' },
-  { name: 'Groww',        slug: 'groww',          location: 'Bangalore' },
-  { name: 'Meesho',       slug: 'meesho',         location: 'Bangalore' },
-  { name: 'CRED',         slug: 'cred',           location: 'Bangalore' },
-  { name: 'Cashfree',     slug: 'cashfree',       location: 'Bangalore' },
-  { name: 'Darwinbox',    slug: 'darwinbox',      location: 'Hyderabad' },
-  { name: 'Zetwerk',      slug: 'zetwerk',        location: 'Bangalore' },
-  { name: 'Slice',        slug: 'sliceit',        location: 'Bangalore' },
-  { name: 'Leadsquared',  slug: 'leadsquared',    location: 'Bangalore' },
-  { name: 'Juspay',       slug: 'juspay',         location: 'Bangalore' },
-  { name: 'Hasura',       slug: 'hasura',         location: 'Bangalore' },
-  { name: 'Exotel',       slug: 'exotel',         location: 'Bangalore' },
-  { name: 'Ninjacart',    slug: 'ninjacart',      location: 'Bangalore' },
-  { name: 'Sharechat',    slug: 'sharechat',      location: 'Bangalore' },
-  { name: 'Niyo',         slug: 'niyo',           location: 'Bangalore' },
-  { name: 'Licious',      slug: 'licious',        location: 'Bangalore' },
-  { name: 'Vedantu',      slug: 'vedantu',        location: 'Bangalore' },
-  { name: 'Pixis',        slug: 'pixis',          location: 'Bangalore' },
-  { name: 'Whatfix',      slug: 'whatfix',        location: 'Bangalore' },
-  { name: 'Setu',         slug: 'setu',           location: 'Bangalore' },
-  { name: 'Jar',          slug: 'jar',            location: 'Bangalore' },
-  { name: 'Rapido',       slug: 'rapido',         location: 'Bangalore' },
+  // Indian product companies
+  { name: 'Paytm',           slug: 'paytm',           location: 'Noida / Bangalore' },
+  { name: 'Postman',         slug: 'postman',          location: 'Bangalore' },
+  { name: 'Sprinklr',        slug: 'sprinklr',         location: 'Gurgaon' },
+  { name: 'CleverTap',       slug: 'clevertap',        location: 'Mumbai / Bangalore' },
+  { name: 'Chargebee',       slug: 'chargebee',        location: 'Chennai / Bangalore' },
+  { name: 'BrowserStack',    slug: 'browserstack',     location: 'Mumbai' },
+  { name: 'Freshworks',      slug: 'freshworks',       location: 'Chennai / Bangalore' },
+  { name: 'Unacademy',       slug: 'unacademy',        location: 'Bangalore' },
+  { name: 'Groww',           slug: 'groww',            location: 'Bangalore' },
+  { name: 'Meesho',          slug: 'meesho',           location: 'Bangalore' },
+  { name: 'CRED',            slug: 'cred',             location: 'Bangalore' },
+  { name: 'Cashfree',        slug: 'cashfree',         location: 'Bangalore' },
+  { name: 'Darwinbox',       slug: 'darwinbox',        location: 'Hyderabad' },
+  { name: 'Zetwerk',         slug: 'zetwerk',          location: 'Bangalore' },
+  { name: 'Slice',           slug: 'sliceit',          location: 'Bangalore' },
+  { name: 'LeadSquared',     slug: 'leadsquared',      location: 'Bangalore' },
+  { name: 'Juspay',          slug: 'juspay',           location: 'Bangalore' },
+  { name: 'Hasura',          slug: 'hasura',           location: 'Bangalore' },
+  { name: 'Exotel',          slug: 'exotel',           location: 'Bangalore' },
+  { name: 'Ninjacart',       slug: 'ninjacart',        location: 'Bangalore' },
+  { name: 'ShareChat',       slug: 'sharechat',        location: 'Bangalore' },
+  { name: 'Niyo',            slug: 'niyo',             location: 'Bangalore' },
+  { name: 'Licious',         slug: 'licious',          location: 'Bangalore' },
+  { name: 'Vedantu',         slug: 'vedantu',          location: 'Bangalore' },
+  { name: 'Pixis',           slug: 'pixis',            location: 'Bangalore' },
+  { name: 'Whatfix',         slug: 'whatfix',          location: 'Bangalore' },
+  { name: 'Setu',            slug: 'setu',             location: 'Bangalore' },
+  { name: 'Jar',             slug: 'jar',              location: 'Bangalore' },
+  { name: 'Rapido',          slug: 'rapido',           location: 'Bangalore' },
+  { name: 'Dunzo',           slug: 'dunzo',            location: 'Bangalore' },
+  // New Indian product companies
+  { name: 'BharatPe',        slug: 'bharatpe',         location: 'Delhi / Bangalore' },
+  { name: 'Lenskart',        slug: 'lenskart',         location: 'Gurugram' },
+  { name: 'MoEngage',        slug: 'moengage',         location: 'Bangalore' },
+  { name: 'Cars24',          slug: 'cars24',            location: 'Gurugram' },
+  { name: 'Icertis',         slug: 'icertis',           location: 'Pune / Hyderabad' },
+  { name: 'Jupiter Money',   slug: 'jupitermoney',      location: 'Bangalore' },
+  { name: 'Porter',          slug: 'porter-in',         location: 'Bangalore' },
+  { name: 'BlackBuck',       slug: 'blackbuck',         location: 'Bangalore' },
+  { name: 'Cult.fit',        slug: 'curefit',           location: 'Bangalore' },
+  { name: 'Shiprocket',      slug: 'shiprocket',        location: 'Delhi / Gurugram' },
+  { name: 'Innovaccer',      slug: 'innovaccer',        location: 'Noida / Bangalore' },
+  { name: 'NoBroker',        slug: 'nobroker',          location: 'Bangalore' },
+  { name: 'Smallcase',       slug: 'smallcase',         location: 'Bangalore' },
+  { name: 'Physics Wallah',  slug: 'physicswallah',     location: 'Noida' },
+  { name: 'Fi Money',        slug: 'epifi',             location: 'Bangalore' },
+  { name: 'Udaan',           slug: 'udaan',             location: 'Bangalore' },
 ];
 
-// Greenhouse companies
+// ── Greenhouse public board API ───────────────────────────────────────────────
 const GREENHOUSE_COMPANIES = [
-  { name: 'Razorpay',      slug: 'razorpay',        location: 'Bangalore' },
-  { name: 'Flipkart',      slug: 'flipkart',         location: 'Bangalore' },
-  { name: 'Swiggy',        slug: 'swiggy',           location: 'Bangalore' },
-  { name: 'PhonePe',       slug: 'phonepe',          location: 'Bangalore' },
-  { name: 'Ola',           slug: 'olacabs',          location: 'Bangalore' },
-  { name: 'Zomato',        slug: 'zomato',           location: 'Gurgaon' },
-  { name: 'BigBasket',     slug: 'bigbasket',        location: 'Bangalore' },
-  { name: 'Urban Company', slug: 'urbancompany',     location: 'Gurgaon' },
-  { name: 'Delhivery',     slug: 'delhivery',        location: 'Gurgaon' },
-  { name: 'Dream11',       slug: 'dream11',          location: 'Mumbai' },
-  { name: 'Nykaa',         slug: 'nykaa',            location: 'Mumbai' },
-  { name: 'MPL',           slug: 'mpl',              location: 'Bangalore' },
-  { name: 'InMobi',        slug: 'inmobi',           location: 'Bangalore' },
-  { name: 'Zepto',         slug: 'zepto',            location: 'Mumbai' },
-  { name: 'Pocket FM',     slug: 'pocketfm',         location: 'Bangalore' },
-  { name: 'Thoughtworks',  slug: 'thoughtworks',     location: 'Bangalore' },
-  { name: 'MongoDB',       slug: 'mongodb',          location: 'Gurgaon' },
-  { name: 'Elastic',       slug: 'elastic',          location: 'Bangalore' },
-  { name: 'Confluent',     slug: 'confluent',        location: 'Pune' },
-  { name: 'Nutanix',       slug: 'nutanix',          location: 'Bangalore' },
-  { name: 'Snowflake',     slug: 'snowflake',        location: 'Bangalore' },
-  { name: 'Databricks',    slug: 'databricks',       location: 'Bangalore' },
+  // Indian product companies
+  { name: 'Razorpay',        slug: 'razorpay',          location: 'Bangalore' },
+  { name: 'Flipkart',        slug: 'flipkart',           location: 'Bangalore' },
+  { name: 'Swiggy',          slug: 'swiggy',             location: 'Bangalore' },
+  { name: 'PhonePe',         slug: 'phonepe',            location: 'Bangalore' },
+  { name: 'Ola',             slug: 'olacabs',            location: 'Bangalore' },
+  { name: 'Zomato',          slug: 'zomato',             location: 'Gurgaon' },
+  { name: 'BigBasket',       slug: 'bigbasket',          location: 'Bangalore' },
+  { name: 'Urban Company',   slug: 'urbancompany',       location: 'Gurgaon' },
+  { name: 'Delhivery',       slug: 'delhivery',          location: 'Gurgaon' },
+  { name: 'Dream11',         slug: 'dream11',            location: 'Mumbai' },
+  { name: 'Nykaa',           slug: 'nykaa',              location: 'Mumbai' },
+  { name: 'MPL',             slug: 'mpl',                location: 'Bangalore' },
+  { name: 'InMobi',          slug: 'inmobi',             location: 'Bangalore' },
+  { name: 'Zepto',           slug: 'zepto',              location: 'Mumbai' },
+  { name: 'Pocket FM',       slug: 'pocketfm',           location: 'Bangalore' },
+  // Global product companies with India engineering
+  { name: 'Thoughtworks',    slug: 'thoughtworks',       location: 'Bangalore / Pune' },
+  { name: 'Stripe',          slug: 'stripe',             location: 'Bangalore' },
+  { name: 'Cloudflare',      slug: 'cloudflare',         location: 'Bangalore' },
+  { name: 'HubSpot',         slug: 'hubspot',            location: 'Bangalore' },
+  { name: 'Zendesk',         slug: 'zendesk',            location: 'Bangalore / Pune' },
+  { name: 'CrowdStrike',     slug: 'crowdstrike',        location: 'Bangalore / Pune' },
+  { name: 'Okta',            slug: 'okta',               location: 'Bangalore / Hyderabad' },
+  { name: 'Figma',           slug: 'figma',              location: 'Bangalore' },
+  { name: 'Notion',          slug: 'notion',             location: 'Hyderabad' },
+  { name: 'Coursera',        slug: 'coursera',           location: 'Bangalore / Gurugram' },
+  { name: 'Reddit',          slug: 'reddit',             location: 'Bangalore' },
+  { name: 'Amplitude',       slug: 'amplitude',          location: 'Bangalore' },
+  { name: 'PagerDuty',       slug: 'pagerduty',          location: 'Bangalore' },
+  { name: 'ThoughtSpot',     slug: 'thoughtspot',        location: 'Bangalore' },
+  { name: 'New Relic',       slug: 'newrelic',           location: 'Bangalore' },
+  { name: 'Datadog',         slug: 'datadoghq',          location: 'Bangalore' },
+  { name: 'Grab',            slug: 'grab',               location: 'Bangalore' },
+  { name: 'Revolut',         slug: 'revolut',            location: 'Bangalore / Chennai' },
+  // Data / cloud infrastructure
+  { name: 'MongoDB',         slug: 'mongodb',            location: 'Gurgaon / Bangalore' },
+  { name: 'Elastic',         slug: 'elastic',            location: 'Bangalore' },
+  { name: 'Confluent',       slug: 'confluent',          location: 'Pune / Bangalore' },
+  { name: 'Nutanix',         slug: 'nutanix',            location: 'Bangalore / Pune' },
+  { name: 'Snowflake',       slug: 'snowflake',          location: 'Bangalore' },
+  { name: 'Databricks',      slug: 'databricks',         location: 'Bangalore' },
+  { name: 'Airbnb',          slug: 'airbnb',             location: 'Gurgaon' },
 ];
 
 const FETCH_TIMEOUT_MS = 30000;
+
+const INDIA_LOCATION_KEYWORDS = [
+  'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'ncr', 'hyderabad',
+  'pune', 'chennai', 'gurgaon', 'gurugram', 'noida', 'kolkata', 'ahmedabad',
+  'jaipur', 'kochi', 'remote india', 'india remote',
+];
+
+function isIndiaLocation(location) {
+  if (!location || location.trim() === '') return true; // no location = Indian company default
+  const loc = location.toLowerCase();
+  return INDIA_LOCATION_KEYWORDS.some(kw => loc.includes(kw));
+}
 
 function cleanHtml(s) {
   return (s || '')
@@ -88,17 +139,23 @@ const GENERIC_WORDS = new Set(['engineer', 'developer', 'lead', 'manager', 'arch
 
 // Role keyword synonyms — OR groups keyed by archetype word
 const ROLE_SYNONYMS = {
-  devops:    ['devops', 'dev ops', 'devsecops'],
-  sre:       ['sre', 'site reliability'],
-  platform:  ['platform engineer', 'platform sre', 'platform infra', 'platform team'],
-  infra:     ['infrastructure', 'infra engineer'],
-  cloud:     ['cloud engineer', 'cloud architect', 'cloud platform', 'cloud infra'],
-  data:      ['data engineer', 'data platform', 'analytics engineer'],
-  backend:   ['backend', 'back-end'],
-  frontend:  ['frontend', 'front-end'],
-  fullstack: ['fullstack', 'full-stack', 'full stack'],
-  ml:        ['machine learning', 'ml engineer', 'ai engineer', 'mlops'],
-  security:  ['security engineer', 'appsec', 'devsecops', 'cloud security'],
+  devops:      ['devops', 'dev ops', 'devsecops', 'ci/cd', 'cicd', 'release engineer'],
+  sre:         ['sre', 'site reliability', 'reliability engineer'],
+  platform:    ['platform engineer', 'platform sre', 'platform infra', 'platform team', 'infrastructure platform'],
+  infra:       ['infrastructure', 'infra engineer', 'systems engineer', 'systems admin'],
+  cloud:       ['cloud engineer', 'cloud architect', 'cloud platform', 'cloud infra', 'cloud operations', 'cloud native'],
+  kubernetes:  ['kubernetes', 'k8s', 'container', 'openshift'],
+  data:        ['data engineer', 'data platform', 'analytics engineer', 'etl', 'pipeline engineer', 'data infrastructure'],
+  backend:     ['backend', 'back-end', 'server-side', 'api engineer', 'microservices'],
+  frontend:    ['frontend', 'front-end', 'ui engineer', 'react', 'angular', 'vue'],
+  fullstack:   ['fullstack', 'full-stack', 'full stack'],
+  ml:          ['machine learning', 'ml engineer', 'ai engineer', 'mlops', 'model', 'llm', 'generative ai'],
+  security:    ['security engineer', 'appsec', 'devsecops', 'cloud security', 'cybersecurity', 'infosec', 'vulnerability'],
+  mobile:      ['mobile engineer', 'android', 'ios engineer', 'react native', 'flutter'],
+  software:    ['software engineer', 'software developer', 'sde', 'swe'],
+  product:     ['product manager', 'product management', 'pm '],
+  architect:   ['solutions architect', 'enterprise architect', 'technical architect', 'cloud architect'],
+  qa:          ['quality assurance', 'qa engineer', 'test engineer', 'sdet', 'automation engineer'],
 };
 
 function jobMatchesArchetype(jobTitle, teamName, archetype) {
@@ -130,6 +187,7 @@ async function scanLever(archetype, companies) {
       if (!Array.isArray(jobs)) return [];
       return jobs
         .filter(j => jobMatchesArchetype(j.text, j.categories?.team, archetype))
+        .filter(j => isIndiaLocation(j.categories?.location))
         .map(j => ({
           title: j.text,
           company: co.name,
@@ -152,6 +210,7 @@ async function scanGreenhouse(archetype, companies) {
       if (!data?.jobs) return [];
       return data.jobs
         .filter(j => jobMatchesArchetype(j.title, j.departments?.[0]?.name, archetype))
+        .filter(j => isIndiaLocation(j.location?.name))
         .map(j => ({
           title: j.title,
           company: co.name,
