@@ -422,11 +422,15 @@ async function runScanFlow(profile) {
       type: 'list',
       name: 'jobChoice',
       message: 'Select a job:',
-      pageSize: 12,
-      choices: jobs.map((job, i) => ({
-        name: `${i + 1}. ${job.title || job.jobTitle}  —  ${job.company}  (${job.location || 'India'})`,
-        value: i
-      }))
+      pageSize: 15,
+      choices: jobs.map((job, i) => {
+        const isNew = job.postedAt && (Date.now() - job.postedAt) < 172800000; // < 48h
+        const badge = isNew ? chalk.red(' 🔥 NEW') : job.postedLabel ? chalk.gray(` · ${job.postedLabel}`) : '';
+        return {
+          name: `${job.title || job.jobTitle}  —  ${job.company}  (${job.location || 'India'})${badge}`,
+          value: i
+        };
+      })
     }]);
     selected = jobs[jobChoice];
   }

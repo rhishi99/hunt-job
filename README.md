@@ -25,7 +25,7 @@
 | Interactive terminal UI | ❌ | ✅ |
 | 5 AI providers (Claude, Gemini, Groq, OpenRouter, NVIDIA) | ❌ | ✅ |
 | India-only location enforcement | ❌ | ✅ |
-| 60+ companies via Lever + Greenhouse APIs | ❌ | ✅ |
+| 108+ companies via Lever + Greenhouse APIs | ❌ | ✅ |
 | SQLite scan cache (no re-scanning daily) | ❌ | ✅ |
 | Interview prep with YouTube + 4-week schedule | ❌ | ✅ |
 | Browser auto-fill (form selectors) | ❌ | ✅ |
@@ -80,7 +80,7 @@ Launches terminal UI:
 # Evaluate any job posting
 npm run evaluate-job -- "https://company.com/jobs/123"
 
-# Scan 60+ Indian company portals
+# Scan 108+ Indian company portals
 npm run scan-portals -- --archetype "Cloud Engineer"
 
 # Generate ATS-optimized resume
@@ -114,11 +114,15 @@ Every job is scored across:
 
 ### 2. Portal Scanning — India Focused
 
-Scans 60+ companies via Lever and Greenhouse public APIs. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
+Scans **108+ companies** via Lever (~56) and Greenhouse (~52) public APIs. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
 
-**Indian product companies:** Razorpay, Flipkart, Swiggy, PhonePe, Paytm, Groww, CRED, Meesho, Zepto, Dream11, Nykaa, BharatPe, Juspay, ShareChat, and 20+ more.
+**Results are sorted by posting date (newest first)** — jobs posted in the last 48 hours get a 🔥 badge for early-applier advantage.
 
-**Global companies with India engineering:** Stripe, Cloudflare, Datadog, Databricks, Snowflake, MongoDB, Notion, Figma, Reddit, HubSpot, New Relic, and 15+ more.
+**Indian product companies (Lever):** Paytm, CRED, Groww, Meesho, Chargebee, BrowserStack, Freshworks, Juspay, ShareChat, Darwinbox, Zetwerk, MoEngage, Lenskart, BharatPe, Jupiter, Cars24, NoBroker, Physics Wallah, Yellow.ai, Observe.AI, Rapido, Whatfix, Khatabook, Simpl, and 30+ more.
+
+**Indian product companies (Greenhouse):** Razorpay, Flipkart, Swiggy, PhonePe, Ola, Zomato, Dream11, Nykaa, Zepto, InMobi, Acko, Scaler, Pocket FM, and 10+ more.
+
+**Global companies with India engineering:** Stripe, Cloudflare, Datadog, Databricks, Snowflake, MongoDB, Figma, HubSpot, Asana, HashiCorp, Brex, Miro, Intercom, Revolut, Anthropic, Cohere, GitLab, Scale AI, Rubrik, Plaid, and 15+ more.
 
 ### 3. Resume Generation
 

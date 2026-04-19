@@ -135,19 +135,21 @@ npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
 #### ✅ Fully Implemented & Working
 
 - **Job Evaluation** (10 dimensions) — Works with all providers
-- **Portal Scanning** (60+ companies) — India-focused, cached results
-- **Resume Generation** (ATS-optimized PDF) — Tailored to each job
+- **Portal Scanning** (~108 companies) — Lever (~56) + Greenhouse (~52), sorted newest-first
+- **Early-Applier Advantage** — 🔥 badge on jobs posted < 48h, sorted by recency
+- **Resume Generation** (ATS-optimized PDF) — Tailored per job
 - **Interview Prep** (4-week schedule + YouTube links) — Role-specific
 - **Profile Management** (YAML-based) — Local storage
+- **Profile Editor** — Edit specific sections without re-running full init
 - **Auto-fill Apply** (Lever & Greenhouse forms) — Browser automation
-- **Application Tracker** (JSON-based) — Manage your applications
+- **Application Tracker** (JSON-based) — Manage applications, tracks duplicates
 - **Resume Parser** (PDF to profile) — Extract your resume data
-- **Multi-provider AI** (Gemini, Groq, OpenRouter, NVIDIA, Claude) — All working
+- **Multi-provider AI** (Gemini, Groq, OpenRouter, NVIDIA, Claude) — Auto-selects available
 
-#### ⏳ Not Implemented (Original Features)
+#### ❌ Not Implemented (Original Scope Items)
 
-- **Dashboard Mode** (Go-based terminal UI) — Mentioned in original, not implemented in this fork
-- **Slash Commands** (e.g., `/evaluate-job`) — Use `npm run` commands or interactive menu instead
+- **Dashboard Mode** (Go terminal UI) — `npm run dashboard` is wired but no Go code exists; interactive menu replaces it
+- **Slash Commands** (e.g., `/evaluate-job`) — Original used Claude Code slash commands; use the interactive menu or `career-ops.bat` instead
 
 ---
 
