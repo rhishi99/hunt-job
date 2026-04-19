@@ -705,6 +705,339 @@ claude
 
 ---
 
+---
+
+## Advanced Optimization Strategies
+
+### Token Optimization
+
+**Strategy 1: Batch Similar Requests**
+- ❌ Inefficient: 10 separate evaluations (40K tokens)
+- ✅ Efficient: 1 smart batch prompt (15K tokens = 60% savings)
+
+**Strategy 2: Use Haiku for Filtering, Sonnet for Polish**
+```bash
+SCANNING_MODEL=claude-3-5-haiku-20241022 npm run scan-portals -- ...  # Cheap
+CLAUDE_MODEL=claude-3-5-sonnet-20241022 npm run generate-resume -- ...  # Quality
+```
+
+### Speed Optimization
+
+**Speed Hack 1: Parallel Job Evaluations**
+```bash
+claude
+> "I have these 10 job URLs. Evaluate all in parallel.
+   Show me scores and top 5 to apply to."
+```
+Time saved: 10 mins on 10 jobs
+
+**Speed Hack 2: Keyboard Aliases**
+```bash
+alias ev='npm run evaluate-job --'
+alias gen='npm run generate-resume --'
+alias prep='npm run prepare-interview --'
+alias scan='npm run scan-portals --'
+```
+
+**Speed Hack 3: Batch Resume Generation**
+```bash
+for id in job_1 job_2 job_3; do npm run generate-resume -- $id & done
+wait  # Parallel > serial, saves 5 mins on 5 resumes
+```
+
+### Quality Optimization
+
+**Quality Hack 1: Specific Feedback to Claude**
+```
+❌ Generic: "Review my resume"
+✅ Specific: "Review against Flipkart JD for:
+   - System design keywords prominent?
+   - ATS-friendly (no images)?
+   - Metric-focused bullets?
+   - Tech stack match?"
+```
+
+**Quality Hack 2: Iterative Refinement**
+1. Generate resume
+2. Claude reviews
+3. You provide feedback
+4. Claude revises
+5. Repeat until satisfied (100% better output)
+
+### Application Velocity: Target 10/Week
+
+**Daily Schedule:**
+- Monday: Scan + Evaluate (6 jobs)
+- Tuesday: Generate Resumes (3 jobs) + Apply
+- Wednesday: Generate Resumes (3 jobs) + Apply
+- Thursday-Friday: Interview prep + Follow-ups
+
+**Time: 2-3 hours/day**
+
+### Interview Prep Optimization
+
+**7-Day Crash Course** (instead of 4 weeks):
+```
+Day 1: Fundamentals + 2 YouTube tutorials (3 hrs)
+Day 2: DSA problems (3 hrs, 6 problems)
+Day 3: System design (4 hrs, 2 case studies)
+Day 4: Advanced topics (3 hrs)
+Day 5-6: Mock interviews (4 hrs)
+Day 7: Rest + light review
+Total: 20 hours vs 40 hours
+```
+
+**3-Day Intensive** (if truly desperate):
+```bash
+claude
+> "I have 3 days until my interview.
+   Create a crash course:
+   - Top 3 most likely topics
+   - 10 must-solve problems
+   - 2 mock interviews
+   Focus only on essentials (6 hrs/day)"
+```
+
+### Sustainable Preparation
+
+**Don't:**
+- 8+ hours/day (unsustainable)
+- 100+ LeetCode problems (diminishing returns)
+- 24/7 prep (mental fatigue)
+
+**Do:**
+- 2-3 focused hours/day
+- 20-30 quality problems
+- Sleep well, exercise 30 mins/day
+
+**Result:** Better performance, no burnout
+
+### Resume Optimization
+
+**A/B Test Versions:**
+- Version A: Achievement-heavy
+- Version B: Responsibility-heavy
+Test which gets more callbacks
+
+**Keyword Injection:**
+```bash
+claude
+> "Extract top 20 keywords from this JD.
+   Make sure they appear in my resume (in context)."
+Result: 30% better ATS scores
+```
+
+**ATS-Friendly Format:**
+- Plain text or simple PDF
+- No images, no colors, no fancy fonts
+- Simple bullets, standard fonts
+
+---
+
+## Ready-to-Use Workflow Templates
+
+### Template 1: Daily Morning Standup (10 min)
+
+```bash
+claude
+> "My situation today:
+   - Applications sent so far: [X]
+   - Interviews scheduled: [Y]
+   - Days until first interview: [Z]
+   
+   Create a personalized daily plan for:
+   1. Job applications (companies to scan)
+   2. Interview prep (topics to study, YouTube links)
+   3. Resume work (any to generate?)
+   4. Time allocation (morning/afternoon/evening)
+   5. Priorities (what matters most?)"
+```
+
+### Template 2: Weekly Job Application Blitz (3 days)
+
+**Day 1: Scan & Evaluate (1 hour)**
+```bash
+npm run scan-portals -- --archetype "Your Target" \
+  --companies "Company1,Company2,Company3"
+
+claude
+> "I found 12 jobs. Evaluate all of them.
+   Show only those scoring 4.0+.
+   Rank by salary, then growth opportunity."
+```
+
+**Day 2: Generate Resumes & Apply (2 hours)**
+```bash
+npm run generate-resume -- job_id_1
+npm run generate-resume -- job_id_2
+npm run generate-resume -- job_id_3
+# Then manually apply on portals (15-20 mins each)
+```
+
+**Day 3: Track & Plan (30 mins)**
+```bash
+claude
+> "I applied to 5 jobs. Update my tracking.
+   When should I follow up?
+   Which companies to prioritize for prep?"
+```
+
+### Template 3: Interview Prep Schedule (4 Weeks)
+
+Print and check off daily:
+
+**Week 1: Fundamentals**
+- Monday: Concept intro (1hr) + LeetCode easy (1hr)
+- Tuesday: Review + medium problems (1.5hrs)
+- Wednesday: Deep dive (1.5hrs) + system design (1hr)
+- Thursday: Practice problems (2hrs) + behavioral (30min)
+- Friday: Weak areas (1.5hrs) + mock interview (1hr)
+
+**Week 2: Medium Problems & Case Studies**
+- Mon-Wed: LeetCode medium (4-5/day, 3hrs each) + design (2hrs)
+- Thursday: Interview pace practice (3hrs)
+- Friday: Mock interview round 2 (1.5hrs)
+
+**Week 3: Advanced & Specialized**
+- Daily: Advanced problem (1-2hrs) + company deep dive (1hr) + behavioral (30min) + YouTube (1hr)
+
+**Week 4: Final Polish**
+- Mon-Wed: 2 mock interviews/day (3hrs each) + weak areas
+- Thursday: Final mock (2hrs) + relaxation
+- Fri-Sun: Light review only + rest
+
+**Generate custom schedule:**
+```bash
+npm run prepare-interview -- "job_description.txt"
+
+claude
+> "Adjust this schedule for my [X] day interview.
+   Include specific YouTube videos for each day."
+```
+
+### Template 4: Batch Resume Generation
+
+```bash
+# Create jobs.txt with job IDs, then:
+for job_id in $(cat jobs.txt); do
+  npm run generate-resume -- $job_id
+done
+
+# Organize results:
+mv data/resumes/resume_123.pdf data/resumes/Company1_Backend.pdf
+```
+
+### Template 5: Interview Tracking Spreadsheet
+
+Keep in Excel/Google Sheets:
+```
+| Date | Company | Position | Score | Applied | Called | Date | Status | Prep | Outcome |
+|------|---------|----------|-------|---------|--------|------|--------|------|---------|
+| Apr18| Flipkart| Backend  | 4.5   | ✓       | ✓      |Apr22 |Round1  | 80%  | Pending |
+```
+
+Update with Claude:
+```bash
+claude
+> "I got interview calls from Flipkart (Apr 22) and Amazon (Apr 25).
+   Show me ranked list by urgency.
+   Create prep plan for each upcoming interview."
+```
+
+### Template 6: Mock Interview Session (1 hour)
+
+```bash
+claude
+> "Conduct a mock system design interview for [Company].
+
+Rules:
+1. Give me a design problem
+2. I solve it (30 mins)
+3. You ask follow-ups (15 mins)
+4. Give feedback (15 mins)
+
+Design a: [system]
+Company: [target]
+Level: [engineer level]
+Start!"
+```
+
+**Alternative - Coding Round:**
+```bash
+claude
+> "LeetCode-style mock (45 mins).
+   Problem: Medium difficulty, [topic]
+   Time limit: 25 minutes
+   Then review my code and optimize."
+```
+
+### Template 7: Weak Area Deep Dive
+
+```bash
+claude
+> "I'm weak in [Topic].
+   Create a 3-day intensive course:
+
+   1. KEY CONCEPTS (how they connect, why they matter)
+   2. YOUTUBE RESOURCES (best tutorials with links)
+   3. PROBLEMS (5 easy, 5 medium, 2 hard)
+   4. PROJECT (build something using [topic])
+   5. ASSESSMENT (quiz me at the end)
+
+   Let's start!"
+```
+
+### Template 8: End of Day Review (15 min)
+
+```bash
+claude
+> "Daily review:
+
+   Today I studied: [what]
+   Problems solved: [how many]
+   YouTube watched: [hours]
+   Mock interviews: [count]
+
+   Based on this:
+   1. Am I on track? (Y/N)
+   2. Topics needing more work?
+   3. What went well?
+   4. What to adjust tomorrow?
+   5. Prep score: X/10
+   6. Confidence: X/10
+
+   Give me honest feedback + tomorrow's priorities."
+```
+
+### Template 9: Pre-Interview Checklist (Day Before)
+
+```
+□ Reviewed company's tech stack
+□ Watched 1 recent interview from company
+□ Solved 3 similar LeetCode problems
+□ Did 1 mock interview
+□ Reviewed top 3 focus areas
+□ Prepared 3 questions for interviewer
+□ Fixed laptop issues, tested camera/mic
+□ Good dinner + 8 hours sleep planned
+□ Outfit ready
+```
+
+### Template 10: Interview Day Checklist (2 Hours Before)
+
+```
+□ Review your strongest project (2 mins)
+□ Quick mock problem (5 mins)
+□ Check camera/mic (5 mins)
+□ Have water nearby
+□ Stretch and warm up
+□ Bathroom break
+□ Clean background
+□ Good lighting
+```
+
+---
+
 ## Need Help?
 
 ```

@@ -1,256 +1,324 @@
-# Career-Ops: AI-Powered Job Search Agent
+# Career-Ops — AI-Powered Job Search Agent
 
-An intelligent multi-agent job search system powered by Claude and Claude Code. Career-Ops evaluates job listings across 10 dimensions, generates ATS-optimized tailored resumes, and helps you manage your job search strategically.
+> An intelligent multi-agent job search system built on Claude. Evaluates jobs across 10 dimensions, generates ATS-optimized resumes tailored per JD, preps you for interviews with YouTube resources, and auto-fills application forms — all India-focused, all local.
 
-## 🚀 Quick Start
+---
+
+## 📖 Documentation Quick Start
+
+**Choose your path:**
+
+| I want to... | Read this | Time |
+|---|---|---|
+| **Get running NOW** | [QUICK_START.md](QUICK_START.md) | 10 min |
+| **Understand everything** | [SETUP_GUIDE.md](SETUP_GUIDE.md) | 1 hour |
+| **Have questions** | [FAQ.md](FAQ.md) | 5 min |
+| **See feature comparison** | [COMPARISON.md](COMPARISON.md) | 10 min |
+| **Compare with LinkedIn** | [VS_LINKEDIN.md](VS_LINKEDIN.md) | 10 min |
+
+---
+
+## What Makes This Fork Different
+
+| Capability | Original | This Fork |
+|---|:---:|:---:|
+| Interactive terminal UI | ❌ | ✅ |
+| 5 AI providers (Claude, Gemini, Groq, OpenRouter, NVIDIA) | ❌ | ✅ |
+| India-only location enforcement | ❌ | ✅ |
+| 60+ companies via Lever + Greenhouse APIs | ❌ | ✅ |
+| SQLite scan cache (no re-scanning daily) | ❌ | ✅ |
+| Interview prep with YouTube + 4-week schedule | ❌ | ✅ |
+| Browser auto-fill (form selectors) | ❌ | ✅ |
+
+Full comparison → [COMPARISON.md](COMPARISON.md)
+
+---
+
+## Quick Start
 
 ### Prerequisites
 - Node.js 16+
-- Anthropic API key (from Claude dashboard)
-- (Optional) Go for terminal dashboard
+- At least one AI provider API key (Anthropic, Gemini, Groq, OpenRouter, NVIDIA)
 
 ### Installation
 
 ```bash
-# Clone and navigate
-git clone <repo-url>
-cd career-ops
+git clone https://github.com/rhishi99/hunt-job.git
+cd hunt-job
 
-# Install dependencies
 npm install
+npx playwright install chromium   # for resume PDF + auto-fill
 
-# Set API key
-export ANTHROPIC_API_KEY=your_api_key
-
-# Initialize your profile
-npm run profile:init
+npm run setup        # configure your API key
+npm start            # launch interactive menu
 ```
 
-### First Steps
+### Interactive Menu (Recommended)
 
 ```bash
-# Evaluate a job posting
-npm run evaluate-job -- "https://example.com/job-posting"
-
-# Scan Indian company portals
-npm run scan-portals -- --archetype "Data Engineer"
-
-# Generate tailored resume
-npm run generate-resume -- job_123
-
-# Prepare for interview with YouTube links
-npm run prepare-interview -- "Paste job description here"
-npm run prepare-interview -- job_description.txt
+npm start
 ```
 
-## 📚 Features
+Launches terminal UI:
+```
+┌──────────────────────────────────────────┐
+│   🎯  CAREER-OPS  —  Job Search Agent    │
+└──────────────────────────────────────────┘
 
-### 1. Intelligent Job Evaluation
-Scores jobs across 10 dimensions:
-- Salary alignment
-- Tech stack compatibility
-- Company culture fit
-- Growth opportunities
-- Remote/location requirements
-- Team dynamics
-- Product market fit
-- Work-life balance
-- Career progression
-- Dealbreaker compliance
-
-Only apply to jobs scoring 4.0 or higher.
-
-### 2. Portal Scanning - India Focused
-Scans 30+ pre-configured Indian company career pages:
-- **Tech Giants:** Google, Microsoft, Amazon, Apple, Meta
-- **Unicorns:** Flipkart, Swiggy, Zomato, OYO, Byju's, Unacademy
-- **Fintech:** Razorpay, PhonePe, CRED
-- **IT Services:** Infosys, TCS, Wipro, HCL, Tech Mahindra
-- **SaaS:** Freshworks, Stripe India, Atlassian, GitLab
-
-### 3. Resume Generation
-Generates ATS-optimized PDFs:
-- Extracts 15-20 most relevant keywords
-- Reorders experience bullets by relevance
-- Highlights quantifiable achievements
-- Professional, scannable format
-
-### 4. Interview Preparation
-Generates personalized prep guides with YouTube resources:
-- 5-8 critical focus areas for the specific role
-- Tech stack concepts to master by difficulty
-- 10+ tailored behavioral questions
-- System design topics
-- 4-week preparation schedule
-- Common interview mistakes to avoid
-- **YouTube links** for theory, tutorials, practice problems
-- **Curated channels** for each topic
-
-### 5. Profile Management
-Stores your information locally:
-- Work experience and projects
-- Skills and certifications
-- Salary expectations and preferences
-- Dealbreakers and constraints
-
-## 📖 Usage
-
-### Initialize Profile
-```bash
-npm run profile:init
+  🚀  Full Apply Workflow  (eval → prep → resume)
+  📊  Evaluate a Job
+  🏢  Scan Job Portals
+  🎯  Interview Prep
+  📄  Generate Resume
+  📋  Application Tracker
+  👤  Update Profile
 ```
 
-Interactive setup wizard walks you through:
-- Personal information
-- Target archetypes
-- Salary expectations
-- Tech stack preferences
-- Dealbreakers
+### Individual Commands
 
-### Evaluate Job Posting
 ```bash
+# Evaluate any job posting
 npm run evaluate-job -- "https://company.com/jobs/123"
-```
 
-Returns:
-- Overall score (1-5.0)
-- Dimension breakdown
-- Key matches and mismatches
-- Recommendation (Apply/Maybe/Skip)
+# Scan 60+ Indian company portals
+npm run scan-portals -- --archetype "Cloud Engineer"
 
-### Scan Job Portals (India)
-```bash
-# Scan for Data Engineer roles in Indian companies
-npm run scan-portals -- --archetype "Data Engineer"
-
-# Scan specific Indian companies
-npm run scan-portals -- --archetype "Backend Engineer" --companies "Flipkart,Amazon India,Microsoft India"
-```
-
-### Generate Tailored Resume
-```bash
+# Generate ATS-optimized resume
 npm run generate-resume -- job_123
+
+# Generate interview prep with YouTube links
+npm run prepare-interview -- "job_description.txt"
 ```
 
-Creates PDF with:
-- Relevant keywords highlighted
-- Experience reordered by relevance
-- Achievement-focused bullet points
-
-### Generate Interview Prep Plan
-```bash
-# Paste job description directly
-npm run prepare-interview -- "Senior Backend Engineer at Flipkart..."
-
-# Or use a file
-npm run prepare-interview -- job_description.txt
-```
-
-Output includes:
-- 5-8 focus areas for the role
-- Concept breakdown by category
-- Interview round expectations
-- 4-week study schedule
-- YouTube links for each topic
-- Behavioral questions
-- Common mistakes to avoid
-
-## 🏗️ Architecture
-
-### Core Modules
-
-- **ProfileManager** - Manages your candidate profile
-- **JobEvaluator** - Scores jobs across 10 dimensions
-- **ResumeGenerator** - Creates tailored resumes with Playwright
-- **PortalScanner** - Scans 30+ Indian company career pages
-- **InterviewPrep** - Generates prep plans with YouTube resources
-
-### Data Storage
-
-All data stored locally on your machine:
-- `config/profile.yml` - Your profile
-- `modes/_profile.md` - Markdown version
-- `data/evaluated-jobs.json` - Job history
-- `data/applications.json` - Application tracking
-- `data/resumes/` - Generated PDFs
-
-## ⚙️ Configuration
-
-### Environment Variables
-```bash
-ANTHROPIC_API_KEY=sk_xxx          # Required
-CLAUDE_MODEL=claude-3-5-sonnet    # Optional, default: Sonnet
-SCANNING_MODEL=claude-3-5-haiku   # Optional, faster for scanning
-```
-
-### Settings (config/settings.json)
-- Model preferences
-- Resume template options
-- Evaluation thresholds
-- Dashboard refresh rate
-
-## 💡 Pro Tips
-
-1. **Quality over Quantity** - Focus on high-scoring jobs (4.0+)
-2. **Monitor Tokens** - Use Haiku for scanning, Sonnet for fine work
-3. **Prep Early** - Generate interview prep 2-4 weeks before interviews
-4. **Follow YouTube Schedule** - Use the 4-week plan with curated channels
-5. **Keep Profile Fresh** - Update quarterly with new projects
-6. **Review PDFs** - Always verify before submitting
-7. **Track Everything** - Review evaluation history for patterns
-8. **India Jobs** - All 30+ companies actively hire in India with local offices
-
-## 📊 Workflow
-
-1. **Onboarding** - Set up your profile once
-2. **Scanning** - Get alerts for new matching jobs
-3. **Evaluation** - Review scores and analysis
-4. **Generation** - Create tailored resumes for top jobs
-5. **Review & Submit** - You're the final human decision-maker
-6. **Tracking** - Monitor application status
-
-## 🔐 Privacy
-
-- All data stored **locally**
-- No profile sent to external servers
-- Only job URLs and analysis sent to Claude API
-- Generated PDFs never uploaded
-
-## 🐛 Troubleshooting
-
-**API key not working:**
-```bash
-echo $ANTHROPIC_API_KEY  # Verify it's set
-```
-
-**Resume PDF fails:**
-```bash
-npx playwright install  # Install browsers
-```
-
-**No results from portals:**
-- Check internet connection
-- Verify URLs in `config/company-portals.json`
-
-## 📝 License
-
-MIT License
-
-## 🤝 Contributing
-
-Feel free to:
-- Add new company portals
-- Improve evaluation dimensions
-- Enhance resume templates
-- Report bugs
-
-## 📞 Support
-
-For issues or questions:
-1. Check troubleshooting section
-2. Review CLAUDE.md for detailed features
-3. Check config/company-portals.json for available companies
+**→ Full setup guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md)
 
 ---
 
-Built with ❤️ using Claude and Claude Code
+## Features
+
+### 1. Job Evaluation — 10 Dimensions
+
+Every job is scored across:
+- **Salary Alignment** — Does the range match your expectations?
+- **Tech Stack Compatibility** — How much do you already know?
+- **Company Culture Fit** — Values, pace, team structure signals
+- **Growth Opportunities** — L&D, internal mobility, scope
+- **Location / Remote** — Matches your preference
+- **Team Dynamics** — Team size, cross-functional signals
+- **Product Market Fit** — Strong market position?
+- **Work-Life Balance** — On-call, crunch, unpaid overtime?
+- **Career Progression** — Title inflation, promotion track
+- **Dealbreaker Compliance** — Your hard stops
+
+**Minimum score to apply: 4.0 / 5.0**
+
+### 2. Portal Scanning — India Focused
+
+Scans 60+ companies via Lever and Greenhouse public APIs. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
+
+**Indian product companies:** Razorpay, Flipkart, Swiggy, PhonePe, Paytm, Groww, CRED, Meesho, Zepto, Dream11, Nykaa, BharatPe, Juspay, ShareChat, and 20+ more.
+
+**Global companies with India engineering:** Stripe, Cloudflare, Datadog, Databricks, Snowflake, MongoDB, Notion, Figma, Reddit, HubSpot, New Relic, and 15+ more.
+
+### 3. Resume Generation
+
+- Extracts 15–20 most relevant keywords from the JD
+- Reorders your experience bullets by relevance to the role
+- Outputs clean, ATS-compatible PDF via Playwright
+
+### 4. Interview Prep
+
+Generates a personalized prep plan including:
+- 5–8 critical focus areas for the role
+- Tech concepts to master, grouped by difficulty
+- System design topics
+- 10+ tailored behavioral questions
+- 4-week preparation schedule
+- **YouTube links** for theory, tutorials, and practice
+- Common interview mistakes to avoid
+
+### 5. Auto-Fill Apply
+
+1. **Application Data Card** — All your profile fields ready to copy-paste in terminal
+2. **Auto-fill mode** — Real Chromium browser, navigates to apply form, fills fields automatically
+3. **Platform-specific** — Selectors for Lever and Greenhouse forms
+4. **Manual completion** — Browser stays open for custom questions, resume upload, submit
+5. **Tracking** — Confirm in terminal, saved to Application Tracker
+
+---
+
+## Architecture
+
+```
+career-ops/
+├── src/
+│   ├── core/
+│   │   ├── jobEvaluator.js       # 10-dimension scoring
+│   │   ├── portalScanner.js      # Lever + Greenhouse APIs
+│   │   ├── resumeGenerator.js    # PDF generation
+│   │   ├── interviewPrep.js      # Prep + YouTube
+│   │   ├── profileManager.js     # Profile CRUD
+│   │   └── aiClient.js           # Multi-provider AI
+│   └── cli/
+│       ├── interactive.js        # Terminal menu
+│       └── evaluateJob.js, etc.
+├── config/
+│   ├── profile.yml               # Your profile (generated)
+│   └── company-portals.json      # Portal config
+├── data/
+│   ├── evaluated-jobs.json       # Evaluation history
+│   ├── applications.json         # Tracker
+│   └── resumes/                  # Generated PDFs
+├── README.md                     # Command reference (you are here)
+├── QUICK_START.md                # 10-min setup
+├── SETUP_GUIDE.md                # Complete guide + optimization + templates
+├── FAQ.md                        # Q&A
+├── COMPARISON.md                 # Original vs fork
+├── VS_LINKEDIN.md                # vs LinkedIn
+└── CLAUDE.md                     # Feature specification
+```
+
+---
+
+## Configuration
+
+### Environment Variables
+
+```bash
+ANTHROPIC_API_KEY=sk-ant-xxx       # Claude (default)
+GEMINI_API_KEY=xxx                 # Google Gemini
+GROQ_API_KEY=xxx                   # Groq
+OPENROUTER_API_KEY=xxx             # OpenRouter
+NVIDIA_API_KEY=xxx                 # NVIDIA NIM
+```
+
+Only one key required. AI client auto-selects whichever is available.
+
+### Profile Fields
+
+Set once via `npm start` → **Update Profile**:
+- Name, email, phone, LinkedIn, GitHub
+- Current role, years of experience
+- Target archetypes
+- Salary expectations (LPA range)
+- Tech stack preferences
+- Remote / hybrid / onsite preference
+- Hard dealbreakers
+
+---
+
+## Privacy & Local Storage
+
+| Data | Where |
+|---|---|
+| Your profile | Local only (`config/profile.yml`) |
+| Evaluated jobs | Local only (`data/evaluated-jobs.json`) |
+| Generated resumes | Local only (`data/resumes/`) |
+| Job descriptions | Sent to AI provider for analysis |
+| Profile info | Sent to AI provider (for resume/eval) |
+| Application data | Local only (`data/applications.json`) |
+
+**No data uploaded to job boards.** Only your chosen AI provider receives job/profile text for processing.
+
+---
+
+## API Costs (Approximate)
+
+- Evaluate job: ~$0.02
+- Generate resume: ~$0.01
+- Interview prep: ~$0.02
+- Scan portals: ~$0.01
+- **Total/week (10 jobs):** ~$0.08
+- **Total/month:** ~$0.30
+
+---
+
+## Troubleshooting
+
+**No API key configured:**
+```bash
+npm run setup
+```
+
+**Playwright / browser errors:**
+```bash
+npx playwright install chromium
+```
+
+**Auto-fill fills nothing:**
+- Check if form uses non-standard selectors
+- Use Data Card shown in terminal to copy-paste manually
+- Check which platform was detected in terminal output
+
+**Scan returns no India jobs:**
+- Try "Fresh search" when prompted (clears cache)
+- Some companies may not have open India roles
+
+**Profile not loading:**
+```bash
+npm run profile:init
+```
+
+**Full troubleshooting guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md) or [FAQ.md](FAQ.md)
+
+---
+
+## Workflows & Templates
+
+### Complete Setup Guide with Optimization & Templates
+
+[SETUP_GUIDE.md](SETUP_GUIDE.md) includes:
+- **Installation & Setup** — Step-by-step
+- **Claude Code Integration** — 5 core workflows
+- **3-Phase Job Search** — Discovery → Application → Prep
+- **Real-World Examples** — Fast-track, intensive, parallel
+- **Pro Tips** — Speed, quality, velocity optimization
+- **Advanced Optimization** — Token, speed, quality hacks
+- **Ready-to-Use Templates** — Daily standup, weekly blitz, interview prep schedule, mock interviews, tracking, weak areas, review sessions
+- **Sustainable Prep** — Burnout prevention, spaced learning
+
+---
+
+## Pro Tips
+
+1. **Score threshold** — Only apply to jobs scoring 4.0+. Borderline roles waste time.
+2. **Use caching** — Re-use scan results from earlier in week; companies don't post daily.
+3. **Prep early** — Generate interview prep 2–4 weeks before likely interviews.
+4. **Review PDFs** — Always read generated resume before submitting.
+5. **Keep profile fresh** — Update quarterly with new projects.
+6. **Pair with LinkedIn** — Use LinkedIn for networking/signals, Career-Ops for evaluation and prep.
+
+**When to use which:** [VS_LINKEDIN.md](VS_LINKEDIN.md)
+
+---
+
+## Expected Timeline
+
+**Week 1:** 5 applications, setup complete
+**Week 2:** 10 applications (total 15)
+**Week 3:** 10 applications (total 25), 1-2 interview calls
+**Week 4:** 5 applications (total 30), 3-4 interview calls, offers
+
+---
+
+## Questions?
+
+| Question Type | See |
+|---|---|
+| How do I set up? | [QUICK_START.md](QUICK_START.md) (10 min) or [SETUP_GUIDE.md](SETUP_GUIDE.md) (1 hour) |
+| How does feature X work? | [CLAUDE.md](CLAUDE.md) (full API reference) |
+| What's the difference from original? | [COMPARISON.md](COMPARISON.md) |
+| Should I use this or LinkedIn? | [VS_LINKEDIN.md](VS_LINKEDIN.md) |
+| I have questions | [FAQ.md](FAQ.md) (40+ answers) |
+| I need workflow templates | [SETUP_GUIDE.md](SETUP_GUIDE.md) (10+ templates) |
+| I want optimization tips | [SETUP_GUIDE.md](SETUP_GUIDE.md) (Advanced Optimization section) |
+
+---
+
+## License
+
+MIT
+
+---
+
+Built with Claude & Claude Code
