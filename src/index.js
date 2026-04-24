@@ -83,7 +83,7 @@ class CareerOpsAgent {
   }
 
   buildSystemPrompt(profile) {
-    return `You are Career-Ops, an AI job search agent powered by Claude Code. You help users find and apply to jobs intelligently, focused on Indian tech opportunities.
+    return `You are Hunt-Job, an AI job search agent powered by Claude Code. You help users find and apply to jobs intelligently, focused on Indian tech opportunities.
 
 User Profile:
 - Archetypes: ${profile?.archetypes?.join(', ') || 'Not configured'}

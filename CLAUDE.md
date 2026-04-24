@@ -1,6 +1,10 @@
-# Career-Ops: AI Job Search Agent
+# Hunt-Job: AI Job Search Agent
 
 **Version:** 1.0.0
+**Based on:** Career-Ops (Extended and customized)
+
+**Original Project:** Career-Ops by Contributors
+**Current Fork:** Hunt-Job
 
 ## Overview
 
@@ -309,3 +313,4 @@ A: Ensure `config/` and `modes/` directories exist and have write permissions
 ---
 
 **Built with ❤️ using Claude & Claude Code**
+**Extended from:** Career-Ops (See project documentation for original features)

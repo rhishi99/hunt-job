@@ -154,6 +154,9 @@ async function editProfile() {
   await profileManager.saveProfile(updated);
 
   console.log(chalk.green.bold('\n  ✅  Profile updated successfully!\n'));
+  console.log(chalk.cyan('  📄 Saved to:'));
+  console.log('     config/profile.yml');
+  console.log('     modes/_profile.md\n');
 }
 
 editProfile().catch(err => {

@@ -54,9 +54,9 @@ class InterviewPrep {
     log.op('prep_done', { focusAreas: (prepPlan.focusAreas || []).length });
 
     const enhancedPlan = await this.enrichWithYouTubeLinks(prepPlan);
-    await this.savePrepPlan(jobDescription, enhancedPlan);
+    const filePath = await this.savePrepPlan(jobDescription, enhancedPlan);
 
-    return enhancedPlan;
+    return { plan: enhancedPlan, filePath };
   }
 
   buildPrepPrompt(jobDescription, profile) {
@@ -926,7 +926,7 @@ Format as valid JSON only.`;
       <div class="yt-grid">${ytHtml}</div>
     </div>` : ''}
 
-    <div class="footer">Career-Ops · AI-Powered Job Search Agent</div>
+    <div class="footer">Hunt-Job · AI-Powered Job Search Agent</div>
 
   </div>
 </div>

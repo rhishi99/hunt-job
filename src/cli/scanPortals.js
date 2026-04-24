@@ -32,7 +32,7 @@ async function scanPortals() {
     process.exit(0);
   }
 
-  console.log(chalk.green(`Found ${jobs.length} matching jobs!\n`));
+  console.log(chalk.green(`✅ Found ${jobs.length} matching jobs!\n`));
 
   jobs.forEach((job, index) => {
     console.log(chalk.cyan.bold(`${index + 1}. ${job.title}`));
@@ -43,6 +43,8 @@ async function scanPortals() {
     }
     console.log();
   });
+
+  console.log(chalk.dim('💡 Tip: Copy any job URL and run: npm run evaluate-job -- <URL>'));
 }
 
 scanPortals().catch(err => {

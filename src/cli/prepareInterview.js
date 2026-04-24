@@ -32,7 +32,7 @@ async function prepareForInterview() {
     jobDescription = fs.readFileSync(jobDescriptionOrFile, 'utf-8');
   }
 
-  const plan = await interviewPrep.generatePrepPlan(jobDescription, profile);
+  const { plan, filePath } = await interviewPrep.generatePrepPlan(jobDescription, profile);
 
   // Display formatted plan
   const formattedPlan = interviewPrep.formatPrepPlanText(plan);
@@ -42,7 +42,10 @@ async function prepareForInterview() {
   const youtubeSection = interviewPrep.formatYouTubeLinks(plan);
   console.log(chalk.yellow(youtubeSection));
 
-  console.log(chalk.green('✅ Full preparation plan saved as HTML in data/\n'));
+  console.log();
+  console.log(chalk.green('✅ Interview prep plan generated!\n'));
+  console.log(chalk.cyan('📄 Full plan (HTML):'), filePath);
+  console.log();
 }
 
 prepareForInterview().catch(err => {

@@ -23,9 +23,11 @@ async function evaluateJob() {
     process.exit(1);
   }
 
-  const evaluation = await jobEvaluator.evaluate(jobUrl, profile);
+  const jobData = await jobEvaluator.evaluate(jobUrl, profile);
+  const evaluation = jobData.evaluation;
+  const jobId = jobData.id;
 
-  console.log(chalk.green('Evaluation Complete!\n'));
+  console.log(chalk.green('✅ Evaluation Complete!\n'));
 
   if (evaluation.overallScore !== undefined) {
     const scoreColor = evaluation.overallScore >= 4.0 ? chalk.green : evaluation.overallScore >= 3.0 ? chalk.yellow : chalk.red;
@@ -54,6 +56,11 @@ async function evaluateJob() {
     evaluation.mismatches.forEach(m => console.log(`  - ${m}`));
   }
 
+  console.log();
+  console.log(chalk.cyan('💾 Saved to:'), 'data/evaluated-jobs.json');
+  console.log(chalk.cyan('📌 Job ID:'), chalk.yellow(jobId));
+  console.log(chalk.dim('\nUse Job ID to generate a tailored resume:'));
+  console.log(chalk.dim(`  npm run generate-resume -- ${jobId}`));
   console.log();
 }
 

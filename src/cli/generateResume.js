@@ -34,8 +34,10 @@ async function generateResume() {
   const result = await resumeGenerator.generate(job.url, profile);
 
   console.log(chalk.green('✅ Resume generated successfully!\n'));
-  console.log(chalk.cyan('Resume PDF:'), result.path);
-  console.log(chalk.cyan('Key Skills Highlighted:'), result.keywords.join(', '));
+  console.log(chalk.cyan('📄 Resume PDF:'), result.path);
+  console.log(chalk.cyan('🎯 Key Skills Highlighted:'), result.keywords.join(', '));
+  console.log();
+  console.log(chalk.dim('💡 Next: Review the PDF and apply directly to the job posting'))
   console.log();
 }
 

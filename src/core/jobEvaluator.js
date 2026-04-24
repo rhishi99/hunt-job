@@ -55,10 +55,10 @@ class JobEvaluator {
     });
 
     const evaluation = this.parseEvaluationResponse(response.content[0].text);
-    await this.saveEvaluatedJob(jobInput, evaluation, profile);
+    const savedJob = await this.saveEvaluatedJob(jobInput, evaluation, profile);
     log.op('evaluate_done', { score: evaluation.overallScore, recommendation: evaluation.recommendation });
 
-    return evaluation;
+    return { evaluation, id: savedJob.id, url: savedJob.url };
   }
 
   buildEvaluationPrompt(jobUrl, profile) {

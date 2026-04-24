@@ -6,7 +6,7 @@ import chalk from 'chalk';
 const profileManager = new ProfileManager();
 
 async function initProfile() {
-  console.log(chalk.cyan.bold('\n🚀 Career-Ops Profile Setup\n'));
+  console.log(chalk.cyan.bold('\n🚀 Hunt-Job Profile Setup\n'));
 
   const answers = await inquirer.prompt([
     {
@@ -114,6 +114,10 @@ async function initProfile() {
   await profileManager.saveProfile(profile);
 
   console.log(chalk.green.bold('\n✅ Profile created successfully!\n'));
+  console.log(chalk.cyan('📄 Saved to:'));
+  console.log('   config/profile.yml');
+  console.log('   modes/_profile.md');
+  console.log();
   console.log(chalk.cyan('Next steps:'));
   console.log('1. Add your experience: npm run profile:edit -- --add-experience');
   console.log('2. Evaluate your first job: npm run evaluate-job -- <URL>');

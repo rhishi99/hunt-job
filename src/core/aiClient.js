@@ -179,8 +179,8 @@ function makeOpenRouterClient() {
     providerName: 'OpenRouter',
     models:       PROVIDER_MODELS.openrouter,
     extraHeaders: {
-      'HTTP-Referer': 'https://github.com/career-ops',
-      'X-Title':      'Career-Ops Job Search Agent',
+      'HTTP-Referer': 'https://github.com/hunt-job',
+      'X-Title':      'Hunt-Job Job Search Agent',
     },
   });
 }
@@ -262,7 +262,7 @@ export async function testConnection(providerName = null) {
   const response = await client.messages.create({
     max_tokens: 20,
     taskType: 'light',
-    messages: [{ role: 'user', content: 'Reply with exactly: "Career-Ops connected"' }],
+    messages: [{ role: 'user', content: 'Reply with exactly: "Hunt-Job connected"' }],
   });
   return response.content[0].text?.trim();
 }

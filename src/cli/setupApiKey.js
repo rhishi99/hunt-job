@@ -93,7 +93,7 @@ async function testProviderKey(providerEnvKey, apiKey) {
 }
 
 async function main() {
-  console.log(chalk.cyan.bold('\n⚙️  Career-Ops Provider Setup\n'));
+  console.log(chalk.cyan.bold('\n⚙️  Hunt-Job Provider Setup\n'));
 
   const { action } = await inquirer.prompt([{
     type: 'list',

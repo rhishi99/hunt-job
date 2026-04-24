@@ -1,11 +1,11 @@
 @echo off
-title Career-Ops — AI Job Search Agent
+title Hunt-Job — AI Job Search Agent
 cd /d "%~dp0"
 
 :: ── Load .env if present ─────────────────────────────────────────────────────
 if exist ".env" (
     for /f "usebackq tokens=1,* delims==" %%a in (".env") do (
-        if not "%%a"=="" if not "%%a:~0,1%"=="#" set "%%a=%%b"
+        if not "%%a"=="" if not "%%a:~0,1%%"=="#" set "%%a=%%b"
     )
 )
 
@@ -21,15 +21,15 @@ if errorlevel 1 (
 )
 
 :: ── Direct command-line mode ─────────────────────────────────────────────────
-::  Usage:  career-ops.bat <command> [args...]
-::  e.g.:   career-ops.bat evaluate "https://careers.google.com/..."
-::          career-ops.bat scan --archetype "Backend Engineer"
-::          career-ops.bat resume job_1234567890
-::          career-ops.bat prep "job_description.txt"
-::          career-ops.bat setup
-::          career-ops.bat profile init
-::          career-ops.bat profile edit
-::          career-ops.bat parse-resume "resume.pdf"
+::  Usage:  hunt-job.bat <command> [args...]
+::  e.g.:   hunt-job.bat evaluate "https://careers.google.com/..."
+::          hunt-job.bat scan --archetype "Backend Engineer"
+::          hunt-job.bat resume job_1234567890
+::          hunt-job.bat prep "job_description.txt"
+::          hunt-job.bat setup
+::          hunt-job.bat profile init
+::          hunt-job.bat profile edit
+::          hunt-job.bat parse-resume "resume.pdf"
 
 if /i "%~1"=="evaluate"     goto CMD_EVALUATE
 if /i "%~1"=="scan"         goto CMD_SCAN
@@ -45,24 +45,24 @@ if /i "%~1"=="menu"         goto CMD_INTERACTIVE
 :MENU
 cls
 echo.
-echo  ╔══════════════════════════════════════════╗
-echo  ║   🎯  CAREER-OPS  —  Job Search Agent    ║
-echo  ╚══════════════════════════════════════════╝
+echo  ========================================
+echo    HUNT-JOB - AI Job Search Agent
+echo  ========================================
 echo.
-echo  ── Job Search ─────────────────────────────
-echo   [1]  Full Interactive Menu  ^(recommended^)
-echo   [2]  Evaluate a Job
-echo   [3]  Scan Job Portals
-echo   [4]  Generate Resume
-echo   [5]  Interview Prep
+echo  -- Job Search --------------------------
+echo   [1] Full Interactive Menu (recommended)
+echo   [2] Evaluate a Job
+echo   [3] Scan Job Portals
+echo   [4] Generate Resume
+echo   [5] Interview Prep
 echo.
-echo  ── Profile ────────────────────────────────
-echo   [6]  Setup API Keys
-echo   [7]  Initialize Profile
-echo   [8]  Edit Profile
-echo   [9]  Parse Resume PDF  ^(build profile from PDF^)
+echo  -- Profile ----------------------------
+echo   [6] Setup API Keys
+echo   [7] Initialize Profile
+echo   [8] Edit Profile
+echo   [9] Parse Resume PDF (build from PDF)
 echo.
-echo   [0]  Exit
+echo   [0] Exit
 echo.
 set /p choice=  Enter your choice:
 

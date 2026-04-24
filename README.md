@@ -1,6 +1,6 @@
-# Career-Ops — AI-Powered Job Search Agent
+# Hunt-Job — AI-Powered Job Search Agent
 
-> An intelligent multi-agent job search system built on Claude. Evaluates jobs across 10 dimensions, generates ATS-optimized resumes tailored per JD, preps you for interviews with YouTube resources, and auto-fills application forms — all India-focused, all local.
+> An intelligent multi-agent job search system built on Claude (Extended from Career-Ops). Evaluates jobs across 10 dimensions, generates ATS-optimized resumes tailored per JD, preps you for interviews with YouTube resources, and auto-fills application forms — all India-focused, all local.
 
 ---
 

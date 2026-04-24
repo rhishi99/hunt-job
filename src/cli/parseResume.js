@@ -124,7 +124,7 @@ async function main() {
   const pdfPath = process.argv[2] || '/cowork/Rhishi_Resume.pdf';
   const resolvedPath = path.resolve(pdfPath);
 
-  console.log(chalk.cyan.bold('\n🔍 Career-Ops Resume Parser\n'));
+  console.log(chalk.cyan.bold('\n🔍 Hunt-Job Resume Parser\n'));
   console.log(chalk.white(`Parsing: ${chalk.yellow(resolvedPath)}\n`));
 
   if (!process.env.GEMINI_API_KEY) {
@@ -179,10 +179,13 @@ async function main() {
   await profileManager.saveProfile(profile);
 
   console.log(chalk.green.bold('\n✅ Profile saved successfully!\n'));
+  console.log(chalk.cyan('📄 Saved to:'));
+  console.log('   config/profile.yml');
+  console.log('   modes/_profile.md');
+  console.log();
   console.log(chalk.cyan('Next steps:'));
   console.log('  Evaluate a job:   npm run evaluate-job -- <URL>');
   console.log('  Scan portals:     npm run scan-portals -- --archetype "Data Engineer"');
-  console.log('  Generate resume:  npm run generate-resume -- --job-id <id>');
   console.log('  Interview prep:   npm run prepare-interview -- <job-description>\n');
 }
 
