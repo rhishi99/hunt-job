@@ -202,6 +202,9 @@ async function main() {
             case 'interactive':
                 await runScript('src/cli/interactive.js');
                 break;
+            case 'hunt':
+                await runScript('src/cli/hunt.js', args.slice(1));
+                break;
             case '--help':
             case '-h':
             case 'help':
@@ -212,6 +215,7 @@ USAGE:
   node hunt-job.js [COMMAND] [OPTIONS]
 
 COMMANDS:
+  hunt --archetype <name>      Single-command full workflow
   evaluate <url>              Evaluate a job posting
   scan --archetype <name>     Scan job portals for matches
   resume <job-id>             Generate tailored resume
@@ -224,10 +228,11 @@ COMMANDS:
   help, --help, -h            Show this help
 
 EXAMPLES:
-  node career-ops.js
-  node career-ops.js evaluate "https://careers.google.com/..."
-  node career-ops.js scan --archetype "Backend Engineer"
-  node career-ops.js prep job_description.txt
+  node hunt-job.js hunt --archetype "Data Engineer"
+  node hunt-job.js hunt --archetype "Backend Engineer" --limit 20
+  node hunt-job.js evaluate "https://careers.google.com/..."
+  node hunt-job.js scan --archetype "Backend Engineer"
+  node hunt-job.js prep job_description.txt
             `);
                 break;
             default:

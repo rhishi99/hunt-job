@@ -5,6 +5,38 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+function loadEnvProfile() {
+  const env = process.env;
+  if (env.HUNT_JOB_NAME || env.HUNT_JOB_EMAIL || env.HUNT_JOB_ROLE) {
+    return {
+      name: env.HUNT_JOB_NAME || '',
+      email: env.HUNT_JOB_EMAIL || '',
+      phone: env.HUNT_JOB_PHONE || '',
+      currentRole: env.HUNT_JOB_ROLE || '',
+      yearsOfExperience: parseInt(env.HUNT_JOB_YEARS) || 0,
+      archetypes: (env.HUNT_JOB_ARCHETYPES || '').split(',').map(s => s.trim()).filter(Boolean),
+      salary: {
+        min: parseInt(env.HUNT_JOB_SALARY_MIN) || 0,
+        max: parseInt(env.HUNT_JOB_SALARY_MAX) || 0,
+        currency: env.HUNT_JOB_CURRENCY || 'INR',
+        unit: env.HUNT_JOB_SALARY_UNIT || 'LPA'
+      },
+      remotePreference: env.HUNT_JOB_REMOTE || 'hybrid',
+      techStack: (env.HUNT_JOB_TECH_STACK || '').split(',').map(s => s.trim()).filter(Boolean),
+      dealbreakers: (env.HUNT_JOB_DEALBREAKERS || '').split(',').map(s => s.trim()).filter(Boolean),
+      experience: [],
+      education: [],
+      projects: [],
+      skills: [],
+      certifications: [],
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      _fromEnv: true
+    };
+  }
+  return null;
+}
+
 class ProfileManager {
   constructor() {
     this.profileDir = path.join(__dirname, '../../config');
@@ -24,6 +56,12 @@ class ProfileManager {
   }
 
   async loadProfile() {
+    // First check env-based profile
+    const envProfile = loadEnvProfile();
+    if (envProfile) {
+      return envProfile;
+    }
+    
     try {
       if (!fs.existsSync(this.profilePath)) {
         return null;

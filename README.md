@@ -77,6 +77,9 @@ Launches terminal UI:
 ### Individual Commands
 
 ```bash
+# Single-command full workflow (scans + evaluates top matches)
+npm run hunt -- --archetype "Cloud Engineer" --limit 10
+
 # Evaluate any job posting
 npm run evaluate-job -- "https://company.com/jobs/123"
 
@@ -189,11 +192,24 @@ career-ops/
 ### Environment Variables
 
 ```bash
+# Required: At least one AI provider
 ANTHROPIC_API_KEY=sk-ant-xxx       # Claude (default)
 GEMINI_API_KEY=xxx                 # Google Gemini
-GROQ_API_KEY=xxx                   # Groq
+GROQ_API_KEY=xxx                 # Groq
 OPENROUTER_API_KEY=xxx             # OpenRouter
-NVIDIA_API_KEY=xxx                 # NVIDIA NIM
+NVIDIA_API_KEY=xxx                # NVIDIA NIM
+
+# Optional: Env-based profile (no interactive prompts needed)
+HUNT_JOB_NAME="Your Name"
+HUNT_JOB_EMAIL="you@example.com"
+HUNT_JOB_ROLE="Software Engineer"
+HUNT_JOB_YEARS=3
+HUNT_JOB_ARCHETYPES="Backend Engineer,Full Stack Engineer"
+HUNT_JOB_SALARY_MIN=15
+HUNT_JOB_SALARY_MAX=30
+HUNT_JOB_REMOTE=hybrid
+HUNT_JOB_TECH_STACK="Python,AWS,Docker,Kubernetes"
+HUNT_JOB_DEALBREAKERS="no remote,service-based"
 ```
 
 Only one key required. AI client auto-selects whichever is available.

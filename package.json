@@ -5,10 +5,11 @@
   "main": "career-ops.js",
   "type": "module",
   "bin": {
-    "hunt-job": "hunt-job.js"
+    "hunt-job": "./hunt-job.js"
   },
   "scripts": {
-    "start": "node career-ops.js",
+    "start": "node hunt-job.js",
+    "hunt": "node hunt-job.js hunt",
     "test": "node runner.mjs",
     "evaluate-job": "node src/cli/evaluateJob.js",
     "scan-portals": "node src/cli/scanPortals.js",

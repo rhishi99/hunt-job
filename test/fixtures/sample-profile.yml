@@ -1,0 +1,59 @@
+name: John Doe
+email: john.doe@example.com
+phone: "+91-9876543210"
+location: Bangalore, India
+linkedin: linkedin.com/in/johndoe
+github: github.com/johndoe
+currentRole: Senior Software Engineer
+yearsOfExperience: 5
+summary: Experienced software engineer with expertise in backend development and data engineering.
+archetypes:
+  - Software Engineer
+  - Data Engineer
+salary:
+  min: 30
+  max: 50
+  currency: INR
+  unit: LPA
+remotePreference: hybrid
+techStack:
+  - Python
+  - JavaScript
+  - AWS
+  - PostgreSQL
+  - Docker
+  - Kubernetes
+skills:
+  - Data Pipeline Design
+  - ETL Development
+  - SQL Optimization
+  - Cloud Architecture
+dealbreakers:
+  - No remote work
+  - Forced overtime
+experience:
+  - title: Senior Software Engineer
+    company: TechCorp India Pvt Ltd
+    startDate: "2021-01"
+    endDate: Present
+    description: Led backend development for data processing pipelines. Improved query performance by 40%.
+  - title: Software Engineer
+    company: StartupXYZ
+    startDate: "2019-06"
+    endDate: "2020-12"
+    description: Built REST APIs and data integration services.
+education:
+  - degree: B.Tech
+    field: Computer Science
+    school: IIT Bombay
+    year: 2019
+projects:
+  - title: Real-time Analytics Pipeline
+    description: Built a real-time data processing pipeline handling 1M+ events per day.
+    technologies:
+      - Python
+      - Kafka
+      - Redis
+certifications:
+  - AWS Certified Solutions Architect
+  - Google Cloud Professional Data Engineer

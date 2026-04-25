@@ -1,0 +1,39 @@
+{
+  "id": "job_test_123",
+  "url": "https://jobs.lever.co/company/abc123",
+  "evaluation": {
+    "overallScore": 4.2,
+    "dimensions": {
+      "salaryAlignment": 4,
+      "techStackCompatibility": 5,
+      "companyCultureFit": 4,
+      "growthOpportunities": 4,
+      "locationRemoteRequirements": 4,
+      "teamDynamics": 4,
+      "productMarketFit": 4,
+      "workLifeBalanceIndicators": 5,
+      "careerProgressionPotential": 4,
+      "dealbreakerCompliance": 4
+    },
+    "matches": [
+      "Tech stack matches perfectly",
+      "Good work-life balance",
+      "Competitive salary"
+    ],
+    "mismatches": [
+      "Some technologies not in current stack"
+    ],
+    "reasoning": "This role aligns well with the candidate's profile and experience.",
+    "recommendation": "Apply"
+  },
+  "profile": {
+    "archetypes": ["Software Engineer", "Data Engineer"],
+    "salaryRange": {
+      "min": 30,
+      "max": 50,
+      "currency": "INR",
+      "unit": "LPA"
+    }
+  },
+  "evaluatedAt": "2026-04-25T10:00:00.000Z"
+}
