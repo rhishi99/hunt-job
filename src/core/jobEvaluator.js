@@ -17,6 +17,59 @@ class JobEvaluator {
     this.ensureDataDir();
   }
 
+  static buildEvaluationPrompt(jobUrl, profile) {
+    return `Please evaluate this job posting: ${jobUrl}
+
+Candidate Profile:
+- Target Archetypes: ${profile.archetypes?.join(', ')}
+- Salary Range: $${profile.salary?.min} - $${profile.salary?.max}
+- Tech Stack: ${profile.techStack?.join(', ')}
+- Remote Preference: ${profile.remotePreference}
+- Dealbreakers: ${profile.dealbreakers?.join(', ')}
+- Years of Experience: ${profile.yearsOfExperience}
+
+Please evaluate this job across these 10 dimensions on a scale of 1-5:
+1. Salary Alignment
+2. Tech Stack Compatibility
+3. Company Culture Fit
+4. Growth Opportunities
+5. Location/Remote Requirements
+6. Team Dynamics (if available)
+7. Product Market Fit
+8. Work-Life Balance Indicators
+9. Career Progression Potential
+10. Dealbreaker Compliance
+
+Provide the following as a JSON object with exactly these keys:
+- "overallScore": number 1-5
+- "dimensions": object with each dimension name as key and score 1-5 as value
+- "matches": array of strings (what fits well)
+- "mismatches": array of strings (what doesn't fit or is missing)
+- "reasoning": string (2-3 sentences explaining the score)
+- "recommendation": one of "Apply", "Maybe", or "Skip"
+
+Return ONLY valid JSON, no markdown fences.`;
+  }
+
+  static parseEvaluationResponse(responseText) {
+    try {
+      const stripped = responseText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.warn('Failed to parse evaluation as JSON, returning text:', e.message);
+    }
+
+    return {
+      overallScore: 0,
+      analysis: responseText,
+      dimensions: {},
+      recommendation: 'REVIEW'
+    };
+  }
+
   ensureDataDir() {
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
@@ -145,3 +198,5 @@ Return ONLY valid JSON, no markdown fences.`;
 }
 
 export default JobEvaluator;
+
+export { JobEvaluator };

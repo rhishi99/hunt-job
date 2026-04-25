@@ -331,3 +331,12 @@ class PortalScanner {
 }
 
 export default PortalScanner;
+
+export {
+  isIndiaLocation,
+  cleanHtml,
+  jobMatchesArchetype,
+  daysAgoLabel,
+  scanLever,
+  scanGreenhouse
+};

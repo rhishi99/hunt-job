@@ -385,3 +385,8 @@ Rules:
 }
 
 export default ResumeGenerator;
+
+export {
+  makeJobSlug,
+  ResumeGenerator
+};

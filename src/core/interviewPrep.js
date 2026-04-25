@@ -34,6 +34,34 @@ class InterviewPrep {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   }
 
+  static makeJobSlug = makeJobSlug;
+  static toStr = toStr;
+  static parsePrepResponse = function(responseText) {
+    try {
+      // Strip markdown code fences if present (```json ... ```)
+      const stripped = responseText.replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+      const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+    } catch (e) {
+      console.warn('Failed to parse prep response as JSON:', e.message);
+    }
+
+    return {
+      techStack: [],
+      conceptsToMaster: [],
+      focusAreas: [],
+      systemDesign: [],
+      behavioralQuestions: [],
+      companySpecific: {},
+      practiceResources: [],
+      interviewRounds: [],
+      weeklyPlan: {},
+      redFlags: []
+    };
+  };
+  
   makeJobDir(jobDescription) {
     const slug = makeJobSlug(jobDescription);
     const dir = path.join(dataDir, slug);
@@ -1046,3 +1074,9 @@ Format as valid JSON only.`;
 }
 
 export default InterviewPrep;
+
+export {
+  makeJobSlug,
+  toStr,
+  InterviewPrep
+};
