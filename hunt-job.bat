@@ -62,6 +62,9 @@ echo   [7] Initialize Profile
 echo   [8] Edit Profile
 echo   [9] Parse Resume PDF (build from PDF)
 echo.
+echo  -- Resume Builder ---------------------
+echo   [R] Open Resume Builder (6 templates, edit + export PDF)
+echo.
 echo   [0] Exit
 echo.
 set /p choice=  Enter your choice:
@@ -75,6 +78,7 @@ if "%choice%"=="6" goto CMD_SETUP
 if "%choice%"=="7" goto CMD_PROFILE_INIT
 if "%choice%"=="8" goto CMD_PROFILE_EDIT
 if "%choice%"=="9" goto ASK_PARSE
+if /i "%choice%"=="R" goto CMD_RESUME_BUILDER
 if "%choice%"=="0" exit /b 0
 goto MENU
 
@@ -149,6 +153,12 @@ goto END
 
 :CMD_PROFILE_EDIT
 node src/cli/profileEdit.js
+goto END
+
+:CMD_RESUME_BUILDER
+echo.
+echo  Opening Resume Builder in your browser...
+start "" "%~dp0resume-builder\index.html"
 goto END
 
 :: ── Done ─────────────────────────────────────────────────────────────────────

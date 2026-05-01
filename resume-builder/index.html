@@ -1,0 +1,1190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resume Builder — Hunt Job</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+<style>
+/* ================================================ RESET ================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ================================================ APP CHROME ================================================ */
+body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0c0c1a; min-height: 100vh; color: #fff; }
+
+#toolbar {
+  position: fixed; top: 0; left: 0; right: 0; height: 58px;
+  background: #12122a; border-bottom: 1px solid rgba(255,255,255,0.08);
+  display: flex; align-items: center; padding: 0 16px; gap: 10px; z-index: 1000;
+  box-shadow: 0 2px 20px rgba(0,0,0,0.4);
+}
+.toolbar-logo { font-weight: 800; font-size: 15px; color: #fff; white-space: nowrap; letter-spacing: -0.3px; }
+.toolbar-logo span { color: #4ecca3; }
+.toolbar-divider { width: 1px; height: 24px; background: rgba(255,255,255,0.12); flex-shrink: 0; }
+#template-btns { display: flex; gap: 5px; flex: 1; overflow-x: auto; padding: 2px 0; min-width: 0; scrollbar-width: none; }
+#template-btns::-webkit-scrollbar { display: none; }
+.tpl-btn {
+  padding: 5px 12px; border-radius: 16px; border: 1.5px solid rgba(255,255,255,0.12);
+  cursor: pointer; font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.55);
+  background: transparent; white-space: nowrap; transition: all 0.18s;
+}
+.tpl-btn:hover { color: #fff; border-color: rgba(255,255,255,0.3); }
+.tpl-btn.active { color: #4ecca3; border-color: #4ecca3; background: rgba(78,204,163,0.1); }
+.toolbar-actions { display: flex; gap: 6px; align-items: center; flex-shrink: 0; }
+.btn { padding: 7px 14px; border-radius: 7px; border: none; cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit; transition: all 0.18s; white-space: nowrap; }
+.btn-ghost { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.7); border: 1px solid rgba(255,255,255,0.1); }
+.btn-ghost:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.btn-export { background: #4ecca3; color: #0c0c1a; }
+.btn-export:hover { background: #3bb88d; }
+
+#edit-hint {
+  position: fixed; bottom: 14px; left: 50%; transform: translateX(-50%);
+  background: rgba(12,12,26,0.85); backdrop-filter: blur(8px);
+  border: 1px solid rgba(78,204,163,0.25); color: rgba(255,255,255,0.55); font-size: 11px;
+  padding: 6px 14px; border-radius: 20px; z-index: 900; pointer-events: none; white-space: nowrap;
+}
+
+#app-body { margin-top: 58px; padding: 28px 20px 80px; display: flex; flex-direction: column; align-items: center; }
+#resume-wrapper { width: 794px; background: white; box-shadow: 0 12px 80px rgba(0,0,0,0.5); position: relative; }
+
+/* ================================================ EDITABLE ================================================ */
+[contenteditable="true"] { outline: none; cursor: text; border-radius: 2px; transition: background 0.15s; display: inline; }
+[contenteditable="true"]:hover { background: rgba(78,204,163,0.09); }
+[contenteditable="true"]:focus { background: rgba(78,204,163,0.14); box-shadow: 0 0 0 1.5px rgba(78,204,163,0.5); }
+
+/* ================================================ BULLET CONTROLS ================================================ */
+.bullet-row { display: flex; align-items: flex-start; gap: 4px; position: relative; }
+.bullet-ctrl { display: flex; gap: 2px; flex-shrink: 0; opacity: 0; transition: opacity 0.15s; padding-top: 2px; }
+.bullet-row:hover .bullet-ctrl { opacity: 1; }
+.del-bullet, .add-bullet-after {
+  width: 16px; height: 16px; border-radius: 50%; border: none; cursor: pointer; font-size: 11px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.del-bullet { background: #e74c3c; color: #fff; }
+.del-bullet:hover { background: #c0392b; }
+.add-bullet-after { background: #4ecca3; color: #0c0c1a; }
+.add-bullet-after:hover { background: #3bb88d; }
+
+/* Tag wrap with delete button */
+.tag-wrap { position: relative; display: inline-flex; align-items: center; }
+.tag-del {
+  display: none; position: absolute; top: -5px; right: -5px;
+  width: 14px; height: 14px; border-radius: 50%; border: none;
+  background: #e74c3c; color: #fff; font-size: 9px; cursor: pointer;
+  align-items: center; justify-content: center;
+}
+.tag-wrap:hover .tag-del { display: flex; }
+.add-tag-btn {
+  border: 1px dashed rgba(78,204,163,0.5); background: transparent; color: #4ecca3;
+  border-radius: 12px; font-size: 11px; padding: 2px 8px; cursor: pointer; font-family: inherit;
+}
+.add-tag-btn:hover { background: rgba(78,204,163,0.1); }
+
+/* ================================================
+   TEMPLATE 1: CLASSIC  (dark header, two-column, teal)
+   ================================================ */
+.resume-classic { font-family: 'Segoe UI', Arial, sans-serif; color: #333; min-height: 1123px; }
+
+.rc-header { background: #1d2b37; padding: 26px 28px 22px; display: flex; justify-content: space-between; align-items: flex-start; }
+.rc-header-left { flex: 1; }
+.rc-name { font-size: 26px; font-weight: 700; color: #fff; margin-bottom: 3px; line-height: 1.15; display: block; }
+.rc-title { font-size: 13px; color: #1abc9c; font-weight: 500; margin-bottom: 10px; display: block; }
+.rc-summary { font-size: 11.5px; color: rgba(255,255,255,0.82); line-height: 1.55; max-width: 90%; display: block; }
+.rc-photo {
+  width: 78px; height: 78px; border-radius: 8px; border: 2px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.08); display: flex; align-items: center; justify-content: center;
+  font-size: 9px; color: rgba(255,255,255,0.4); text-align: center;
+  cursor: pointer; overflow: hidden; flex-shrink: 0; margin-left: 20px;
+}
+.rc-photo img { width: 100%; height: 100%; object-fit: cover; }
+.rc-contact { background: #152330; display: flex; flex-wrap: wrap; }
+.rc-contact-item { display: flex; align-items: center; gap: 5px; padding: 7px 16px; font-size: 11px; color: #9ec5d0; border-right: 1px solid rgba(255,255,255,0.06); }
+.rc-contact-icon { color: #1abc9c; font-size: 11px; flex-shrink: 0; }
+.rc-body { display: grid; grid-template-columns: 58% 42%; min-height: 860px; }
+.rc-left { padding: 18px 18px 18px 22px; border-right: 1px solid #ebebeb; }
+.rc-right { padding: 18px 18px 18px 18px; }
+.rc-section-title { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #1abc9c; border-bottom: 1.5px solid #1abc9c; padding-bottom: 4px; margin-bottom: 11px; margin-top: 16px; }
+.rc-left .rc-section-title:first-child, .rc-right .rc-section-title:first-child { margin-top: 0; }
+.rc-exp-title { font-size: 13px; font-weight: 700; color: #1d2b37; display: block; }
+.rc-exp-company-line { font-size: 11.5px; font-weight: 600; color: #333; margin-bottom: 2px; }
+.rc-exp-period { font-size: 10.5px; color: #1abc9c; font-style: italic; margin: 2px 0 3px; display: block; }
+.rc-exp-desc { font-size: 11px; color: #666; font-style: italic; margin-bottom: 5px; line-height: 1.4; display: block; }
+.rc-exp-tag { font-size: 10px; color: #1abc9c; font-weight: 600; margin-bottom: 4px; }
+.rc-exp-block { margin-bottom: 14px; }
+/* Bullet rows for classic — dot is a separate non-editable element */
+.rc-bullet-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 4px; }
+.rc-bullet-row:hover .bullet-ctrl { opacity: 1; }
+.rc-bullet-dot { width: 6px; height: 6px; background: #1abc9c; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
+.rc-bullet-text { font-size: 11px; color: #444; line-height: 1.48; flex: 1; }
+.rc-skill-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 6px; }
+.rc-skill-tag { border: 1px solid #1abc9c; color: #1d6f68; font-size: 10.5px; padding: 3px 9px; border-radius: 12px; background: transparent; }
+.rc-edu-item { margin-bottom: 10px; }
+.rc-edu-degree { font-size: 12px; font-weight: 700; color: #1d2b37; display: block; }
+.rc-edu-inst { font-size: 11px; color: #444; display: block; }
+.rc-edu-period { font-size: 10.5px; color: #1abc9c; font-style: italic; display: block; }
+.rc-cert-name { font-size: 12px; font-weight: 600; color: #1d2b37; display: block; }
+.rc-cert-period { font-size: 10.5px; color: #777; display: block; }
+.rc-cert-desc { font-size: 10.5px; color: #888; font-style: italic; display: block; }
+.rc-lang-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rc-lang-name { font-size: 12px; font-weight: 600; color: #1d2b37; display: block; }
+.rc-lang-level { font-size: 10.5px; color: #1abc9c; font-style: italic; display: block; }
+.rc-interest-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+.rc-interest-tag { background: #f0faf8; border: 1px solid #c5e8e2; color: #1d6f68; font-size: 10.5px; padding: 3px 9px; border-radius: 12px; }
+.rc-prev-exp-item { margin-bottom: 13px; }
+.rc-prev-exp-company { font-size: 11px; color: #555; }
+.rc-prev-exp-period { font-size: 10.5px; color: #1abc9c; font-style: italic; margin: 2px 0 3px; display: block; }
+
+/* ================================================
+   TEMPLATE 2: MINIMALIST PRO  (clean white, lots of space)
+   ================================================ */
+.resume-minimalist { font-family: 'Inter', 'Segoe UI', sans-serif; color: #1a1a1a; min-height: 1123px; padding: 44px 46px; }
+.rm-name { font-size: 30px; font-weight: 800; color: #111; letter-spacing: -0.5px; margin-bottom: 3px; display: block; }
+.rm-title { font-size: 13px; color: #555; font-weight: 500; margin-bottom: 10px; display: block; }
+.rm-contact { display: flex; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: #555; margin-bottom: 14px; }
+.rm-contact-item { display: flex; align-items: center; gap: 4px; }
+.rm-summary { font-size: 12px; color: #444; line-height: 1.65; border-left: 3px solid #4ecca3; padding-left: 12px; margin-bottom: 22px; display: block; }
+.rm-divider { height: 1px; background: #eee; margin-bottom: 20px; }
+.rm-body { display: grid; grid-template-columns: 62% 38%; gap: 28px; }
+.rm-section-title { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: #4ecca3; margin-bottom: 12px; }
+.rm-exp-title { font-size: 13px; font-weight: 700; color: #111; display: block; }
+.rm-exp-company-line { font-size: 11.5px; color: #555; margin-bottom: 2px; }
+.rm-exp-period { font-size: 10.5px; color: #888; margin: 2px 0 6px; display: block; }
+.rm-exp-block { margin-bottom: 16px; }
+/* Minimalist bullet: dash is a CSS ::before, NOT in editable text */
+.rm-bullet-row { display: flex; align-items: flex-start; gap: 4px; margin-bottom: 3px; }
+.rm-bullet-dash { font-size: 11px; color: #4ecca3; flex-shrink: 0; line-height: 1.5; margin-top: 1px; user-select: none; }
+.rm-bullet-text { font-size: 11.5px; color: #333; line-height: 1.55; flex: 1; }
+.rm-skill-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.rm-skill-chip { background: #f4f4f4; color: #333; font-size: 10.5px; padding: 3px 9px; border-radius: 4px; }
+.rm-edu-item { margin-bottom: 11px; }
+.rm-edu-degree { font-size: 12.5px; font-weight: 600; display: block; }
+.rm-edu-inst { font-size: 11px; color: #666; display: block; }
+.rm-edu-period { font-size: 10.5px; color: #888; display: block; }
+.rm-cert-name { font-size: 12px; font-weight: 600; display: block; }
+.rm-cert-sub { font-size: 10.5px; color: #888; display: block; }
+.rm-lang-item { margin-bottom: 7px; }
+.rm-lang-name { font-size: 12px; font-weight: 600; display: block; }
+.rm-lang-level { font-size: 10.5px; color: #888; display: block; }
+.rm-tag { display: inline-block; background: #f0fdf9; color: #1d6f68; border: 1px solid #b2e2d6; font-size: 10.5px; padding: 2px 8px; border-radius: 3px; margin: 2px 2px 0 0; }
+
+/* ================================================
+   TEMPLATE 3: AZURE SIDEBAR  (dark left panel)
+   ================================================ */
+.resume-sidebar { font-family: 'Inter', 'Segoe UI', sans-serif; display: flex; min-height: 1123px; }
+.rs-sidebar { width: 30%; background: #1a3a5c; color: #fff; padding: 30px 18px; display: flex; flex-direction: column; gap: 0; }
+.rs-main { flex: 1; background: #fff; color: #1a1a1a; padding: 30px 22px; }
+.rs-photo-area {
+  width: 88px; height: 88px; border-radius: 50%; background: rgba(255,255,255,0.12);
+  border: 3px solid rgba(255,255,255,0.25); margin: 0 auto 14px; display: flex;
+  align-items: center; justify-content: center; font-size: 9px; color: rgba(255,255,255,0.5);
+  cursor: pointer; overflow: hidden;
+}
+.rs-photo-area img { width: 100%; height: 100%; object-fit: cover; }
+.rs-sb-name { font-size: 14px; font-weight: 700; text-align: center; margin-bottom: 3px; display: block; }
+.rs-sb-title { font-size: 9.5px; color: rgba(255,255,255,0.7); text-align: center; margin-bottom: 18px; display: block; }
+.rs-sb-section { margin-bottom: 16px; }
+.rs-sb-label { font-size: 8.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px; color: #4ecca3; margin-bottom: 7px; border-bottom: 1px solid rgba(78,204,163,0.3); padding-bottom: 3px; }
+.rs-sb-contact-item { display: flex; align-items: flex-start; gap: 5px; font-size: 10px; color: rgba(255,255,255,0.78); margin-bottom: 5px; line-height: 1.35; }
+.rs-sb-contact-icon { color: #4ecca3; flex-shrink: 0; margin-top: 1px; }
+.rs-sb-skill-tag { display: inline-block; background: rgba(255,255,255,0.1); border: 1px solid rgba(78,204,163,0.4); color: rgba(255,255,255,0.88); font-size: 9.5px; padding: 2px 7px; border-radius: 10px; margin: 2px 2px 0 0; }
+.rs-sb-lang-item { margin-bottom: 6px; }
+.rs-sb-lang-name { font-size: 11.5px; font-weight: 600; display: block; }
+.rs-sb-lang-level { font-size: 9.5px; color: rgba(255,255,255,0.62); display: block; }
+.rs-sb-interest-tag { display: inline-block; font-size: 9.5px; color: rgba(255,255,255,0.72); background: rgba(255,255,255,0.07); border-radius: 3px; padding: 2px 6px; margin: 2px 2px 0 0; }
+.rs-main-name { font-size: 24px; font-weight: 800; color: #1a3a5c; margin-bottom: 2px; display: block; }
+.rs-main-title { font-size: 12px; color: #4ecca3; font-weight: 600; margin-bottom: 10px; display: block; }
+.rs-main-summary { font-size: 11.5px; color: #555; line-height: 1.6; border-bottom: 1px solid #eee; padding-bottom: 14px; margin-bottom: 14px; display: block; }
+.rs-section-title { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.8px; color: #1a3a5c; border-left: 3px solid #4ecca3; padding-left: 8px; margin-bottom: 11px; margin-top: 16px; }
+.rs-section-title:first-child { margin-top: 0; }
+.rs-exp-title { font-size: 13px; font-weight: 700; color: #1a3a5c; display: block; }
+.rs-exp-company-line { font-size: 11px; color: #444; margin-bottom: 1px; }
+.rs-exp-period { font-size: 10.5px; color: #4ecca3; margin: 2px 0 5px; display: block; }
+.rs-exp-desc { font-size: 11px; color: #666; font-style: italic; margin-bottom: 5px; display: block; }
+.rs-exp-block { margin-bottom: 15px; }
+/* Sidebar bullet: marker is separate span, NOT inside editable */
+.rs-bullet-row { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 3px; }
+.rs-bullet-row:hover .bullet-ctrl { opacity: 1; }
+.rs-bullet-mark { color: #4ecca3; font-weight: 700; flex-shrink: 0; margin-top: 1px; font-size: 12px; user-select: none; }
+.rs-bullet-text { font-size: 11px; color: #444; line-height: 1.48; flex: 1; }
+.rs-edu-item { margin-bottom: 10px; }
+.rs-edu-degree { font-size: 12px; font-weight: 600; color: #1a3a5c; display: block; }
+.rs-edu-inst { font-size: 10.5px; color: #555; display: block; }
+.rs-edu-period { font-size: 10.5px; color: #888; display: block; }
+
+/* ================================================
+   TEMPLATE 4: EXECUTIVE  (traditional, centered header, serif)
+   ================================================ */
+.resume-executive { font-family: 'Georgia', 'Times New Roman', serif; color: #1a1a2e; min-height: 1123px; }
+.re-header { text-align: center; padding: 30px 36px 18px; border-bottom: 3px solid #1a1a6e; }
+.re-name { font-size: 28px; font-weight: 700; color: #1a1a6e; letter-spacing: 1px; margin-bottom: 5px; display: block; }
+.re-title { font-size: 13.5px; color: #555; margin-bottom: 12px; font-style: italic; display: block; }
+.re-contact { display: flex; justify-content: center; flex-wrap: wrap; gap: 14px; font-size: 11.5px; color: #444; }
+.re-contact-item { display: flex; align-items: center; gap: 4px; }
+.re-summary { font-size: 11.5px; color: #333; line-height: 1.65; text-align: center; max-width: 680px; margin: 12px auto 0; display: block; }
+.re-body { display: grid; grid-template-columns: 55% 45%; }
+.re-left { padding: 18px 18px 22px 26px; border-right: 1px solid #d8d8e8; }
+.re-right { padding: 18px 22px 22px 18px; }
+.re-section-title { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: #1a1a6e; border-bottom: 2px solid #1a1a6e; padding-bottom: 4px; margin-bottom: 11px; margin-top: 16px; font-family: 'Inter', sans-serif; }
+.re-left .re-section-title:first-child, .re-right .re-section-title:first-child { margin-top: 0; }
+.re-exp-title { font-size: 13px; font-weight: 700; color: #1a1a2e; display: block; }
+.re-exp-company-line { font-size: 11.5px; font-style: italic; color: #1a1a6e; font-weight: 600; }
+.re-exp-period { font-size: 10.5px; color: #888; margin: 2px 0 5px; display: block; }
+.re-exp-desc { font-size: 11px; color: #555; font-style: italic; margin-bottom: 5px; line-height: 1.4; display: block; }
+.re-exp-block { margin-bottom: 14px; }
+/* Executive bullet: diamond is a separate non-editable span */
+.re-bullet-row { display: flex; align-items: flex-start; gap: 6px; margin-bottom: 3px; }
+.re-bullet-row:hover .bullet-ctrl { opacity: 1; }
+.re-bullet-mark { color: #1a1a6e; flex-shrink: 0; font-size: 9px; margin-top: 4px; user-select: none; }
+.re-bullet-text { font-size: 11.5px; color: #333; line-height: 1.5; flex: 1; font-family: 'Georgia', serif; }
+/* Skills: bullet prefix is a separate non-editable span */
+.re-skill-row { display: flex; align-items: baseline; gap: 4px; margin-bottom: 5px; }
+.re-skill-bullet { color: #1a1a6e; font-size: 10px; flex-shrink: 0; user-select: none; }
+.re-skill-text { font-size: 11.5px; color: #333; line-height: 1.4; }
+.re-edu-item { margin-bottom: 11px; }
+.re-edu-degree { font-size: 12.5px; font-weight: 700; display: block; }
+.re-edu-inst { font-size: 11.5px; color: #555; font-style: italic; display: block; }
+.re-edu-period { font-size: 10.5px; color: #888; display: block; }
+.re-cert-name { font-size: 12px; font-weight: 600; display: block; }
+.re-cert-sub { font-size: 10.5px; color: #888; font-style: italic; display: block; }
+.re-lang-item { font-size: 11.5px; margin-bottom: 5px; }
+.re-lang-name { font-weight: 600; color: #1a1a2e; }
+
+/* ================================================
+   TEMPLATE 5: BOLD IMPACT  (gradient header, cards)
+   ================================================ */
+.resume-bold { font-family: 'Inter', 'Segoe UI', sans-serif; min-height: 1123px; background: #fff; }
+.rb-header { background: linear-gradient(135deg, #0f0c29, #302b63, #24243e); padding: 32px 34px 26px; position: relative; overflow: hidden; }
+.rb-header::before { content: ''; position: absolute; top: -60px; right: -40px; width: 200px; height: 200px; border-radius: 50%; background: rgba(78,204,163,0.07); border: 1px solid rgba(78,204,163,0.14); }
+.rb-header-inner { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; }
+.rb-name { font-size: 32px; font-weight: 800; color: #fff; letter-spacing: -1px; line-height: 1; margin-bottom: 6px; display: block; }
+.rb-name-accent { color: #4ecca3; }
+.rb-title { font-size: 11.5px; font-weight: 500; color: rgba(255,255,255,0.65); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; display: block; }
+.rb-summary { font-size: 11px; color: rgba(255,255,255,0.78); line-height: 1.6; max-width: 78%; display: block; }
+.rb-photo { width: 78px; height: 78px; border-radius: 12px; border: 2px solid rgba(78,204,163,0.4); background: rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: center; font-size: 9px; color: rgba(255,255,255,0.4); text-align: center; cursor: pointer; overflow: hidden; flex-shrink: 0; }
+.rb-photo img { width: 100%; height: 100%; object-fit: cover; }
+.rb-contact-bar { background: rgba(0,0,0,0.55); display: flex; position: relative; z-index: 1; margin: 14px -34px -26px; padding: 0 34px; }
+.rb-contact-item { display: flex; align-items: center; gap: 5px; padding: 7px 12px; font-size: 10.5px; color: rgba(255,255,255,0.68); border-right: 1px solid rgba(255,255,255,0.06); }
+.rb-contact-icon { color: #4ecca3; }
+.rb-body { display: grid; grid-template-columns: 58% 42%; }
+.rb-left { padding: 20px 18px 20px 22px; border-right: 1px solid #f0f0f0; }
+.rb-right { padding: 20px 18px 20px 16px; }
+.rb-section-title { display: flex; align-items: center; gap: 8px; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #302b63; margin-bottom: 11px; margin-top: 18px; }
+.rb-section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, #302b63, transparent); }
+.rb-left .rb-section-title:first-child, .rb-right .rb-section-title:first-child { margin-top: 0; }
+.rb-exp-card { border-left: 3px solid #4ecca3; padding-left: 11px; margin-bottom: 14px; }
+.rb-exp-title { font-size: 13px; font-weight: 700; color: #0f0c29; display: block; }
+.rb-exp-company-line { font-size: 11px; font-weight: 600; color: #302b63; }
+.rb-exp-period { font-size: 9.5px; color: #fff; background: #302b63; display: inline-block; padding: 1px 7px; border-radius: 10px; margin: 3px 0 5px; }
+.rb-exp-desc { font-size: 10.5px; color: #666; font-style: italic; margin-bottom: 5px; display: block; }
+/* Bold bullet: marker is separate non-editable span */
+.rb-bullet-row { display: flex; align-items: flex-start; gap: 5px; margin-bottom: 3px; }
+.rb-bullet-row:hover .bullet-ctrl { opacity: 1; }
+.rb-bullet-mark { color: #4ecca3; font-weight: 700; flex-shrink: 0; margin-top: 1px; font-size: 13px; line-height: 1.3; user-select: none; }
+.rb-bullet-text { font-size: 10.5px; color: #333; line-height: 1.5; flex: 1; }
+.rb-skill-wrap { display: flex; flex-wrap: wrap; gap: 5px; }
+.rb-skill-tag { background: linear-gradient(135deg, rgba(48,43,99,0.08), rgba(78,204,163,0.08)); border: 1px solid rgba(78,204,163,0.35); color: #302b63; font-size: 10.5px; padding: 3px 9px; border-radius: 12px; font-weight: 500; }
+.rb-edu-item { margin-bottom: 10px; }
+.rb-edu-degree { font-size: 12px; font-weight: 700; color: #0f0c29; display: block; }
+.rb-edu-inst { font-size: 10.5px; color: #555; display: block; }
+.rb-edu-period { font-size: 10.5px; color: #4ecca3; font-weight: 600; display: block; }
+.rb-cert-name { font-size: 12px; font-weight: 700; color: #0f0c29; display: block; }
+.rb-cert-sub { font-size: 10.5px; color: #888; display: block; }
+.rb-lang-item { margin-bottom: 7px; }
+.rb-lang-name { font-size: 12px; font-weight: 600; color: #0f0c29; display: block; }
+.rb-lang-level { font-size: 10.5px; color: #666; display: block; }
+.rb-interest-tag { display: inline-block; background: #f8f8fc; border: 1px solid #e0ddf6; color: #302b63; font-size: 10.5px; padding: 3px 9px; border-radius: 3px; margin: 2px 2px 0 0; }
+
+/* ================================================
+   TEMPLATE 6: ATS OPTIMAL  (single column, no graphics)
+   ================================================ */
+.resume-ats { font-family: 'Calibri', 'Gill Sans', 'Arial', 'Helvetica', sans-serif; color: #000; min-height: 1123px; padding: 36px 44px; }
+.ra-name { font-size: 24px; font-weight: 700; color: #000; margin-bottom: 3px; display: block; }
+.ra-title { font-size: 14px; color: #333; margin-bottom: 7px; display: block; }
+.ra-contact { font-size: 11.5px; color: #333; margin-bottom: 12px; }
+.ra-summary { font-size: 11.5px; color: #222; line-height: 1.65; margin-bottom: 16px; display: block; }
+.ra-section-title { font-size: 13px; font-weight: 700; color: #000; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #000; padding-bottom: 2px; margin-bottom: 10px; margin-top: 18px; }
+.ra-exp-block { margin-bottom: 14px; }
+.ra-exp-title { font-size: 13px; font-weight: 700; display: block; }
+.ra-exp-company-line { font-size: 12px; font-weight: 600; }
+.ra-exp-period { font-size: 11.5px; color: #444; margin-bottom: 4px; display: block; }
+.ra-exp-desc { font-size: 11.5px; color: #444; font-style: italic; margin-bottom: 4px; display: block; }
+/* ATS bullet: standard disc list, no special markers */
+.ra-bullet-text { font-size: 11.5px; color: #222; line-height: 1.55; }
+.ra-edu-item { margin-bottom: 9px; }
+.ra-edu-degree { font-size: 12.5px; font-weight: 700; display: block; }
+.ra-edu-inst { font-size: 12px; color: #444; display: block; }
+.ra-edu-period { font-size: 11.5px; color: #555; display: block; }
+.ra-cert-name { font-size: 12.5px; font-weight: 600; display: block; }
+.ra-cert-period { font-size: 11.5px; color: #555; display: block; }
+.ra-cert-desc { font-size: 11px; color: #666; font-style: italic; display: block; }
+.ra-lang-item { font-size: 12px; }
+.ra-interests { font-size: 12px; color: #333; }
+
+/* ================================================ PRINT STYLES ================================================ */
+@media print {
+  @page { size: A4; margin: 0; }
+  html, body { background: white !important; margin: 0 !important; padding: 0 !important; }
+  #toolbar, #edit-hint { display: none !important; }
+  #app-body { margin: 0 !important; padding: 0 !important; }
+  #resume-wrapper { box-shadow: none !important; width: 100% !important; }
+  /* Hide all edit controls */
+  .bullet-ctrl, .tag-del, .add-tag-btn { display: none !important; }
+  /* Remove all edit highlights */
+  [contenteditable] { background: transparent !important; box-shadow: none !important; outline: none !important; cursor: default !important; }
+  /* Better font rendering in print */
+  .resume-minimalist, .resume-sidebar, .resume-bold { font-family: 'Segoe UI', 'Arial', 'Helvetica Neue', sans-serif !important; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOOLBAR -->
+<div id="toolbar">
+  <div class="toolbar-logo">Hunt<span>Job</span></div>
+  <div class="toolbar-divider"></div>
+  <div id="template-btns"></div>
+  <div class="toolbar-divider"></div>
+  <div class="toolbar-actions">
+    <button class="btn btn-ghost" onclick="triggerPhotoUpload()">📷 Photo</button>
+    <button class="btn btn-ghost" onclick="addSkill()">+ Skill</button>
+    <button class="btn btn-ghost" onclick="addExperience()">+ Job</button>
+    <button class="btn btn-ghost" onclick="resetData()" title="Clear all edits and reload original resume data" style="color:#e74c3c;border-color:rgba(231,76,60,0.3)">↺ Reset</button>
+    <button class="btn btn-export" onclick="exportPDF()">⬇ Export PDF</button>
+  </div>
+</div>
+
+<div id="edit-hint">Click any text to edit · Hover bullets for +/× controls · Switch templates above</div>
+
+<div id="app-body">
+  <div id="resume-wrapper"></div>
+</div>
+
+<input type="file" id="photo-input" accept="image/*" style="display:none">
+
+<script>
+// ============================================================
+// DATA MODEL
+// ============================================================
+let D = {
+  name: "Rhishikesh Patil",
+  title: "Senior Software Engineer DevOps",
+  summary: "DevOps Engineer with extensive experience in AWS infrastructure, CI/CD, containerization, IaC, monitoring, automation, and leading large-scale migrations and team enablement. Certified Scrum Master (SAFe) with experience in Agile methodologies. Excellent problem solving, communication",
+  photo: null,
+  contact: {
+    email: "rhishi99@gmail.com",
+    phone: "8087821219",
+    location: "Pune, India",
+    linkedin: "in.linkedin.com/in/rhishikesh-patil-07413a23"
+  },
+  experience: [
+    {
+      title: "Senior Software Engineer",
+      company: "CDK GLOBAL INDIA PVT. LTD.",
+      location: "Pune",
+      period: "12/2016 – Present",
+      desc: "CDK Global provide software solutions and data services to the automotive retail industry.",
+      bullets: [
+        "Extensive experience in managing AWS cloud infra including EC2, S3, RDS, IAM, VPC, Elasticache, DynamoDB, CloudWatch etc.",
+        "Develop and maintain CICD pipelines with Stash, Bamboo/Github Enterprise",
+        "Skilled in managing observability and monitoring with New Relic for performance, reliability and proactive incident detection.",
+        "Experience in IaC tools like Terraform and CloudFormation for managing cloud resources.",
+        "Built, deployed, and fixed issues in Docker container apps on Kubernetes with strong containerization and orchestration knowledge.",
+        "Automated Server Creation and Configuration process with Ansible and PowerShell.",
+        "Mentored team of 70+ on branching strategy for effective parallel development with CICD tools.",
+        "Lead cross-functional team to accomplish various migrations: Puppet to Ansible, Bamboo to Github, Windows 2008 R2 to 2016, Ansible Tower to AWX.",
+        "Code Quality and Security in CICD pipelines with SonarQube, Coverity and Blackduck",
+        "Manage Production releases and Requests for change."
+      ]
+    },
+    {
+      title: "Senior Systems Analyst",
+      company: "Persistent Systems LTD.",
+      location: "",
+      period: "06/2015 – 12/2016",
+      desc: "",
+      bullets: [
+        "Responsible for setting up Continuous Integration and Continuous Deployment using Jenkins, SonarQube, GIT, SVN, JIRA, and IBM Rational CLM Tools for various software development projects of organizations."
+      ]
+    },
+    {
+      title: "Software Engineer",
+      company: "Atos India Pvt. Ltd.",
+      location: "",
+      period: "11/2010 – 06/2015",
+      desc: "",
+      bullets: [
+        "Consulting software projects on implementing SDLC and process engineering with IBM Tools like RTC, RRC, ClearQuest."
+      ]
+    }
+  ],
+  skills: [
+    "AWS Cloud", "EC2", "S3", "RDS", "DynamoDB",
+    "Terraform", "CloudFormation", "Ansible", "Docker", "Kubernetes",
+    "Jenkins", "Bamboo", "Github Enterprise", "Stash", "JIRA", "Confluence",
+    "New Relic", "SonarQube", "Blackduck", "Coverity",
+    "PowerShell", "DevOps", "Scaled Agile SAFe"
+  ],
+  certificates: [
+    {
+      name: "SAFe 5.0 Scrum Master",
+      period: "07/2021 – 07/2022",
+      desc: "Scaled Agile Safe 5.0 Scrum Master Certification"
+    }
+  ],
+  education: [
+    { degree: "Bachelor of Computer Engineering", institution: "RMCET Devrukh, University of Mumbai", period: "07/2006 – 08/2010" },
+    { degree: "Class XII", institution: "Kolhapur Board, Maharashtra", period: "03/2004 – 03/2006" },
+    { degree: "Class X", institution: "Karnataka Secondary Education Examination Board", period: "" }
+  ],
+  languages: [
+    { name: "Marathi", level: "Native or Bilingual Proficiency" },
+    { name: "Hindi", level: "Native or Bilingual Proficiency" },
+    { name: "English", level: "Full Professional Proficiency" }
+  ],
+  interests: ["Trekking and Hiking", "Anime", "Financial Markets"]
+};
+
+// ============================================================
+// TEMPLATES
+// ============================================================
+const TEMPLATES = [
+  { id: 'classic',    label: 'Classic',       desc: 'Matches your original resume' },
+  { id: 'minimalist', label: 'Minimalist Pro', desc: '2024 clean whitespace design' },
+  { id: 'sidebar',    label: 'Azure Sidebar',  desc: 'Modern side-panel layout' },
+  { id: 'executive',  label: 'Executive',      desc: 'Traditional formal premium' },
+  { id: 'bold',       label: 'Bold Impact',    desc: 'Creative tech gradient style' },
+  { id: 'ats',        label: 'ATS Optimal',    desc: 'Single-column ATS-safe format' }
+];
+
+let currentTpl = 'classic';
+let lastFocused = new Map();
+
+// ============================================================
+// HELPERS — shared rendering functions
+// ============================================================
+
+// Returns HTML for a bullet row: controls (hidden) + marker (non-editable) + editable text
+// marker = the visual bullet char; markerCls = CSS class for it; textCls = CSS class for text; rowCls = CSS class for row
+function mkBullet(ei, bi, text, rowCls, markerCls, markerChar, textCls) {
+  return `
+<div class="${rowCls}">
+  <span class="bullet-ctrl">
+    <button class="del-bullet" onclick="deleteBulletById('experience.${ei}.bullets.${bi}')" title="Remove">×</button>
+    <button class="add-bullet-after" onclick="addBulletAfter('experience.${ei}.bullets.${bi}')" title="Add below">+</button>
+  </span>
+  <span class="${markerCls}" aria-hidden="true">${markerChar}</span>
+  <span class="${textCls}" contenteditable="true" data-id="experience.${ei}.bullets.${bi}">${text}</span>
+</div>`;
+}
+
+// Returns HTML for a tag-wrap (skill/interest/etc) with delete button
+function tagWrap(text, dataId, tagClass) {
+  return `<span class="tag-wrap"><span class="${tagClass}" contenteditable="true" data-id="${dataId}">${text}</span><button class="tag-del" onclick="deleteTagById('${dataId}')" title="Remove">×</button></span>`;
+}
+
+// Returns HTML for company + optional location as SEPARATE editable fields
+function companyLoc(ei, exp, sep, companyCls, locCls) {
+  const loc = exp.location
+    ? `<span style="color:#999;user-select:none">${sep}</span><span class="${locCls}" contenteditable="true" data-id="experience.${ei}.location">${exp.location}</span>`
+    : '';
+  return `<span class="${companyCls}" contenteditable="true" data-id="experience.${ei}.company">${exp.company}</span>${loc}`;
+}
+
+// ============================================================
+// TEMPLATE 1: CLASSIC
+// ============================================================
+function renderClassic(d) {
+  const mainExp = d.experience[0];
+  const prevExps = d.experience.slice(1);
+
+  const mainExpHtml = mainExp ? `
+  <div class="rc-exp-block">
+    <div class="rc-exp-title" contenteditable="true" data-id="experience.0.title">${mainExp.title}</div>
+    <div class="rc-exp-company-line">${companyLoc(0, mainExp, ' · ', '', '')}</div>
+    <div class="rc-exp-period" contenteditable="true" data-id="experience.0.period">${mainExp.period}</div>
+    ${mainExp.desc ? `<div class="rc-exp-desc" contenteditable="true" data-id="experience.0.desc">${mainExp.desc}</div>` : ''}
+    <div class="rc-exp-tag">Achievements/Tasks</div>
+    ${mainExp.bullets.map((b, bi) => mkBullet(0, bi, b, 'rc-bullet-row', 'rc-bullet-dot', '', 'rc-bullet-text')).join('')}
+    <div style="margin-top:5px"><button class="add-tag-btn" onclick="addBulletToExp(0)">+ bullet</button></div>
+  </div>` : '';
+
+  const certs = d.certificates.map((c, ci) => `
+  <div style="margin-bottom:10px">
+    <div class="rc-cert-name" contenteditable="true" data-id="certificates.${ci}.name">${c.name}</div>
+    <div class="rc-cert-period" contenteditable="true" data-id="certificates.${ci}.period">${c.period}</div>
+    <div class="rc-cert-desc" contenteditable="true" data-id="certificates.${ci}.desc">${c.desc}</div>
+  </div>`).join('');
+
+  const edu = d.education.map((e, ei) => `
+  <div class="rc-edu-item">
+    <div class="rc-edu-degree" contenteditable="true" data-id="education.${ei}.degree">${e.degree}</div>
+    <div class="rc-edu-inst" contenteditable="true" data-id="education.${ei}.institution">${e.institution}</div>
+    ${e.period ? `<div class="rc-edu-period" contenteditable="true" data-id="education.${ei}.period">${e.period}</div>` : ''}
+  </div>`).join('');
+
+  const skills = `
+  <div class="rc-skill-tags">
+    ${d.skills.map((s, si) => tagWrap(s, `skills.${si}`, 'rc-skill-tag')).join('')}
+    <button class="add-tag-btn" onclick="addSkill()">+ add</button>
+  </div>`;
+
+  const prevExpHtml = prevExps.map((exp, i) => {
+    const idx = i + 1;
+    return `<div class="rc-prev-exp-item">
+      <div class="rc-exp-title" contenteditable="true" data-id="experience.${idx}.title">${exp.title}</div>
+      <div class="rc-prev-exp-company">${companyLoc(idx, exp, ' · ', '', '')}</div>
+      <div class="rc-prev-exp-period" contenteditable="true" data-id="experience.${idx}.period">${exp.period}</div>
+      <div class="rc-exp-tag">Tasks/Achievements</div>
+      ${exp.bullets.map((b, bi) => mkBullet(idx, bi, b, 'rc-bullet-row', 'rc-bullet-dot', '', 'rc-bullet-text')).join('')}
+    </div>`;
+  }).join('');
+
+  const langs = `
+  <div class="rc-lang-grid">
+    ${d.languages.map((l, li) => `
+    <div>
+      <div class="rc-lang-name" contenteditable="true" data-id="languages.${li}.name">${l.name}</div>
+      <div class="rc-lang-level" contenteditable="true" data-id="languages.${li}.level">${l.level}</div>
+    </div>`).join('')}
+  </div>`;
+
+  const interests = `
+  <div class="rc-interest-tags">
+    ${d.interests.map((t, ti) => tagWrap(t, `interests.${ti}`, 'rc-interest-tag')).join('')}
+    <button class="add-tag-btn" onclick="addInterest()">+ add</button>
+  </div>`;
+
+  return `<div class="resume-classic">
+  <header class="rc-header">
+    <div class="rc-header-left">
+      <span class="rc-name" contenteditable="true" data-id="name">${d.name}</span>
+      <span class="rc-title" contenteditable="true" data-id="title">${d.title}</span>
+      <span class="rc-summary" contenteditable="true" data-id="summary">${d.summary}</span>
+    </div>
+    <div class="rc-photo" onclick="triggerPhotoUpload()" title="Click to upload photo">
+      ${d.photo ? `<img src="${d.photo}" alt="">` : '+ Photo'}
+    </div>
+  </header>
+  <div class="rc-contact">
+    <div class="rc-contact-item"><span class="rc-contact-icon">&#9993;</span><span contenteditable="true" data-id="contact.email">${d.contact.email}</span></div>
+    <div class="rc-contact-item"><span class="rc-contact-icon">&#128241;</span><span contenteditable="true" data-id="contact.phone">${d.contact.phone}</span></div>
+    <div class="rc-contact-item"><span class="rc-contact-icon">&#128205;</span><span contenteditable="true" data-id="contact.location">${d.contact.location}</span></div>
+    <div class="rc-contact-item"><span class="rc-contact-icon" style="font-style:italic;font-weight:700">in</span><span contenteditable="true" data-id="contact.linkedin">${d.contact.linkedin}</span></div>
+  </div>
+  <div class="rc-body">
+    <div class="rc-left">
+      <div class="rc-section-title">Work Experience</div>
+      ${mainExpHtml}
+      <div class="rc-section-title">Certificates</div>
+      ${certs}
+      <div class="rc-section-title">Education</div>
+      ${edu}
+    </div>
+    <div class="rc-right">
+      <div class="rc-section-title">Skills</div>
+      ${skills}
+      <div class="rc-section-title">Previous Organizations and Experience</div>
+      ${prevExpHtml}
+      <div class="rc-section-title">Languages</div>
+      ${langs}
+      <div class="rc-section-title">Interests</div>
+      ${interests}
+    </div>
+  </div>
+</div>`;
+}
+
+// ============================================================
+// TEMPLATE 2: MINIMALIST PRO
+// ============================================================
+function renderMinimalist(d) {
+  const expHtml = d.experience.map((exp, ei) => `
+  <div class="rm-exp-block">
+    <span class="rm-exp-title" contenteditable="true" data-id="experience.${ei}.title">${exp.title}</span>
+    <div class="rm-exp-company-line">${companyLoc(ei, exp, ', ', '', '')}</div>
+    <span class="rm-exp-period" contenteditable="true" data-id="experience.${ei}.period">${exp.period}</span>
+    ${exp.desc ? `<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:4px" contenteditable="true" data-id="experience.${ei}.desc">${exp.desc}</div>` : ''}
+    ${exp.bullets.map((b, bi) => mkBullet(ei, bi, b, 'rm-bullet-row', 'rm-bullet-dash', '—', 'rm-bullet-text')).join('')}
+    <div style="margin-top:4px"><button class="add-tag-btn" onclick="addBulletToExp(${ei})">+ bullet</button></div>
+  </div>`).join('');
+
+  const skills = `
+  <div class="rm-skill-list">
+    ${d.skills.map((s, si) => tagWrap(s, `skills.${si}`, 'rm-skill-chip')).join('')}
+    <button class="add-tag-btn" onclick="addSkill()">+ add</button>
+  </div>`;
+
+  const edu = d.education.map((e, ei) => `
+  <div class="rm-edu-item">
+    <span class="rm-edu-degree" contenteditable="true" data-id="education.${ei}.degree">${e.degree}</span>
+    <span class="rm-edu-inst" contenteditable="true" data-id="education.${ei}.institution">${e.institution}</span>
+    ${e.period ? `<span class="rm-edu-period" contenteditable="true" data-id="education.${ei}.period">${e.period}</span>` : ''}
+  </div>`).join('');
+
+  const certs = d.certificates.map((c, ci) => `
+  <div style="margin-bottom:9px">
+    <span class="rm-cert-name" contenteditable="true" data-id="certificates.${ci}.name">${c.name}</span>
+    <span class="rm-cert-sub" contenteditable="true" data-id="certificates.${ci}.period">${c.period}</span>
+    <span class="rm-cert-sub" contenteditable="true" data-id="certificates.${ci}.desc">${c.desc}</span>
+  </div>`).join('');
+
+  const langs = d.languages.map((l, li) => `
+  <div class="rm-lang-item">
+    <span class="rm-lang-name" contenteditable="true" data-id="languages.${li}.name">${l.name}</span>
+    <span class="rm-lang-level" contenteditable="true" data-id="languages.${li}.level">${l.level}</span>
+  </div>`).join('');
+
+  const interests = `
+  <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+    ${d.interests.map((t, ti) => tagWrap(t, `interests.${ti}`, 'rm-tag')).join('')}
+    <button class="add-tag-btn" onclick="addInterest()">+ add</button>
+  </div>`;
+
+  return `<div class="resume-minimalist">
+  <span class="rm-name" contenteditable="true" data-id="name">${d.name}</span>
+  <span class="rm-title" contenteditable="true" data-id="title">${d.title}</span>
+  <div class="rm-contact">
+    <span class="rm-contact-item">&#9993; <span contenteditable="true" data-id="contact.email">${d.contact.email}</span></span>
+    <span class="rm-contact-item">&#128241; <span contenteditable="true" data-id="contact.phone">${d.contact.phone}</span></span>
+    <span class="rm-contact-item">&#128205; <span contenteditable="true" data-id="contact.location">${d.contact.location}</span></span>
+    <span class="rm-contact-item">in <span contenteditable="true" data-id="contact.linkedin">${d.contact.linkedin}</span></span>
+  </div>
+  <span class="rm-summary" contenteditable="true" data-id="summary">${d.summary}</span>
+  <div class="rm-divider"></div>
+  <div class="rm-body">
+    <div class="rm-left">
+      <div class="rm-section-title">Experience</div>
+      ${expHtml}
+    </div>
+    <div class="rm-right">
+      <div class="rm-section-title">Skills</div>
+      ${skills}
+      <div class="rm-section-title" style="margin-top:18px">Education</div>
+      ${edu}
+      <div class="rm-section-title" style="margin-top:18px">Certificates</div>
+      ${certs}
+      <div class="rm-section-title" style="margin-top:18px">Languages</div>
+      ${langs}
+      <div class="rm-section-title" style="margin-top:18px">Interests</div>
+      ${interests}
+    </div>
+  </div>
+</div>`;
+}
+
+// ============================================================
+// TEMPLATE 3: AZURE SIDEBAR
+// ============================================================
+function renderSidebar(d) {
+  const expHtml = d.experience.map((exp, ei) => `
+  <div class="rs-exp-block">
+    <span class="rs-exp-title" contenteditable="true" data-id="experience.${ei}.title">${exp.title}</span>
+    <div class="rs-exp-company-line">${companyLoc(ei, exp, ', ', '', '')}</div>
+    <span class="rs-exp-period" contenteditable="true" data-id="experience.${ei}.period">${exp.period}</span>
+    ${exp.desc ? `<span class="rs-exp-desc" contenteditable="true" data-id="experience.${ei}.desc">${exp.desc}</span>` : ''}
+    ${exp.bullets.map((b, bi) => mkBullet(ei, bi, b, 'rs-bullet-row', 'rs-bullet-mark', '›', 'rs-bullet-text')).join('')}
+    <button class="add-tag-btn" onclick="addBulletToExp(${ei})" style="margin-top:4px">+ bullet</button>
+  </div>`).join('');
+
+  const edu = d.education.map((e, ei) => `
+  <div class="rs-edu-item">
+    <span class="rs-edu-degree" contenteditable="true" data-id="education.${ei}.degree">${e.degree}</span>
+    <span class="rs-edu-inst" contenteditable="true" data-id="education.${ei}.institution">${e.institution}</span>
+    ${e.period ? `<span class="rs-edu-period" contenteditable="true" data-id="education.${ei}.period">${e.period}</span>` : ''}
+  </div>`).join('');
+
+  return `<div class="resume-sidebar">
+  <aside class="rs-sidebar">
+    <div class="rs-photo-area" onclick="triggerPhotoUpload()" title="Click to upload photo">
+      ${d.photo ? `<img src="${d.photo}" alt="">` : '+ Photo'}
+    </div>
+    <span class="rs-sb-name" contenteditable="true" data-id="name">${d.name}</span>
+    <span class="rs-sb-title" contenteditable="true" data-id="title">${d.title}</span>
+
+    <div class="rs-sb-section">
+      <div class="rs-sb-label">Contact</div>
+      <div class="rs-sb-contact-item"><span class="rs-sb-contact-icon">&#9993;</span><span contenteditable="true" data-id="contact.email">${d.contact.email}</span></div>
+      <div class="rs-sb-contact-item"><span class="rs-sb-contact-icon">&#128241;</span><span contenteditable="true" data-id="contact.phone">${d.contact.phone}</span></div>
+      <div class="rs-sb-contact-item"><span class="rs-sb-contact-icon">&#128205;</span><span contenteditable="true" data-id="contact.location">${d.contact.location}</span></div>
+      <div class="rs-sb-contact-item"><span class="rs-sb-contact-icon" style="font-style:italic;font-weight:700">in</span><span contenteditable="true" data-id="contact.linkedin">${d.contact.linkedin}</span></div>
+    </div>
+
+    <div class="rs-sb-section">
+      <div class="rs-sb-label">Skills</div>
+      <div>
+        ${d.skills.map((s, si) => tagWrap(s, `skills.${si}`, 'rs-sb-skill-tag')).join('')}
+        <button class="add-tag-btn" onclick="addSkill()" style="border-color:rgba(78,204,163,0.4);color:#4ecca3;margin-top:5px">+ add</button>
+      </div>
+    </div>
+
+    <div class="rs-sb-section">
+      <div class="rs-sb-label">Languages</div>
+      ${d.languages.map((l, li) => `
+      <div class="rs-sb-lang-item">
+        <span class="rs-sb-lang-name" contenteditable="true" data-id="languages.${li}.name">${l.name}</span>
+        <span class="rs-sb-lang-level" contenteditable="true" data-id="languages.${li}.level">${l.level}</span>
+      </div>`).join('')}
+    </div>
+
+    <div class="rs-sb-section">
+      <div class="rs-sb-label">Interests</div>
+      <div>
+        ${d.interests.map((t, ti) => tagWrap(t, `interests.${ti}`, 'rs-sb-interest-tag')).join('')}
+        <button class="add-tag-btn" onclick="addInterest()" style="border-color:rgba(78,204,163,0.4);color:#4ecca3;margin-top:4px">+ add</button>
+      </div>
+    </div>
+
+    <div class="rs-sb-section">
+      <div class="rs-sb-label">Certificates</div>
+      ${d.certificates.map((c, ci) => `
+      <div style="margin-bottom:7px">
+        <span class="rs-sb-lang-name" contenteditable="true" data-id="certificates.${ci}.name">${c.name}</span>
+        <span class="rs-sb-lang-level" contenteditable="true" data-id="certificates.${ci}.period">${c.period}</span>
+      </div>`).join('')}
+    </div>
+  </aside>
+
+  <main class="rs-main">
+    <span class="rs-main-name" contenteditable="true" data-id="name">${d.name}</span>
+    <span class="rs-main-title" contenteditable="true" data-id="title">${d.title}</span>
+    <span class="rs-main-summary" contenteditable="true" data-id="summary">${d.summary}</span>
+
+    <div class="rs-section-title">Work Experience</div>
+    ${expHtml}
+
+    <div class="rs-section-title">Education</div>
+    ${edu}
+  </main>
+</div>`;
+}
+
+// ============================================================
+// TEMPLATE 4: EXECUTIVE
+// ============================================================
+function renderExecutive(d) {
+  const expHtml = d.experience.map((exp, ei) => `
+  <div class="re-exp-block">
+    <span class="re-exp-title" contenteditable="true" data-id="experience.${ei}.title">${exp.title}</span>
+    <div class="re-exp-company-line">${companyLoc(ei, exp, ' · ', 're-exp-company-line', '')}</div>
+    <span class="re-exp-period" contenteditable="true" data-id="experience.${ei}.period">${exp.period}</span>
+    ${exp.desc ? `<span class="re-exp-desc" contenteditable="true" data-id="experience.${ei}.desc">${exp.desc}</span>` : ''}
+    ${exp.bullets.map((b, bi) => mkBullet(ei, bi, b, 're-bullet-row', 're-bullet-mark', '&#9670;', 're-bullet-text')).join('')}
+    <button class="add-tag-btn" onclick="addBulletToExp(${ei})" style="margin-top:5px;border-color:rgba(26,26,110,0.3);color:#1a1a6e">+ bullet</button>
+  </div>`).join('');
+
+  const skills = `
+  <div>
+    ${d.skills.map((s, si) => `
+    <div class="re-skill-row">
+      <span class="re-skill-bullet">&#9670;</span>
+      <span class="re-skill-text tag-wrap">
+        <span contenteditable="true" data-id="skills.${si}">${s}</span>
+        <button class="tag-del" onclick="deleteTagById('skills.${si}')">×</button>
+      </span>
+    </div>`).join('')}
+    <button class="add-tag-btn" onclick="addSkill()" style="border-color:rgba(26,26,110,0.3);color:#1a1a6e;margin-top:4px">+ add</button>
+  </div>`;
+
+  const edu = d.education.map((e, ei) => `
+  <div class="re-edu-item">
+    <span class="re-edu-degree" contenteditable="true" data-id="education.${ei}.degree">${e.degree}</span>
+    <span class="re-edu-inst" contenteditable="true" data-id="education.${ei}.institution">${e.institution}</span>
+    ${e.period ? `<span class="re-edu-period" contenteditable="true" data-id="education.${ei}.period">${e.period}</span>` : ''}
+  </div>`).join('');
+
+  const certs = d.certificates.map((c, ci) => `
+  <div style="margin-bottom:10px">
+    <span class="re-cert-name" contenteditable="true" data-id="certificates.${ci}.name">${c.name}</span>
+    <span class="re-cert-sub" contenteditable="true" data-id="certificates.${ci}.period">${c.period}</span>
+    <span class="re-cert-sub" contenteditable="true" data-id="certificates.${ci}.desc">${c.desc}</span>
+  </div>`).join('');
+
+  const langs = d.languages.map((l, li) => `
+  <div class="re-lang-item">
+    <span class="re-lang-name" contenteditable="true" data-id="languages.${li}.name">${l.name}</span>
+    <span> — </span><span style="font-style:italic;color:#666" contenteditable="true" data-id="languages.${li}.level">${l.level}</span>
+  </div>`).join('');
+
+  return `<div class="resume-executive">
+  <header class="re-header">
+    <span class="re-name" contenteditable="true" data-id="name">${d.name}</span>
+    <span class="re-title" contenteditable="true" data-id="title">${d.title}</span>
+    <div class="re-contact">
+      <span class="re-contact-item">&#9993; <span contenteditable="true" data-id="contact.email">${d.contact.email}</span></span>
+      <span style="color:#ccc">·</span>
+      <span class="re-contact-item">&#128241; <span contenteditable="true" data-id="contact.phone">${d.contact.phone}</span></span>
+      <span style="color:#ccc">·</span>
+      <span class="re-contact-item">&#128205; <span contenteditable="true" data-id="contact.location">${d.contact.location}</span></span>
+      <span style="color:#ccc">·</span>
+      <span class="re-contact-item">in <span contenteditable="true" data-id="contact.linkedin">${d.contact.linkedin}</span></span>
+    </div>
+    <span class="re-summary" contenteditable="true" data-id="summary">${d.summary}</span>
+  </header>
+  <div class="re-body">
+    <div class="re-left">
+      <div class="re-section-title">Professional Experience</div>
+      ${expHtml}
+    </div>
+    <div class="re-right">
+      <div class="re-section-title">Core Competencies</div>
+      ${skills}
+      <div class="re-section-title">Education</div>
+      ${edu}
+      <div class="re-section-title">Certifications</div>
+      ${certs}
+      <div class="re-section-title">Languages</div>
+      ${langs}
+      <div class="re-section-title">Interests</div>
+      <div style="font-size:11.5px;color:#555;font-family:'Georgia',serif">
+        ${d.interests.map((t, ti) => `<span contenteditable="true" data-id="interests.${ti}">${t}</span>`).join(' · ')}
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ============================================================
+// TEMPLATE 5: BOLD IMPACT
+// ============================================================
+function renderBold(d) {
+  const nameParts = d.name.trim().split(' ');
+  const firstName = nameParts.slice(0, -1).join(' ');
+  const lastName = nameParts[nameParts.length - 1] || '';
+
+  const expHtml = d.experience.map((exp, ei) => `
+  <div class="rb-exp-card">
+    <span class="rb-exp-title" contenteditable="true" data-id="experience.${ei}.title">${exp.title}</span>
+    <div class="rb-exp-company-line">${companyLoc(ei, exp, ' · ', '', '')}</div>
+    <div class="rb-exp-period" contenteditable="true" data-id="experience.${ei}.period" style="display:inline-block">${exp.period}</div>
+    ${exp.desc ? `<span class="rb-exp-desc" contenteditable="true" data-id="experience.${ei}.desc">${exp.desc}</span>` : ''}
+    ${exp.bullets.map((b, bi) => mkBullet(ei, bi, b, 'rb-bullet-row', 'rb-bullet-mark', '›', 'rb-bullet-text')).join('')}
+    <button class="add-tag-btn" onclick="addBulletToExp(${ei})" style="margin-top:4px">+ bullet</button>
+  </div>`).join('');
+
+  const edu = d.education.map((e, ei) => `
+  <div class="rb-edu-item">
+    <span class="rb-edu-degree" contenteditable="true" data-id="education.${ei}.degree">${e.degree}</span>
+    <span class="rb-edu-inst" contenteditable="true" data-id="education.${ei}.institution">${e.institution}</span>
+    ${e.period ? `<span class="rb-edu-period" contenteditable="true" data-id="education.${ei}.period">${e.period}</span>` : ''}
+  </div>`).join('');
+
+  const certs = d.certificates.map((c, ci) => `
+  <div style="margin-bottom:9px">
+    <span class="rb-cert-name" contenteditable="true" data-id="certificates.${ci}.name">${c.name}</span>
+    <span class="rb-cert-sub" contenteditable="true" data-id="certificates.${ci}.period">${c.period}</span>
+    <span class="rb-cert-sub" contenteditable="true" data-id="certificates.${ci}.desc">${c.desc}</span>
+  </div>`).join('');
+
+  return `<div class="resume-bold">
+  <header class="rb-header">
+    <div class="rb-header-inner">
+      <div style="flex:1">
+        <span class="rb-name" contenteditable="true" data-id="name">${firstName} <span class="rb-name-accent">${lastName}</span></span>
+        <span class="rb-title" contenteditable="true" data-id="title">${d.title}</span>
+        <span class="rb-summary" contenteditable="true" data-id="summary">${d.summary}</span>
+      </div>
+      <div class="rb-photo" onclick="triggerPhotoUpload()" title="Click to upload photo">
+        ${d.photo ? `<img src="${d.photo}" alt="">` : '+ Photo'}
+      </div>
+    </div>
+    <div class="rb-contact-bar">
+      <div class="rb-contact-item"><span class="rb-contact-icon">&#9993;</span><span contenteditable="true" data-id="contact.email">${d.contact.email}</span></div>
+      <div class="rb-contact-item"><span class="rb-contact-icon">&#128241;</span><span contenteditable="true" data-id="contact.phone">${d.contact.phone}</span></div>
+      <div class="rb-contact-item"><span class="rb-contact-icon">&#128205;</span><span contenteditable="true" data-id="contact.location">${d.contact.location}</span></div>
+      <div class="rb-contact-item"><span class="rb-contact-icon" style="font-style:italic;font-weight:700">in</span><span contenteditable="true" data-id="contact.linkedin">${d.contact.linkedin}</span></div>
+    </div>
+  </header>
+  <div class="rb-body">
+    <div class="rb-left">
+      <div class="rb-section-title">Experience</div>
+      ${expHtml}
+    </div>
+    <div class="rb-right">
+      <div class="rb-section-title">Skills</div>
+      <div class="rb-skill-wrap">
+        ${d.skills.map((s, si) => tagWrap(s, `skills.${si}`, 'rb-skill-tag')).join('')}
+        <button class="add-tag-btn" onclick="addSkill()">+ add</button>
+      </div>
+      <div class="rb-section-title">Education</div>
+      ${edu}
+      <div class="rb-section-title">Certificates</div>
+      ${certs}
+      <div class="rb-section-title">Languages</div>
+      ${d.languages.map((l, li) => `
+      <div class="rb-lang-item">
+        <span class="rb-lang-name" contenteditable="true" data-id="languages.${li}.name">${l.name}</span>
+        <span class="rb-lang-level" contenteditable="true" data-id="languages.${li}.level">${l.level}</span>
+      </div>`).join('')}
+      <div class="rb-section-title">Interests</div>
+      <div>
+        ${d.interests.map((t, ti) => tagWrap(t, `interests.${ti}`, 'rb-interest-tag')).join('')}
+        <button class="add-tag-btn" onclick="addInterest()">+ add</button>
+      </div>
+    </div>
+  </div>
+</div>`;
+}
+
+// ============================================================
+// TEMPLATE 6: ATS OPTIMAL
+// ============================================================
+function renderATS(d) {
+  const expHtml = d.experience.map((exp, ei) => `
+  <div class="ra-exp-block">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <span class="ra-exp-title" contenteditable="true" data-id="experience.${ei}.title">${exp.title}</span>
+        <div class="ra-exp-company-line">${companyLoc(ei, exp, ', ', '', '')}</div>
+      </div>
+      <span class="ra-exp-period" contenteditable="true" data-id="experience.${ei}.period">${exp.period}</span>
+    </div>
+    ${exp.desc ? `<span class="ra-exp-desc" contenteditable="true" data-id="experience.${ei}.desc">${exp.desc}</span>` : ''}
+    <ul style="margin-left:18px;margin-top:4px">
+      ${exp.bullets.map((b, bi) => `
+      <li class="bullet-row" style="list-style:disc;margin-bottom:3px">
+        <span class="bullet-ctrl">
+          <button class="del-bullet" onclick="deleteBulletById('experience.${ei}.bullets.${bi}')">×</button>
+          <button class="add-bullet-after" onclick="addBulletAfter('experience.${ei}.bullets.${bi}')">+</button>
+        </span>
+        <span class="ra-bullet-text" contenteditable="true" data-id="experience.${ei}.bullets.${bi}">${b}</span>
+      </li>`).join('')}
+    </ul>
+    <button class="add-tag-btn" onclick="addBulletToExp(${ei})" style="margin:4px 0;border-color:#333;color:#333">+ bullet</button>
+  </div>`).join('');
+
+  const edu = d.education.map((e, ei) => `
+  <div class="ra-edu-item">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap">
+      <div>
+        <span class="ra-edu-degree" contenteditable="true" data-id="education.${ei}.degree">${e.degree}</span>
+        <span class="ra-edu-inst" contenteditable="true" data-id="education.${ei}.institution">${e.institution}</span>
+      </div>
+      ${e.period ? `<span class="ra-edu-period" contenteditable="true" data-id="education.${ei}.period">${e.period}</span>` : ''}
+    </div>
+  </div>`).join('');
+
+  const certs = d.certificates.map((c, ci) => `
+  <div style="margin-bottom:8px">
+    <span class="ra-cert-name" contenteditable="true" data-id="certificates.${ci}.name">${c.name}</span>
+    <span class="ra-cert-period" contenteditable="true" data-id="certificates.${ci}.period">${c.period}</span>
+    <span class="ra-cert-desc" contenteditable="true" data-id="certificates.${ci}.desc">${c.desc}</span>
+  </div>`).join('');
+
+  return `<div class="resume-ats">
+  <span class="ra-name" contenteditable="true" data-id="name">${d.name}</span>
+  <span class="ra-title" contenteditable="true" data-id="title">${d.title}</span>
+  <div class="ra-contact">
+    <span contenteditable="true" data-id="contact.email">${d.contact.email}</span> |
+    <span contenteditable="true" data-id="contact.phone">${d.contact.phone}</span> |
+    <span contenteditable="true" data-id="contact.location">${d.contact.location}</span> |
+    <span contenteditable="true" data-id="contact.linkedin">${d.contact.linkedin}</span>
+  </div>
+  <span class="ra-summary" contenteditable="true" data-id="summary">${d.summary}</span>
+
+  <div class="ra-section-title">Professional Experience</div>
+  ${expHtml}
+
+  <div class="ra-section-title">Technical Skills</div>
+  <div style="font-size:12px;color:#222;line-height:1.7">
+    ${d.skills.map((s, si) => `<span class="tag-wrap"><span contenteditable="true" data-id="skills.${si}">${s}</span><button class="tag-del" onclick="deleteTagById('skills.${si}')">×</button></span>`).join(' · ')}
+    <button class="add-tag-btn" onclick="addSkill()" style="margin-left:4px;border-color:#333;color:#333">+ add</button>
+  </div>
+
+  <div class="ra-section-title">Education</div>
+  ${edu}
+
+  <div class="ra-section-title">Certifications</div>
+  ${certs}
+
+  <div class="ra-section-title">Languages</div>
+  <div class="ra-lang-item">
+    ${d.languages.map((l, li) => `<span contenteditable="true" data-id="languages.${li}.name">${l.name}</span> (<span contenteditable="true" data-id="languages.${li}.level">${l.level}</span>)`).join(' · ')}
+  </div>
+
+  <div class="ra-section-title">Interests</div>
+  <div class="ra-interests">
+    ${d.interests.map((t, ti) => `<span contenteditable="true" data-id="interests.${ti}">${t}</span>`).join(' · ')}
+    <button class="add-tag-btn" onclick="addInterest()" style="margin-left:4px;border-color:#333;color:#333">+ add</button>
+  </div>
+</div>`;
+}
+
+// ============================================================
+// RENDER DISPATCH
+// ============================================================
+const renderers = { classic: renderClassic, minimalist: renderMinimalist, sidebar: renderSidebar, executive: renderExecutive, bold: renderBold, ats: renderATS };
+
+// ============================================================
+// DATA EXTRACTION — only takes text from data-id elements,
+// NEVER nests data-ids so textContent is always just the field value
+// ============================================================
+function extractEdits() {
+  const wrap = document.getElementById('resume-wrapper');
+  if (!wrap) return;
+
+  const values = new Map();
+  wrap.querySelectorAll('[data-id]').forEach(el => {
+    const id = el.dataset.id;
+    if (!values.has(id)) values.set(id, el.textContent.trim());
+  });
+
+  // Override with last-focused (resolves Sidebar duplicate name/title data-ids)
+  lastFocused.forEach((el, id) => {
+    if (el.isConnected) values.set(id, el.textContent.trim());
+  });
+
+  values.forEach((val, id) => setVal(id, val));
+  lastFocused.clear();
+}
+
+function setVal(path, val) {
+  const parts = path.split('.');
+  let obj = D;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const k = isNaN(parts[i]) ? parts[i] : parseInt(parts[i]);
+    if (obj == null || obj[k] == null) return;
+    obj = obj[k];
+  }
+  const last = parts[parts.length - 1];
+  const key = isNaN(last) ? last : parseInt(last);
+  obj[key] = val;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function render(tplId) {
+  extractEdits();
+  currentTpl = tplId;
+  document.getElementById('resume-wrapper').innerHTML = renderers[tplId](D);
+  updateToolbar();
+  saveToStorage();
+}
+
+function updateToolbar() {
+  document.querySelectorAll('.tpl-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tpl === currentTpl);
+  });
+}
+
+// ============================================================
+// ADD / DELETE OPERATIONS
+// ============================================================
+function deleteBulletById(dataId) {
+  extractEdits();
+  const parts = dataId.split('.');
+  const idx = parseInt(parts[parts.length - 1]);
+  let arr = D;
+  for (const p of parts.slice(0, -1)) arr = arr[isNaN(p) ? p : parseInt(p)];
+  if (Array.isArray(arr) && arr.length > 1) { arr.splice(idx, 1); render(currentTpl); }
+}
+
+function addBulletAfter(dataId) {
+  extractEdits();
+  const parts = dataId.split('.');
+  const idx = parseInt(parts[parts.length - 1]);
+  let arr = D;
+  for (const p of parts.slice(0, -1)) arr = arr[isNaN(p) ? p : parseInt(p)];
+  if (Array.isArray(arr)) { arr.splice(idx + 1, 0, 'New achievement or responsibility'); render(currentTpl); }
+}
+
+function addBulletToExp(expIdx) {
+  extractEdits();
+  D.experience[expIdx].bullets.push('New achievement or responsibility');
+  render(currentTpl);
+}
+
+function deleteTagById(dataId) {
+  extractEdits();
+  const parts = dataId.split('.');
+  const idx = parseInt(parts[parts.length - 1]);
+  let arr = D;
+  for (const p of parts.slice(0, -1)) arr = arr[isNaN(p) ? p : parseInt(p)];
+  if (Array.isArray(arr) && arr.length > 1) { arr.splice(idx, 1); render(currentTpl); }
+}
+
+function addSkill() { extractEdits(); D.skills.push('New Skill'); render(currentTpl); }
+function addInterest() { extractEdits(); D.interests.push('New Interest'); render(currentTpl); }
+function addExperience() {
+  extractEdits();
+  D.experience.push({ title: 'Job Title', company: 'Company Name', location: '', period: 'MM/YYYY – MM/YYYY', desc: '', bullets: ['Key achievement or responsibility'] });
+  render(currentTpl);
+}
+
+// ============================================================
+// PHOTO UPLOAD
+// ============================================================
+function triggerPhotoUpload() { document.getElementById('photo-input').click(); }
+
+document.getElementById('photo-input').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => { D.photo = ev.target.result; render(currentTpl); };
+  reader.readAsDataURL(file);
+  this.value = '';
+});
+
+// ============================================================
+// PDF EXPORT
+// ============================================================
+function exportPDF() { extractEdits(); window.print(); }
+
+// ============================================================
+// PERSISTENCE
+// ============================================================
+function saveToStorage() {
+  try { localStorage.setItem('hj_resume_data', JSON.stringify(D)); localStorage.setItem('hj_resume_tpl', currentTpl); } catch(e) {}
+}
+function loadFromStorage() {
+  try {
+    const saved = localStorage.getItem('hj_resume_data');
+    if (saved) D = JSON.parse(saved);
+    const tpl = localStorage.getItem('hj_resume_tpl');
+    if (tpl && renderers[tpl]) currentTpl = tpl;
+  } catch(e) {}
+}
+
+function resetData() {
+  if (!confirm('Reset all edits and reload the original resume data?')) return;
+  localStorage.removeItem('hj_resume_data');
+  localStorage.removeItem('hj_resume_tpl');
+  location.reload();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(function init() {
+  // Build template buttons
+  const btns = document.getElementById('template-btns');
+  TEMPLATES.forEach(t => {
+    const btn = document.createElement('button');
+    btn.className = 'tpl-btn';
+    btn.dataset.tpl = t.id;
+    btn.textContent = t.label;
+    btn.title = t.desc;
+    btn.onclick = () => render(t.id);
+    btns.appendChild(btn);
+  });
+
+  // Load saved data, then render
+  loadFromStorage();
+  render(currentTpl);
+
+  // Track last focused element for duplicate data-id resolution (Sidebar template)
+  document.getElementById('resume-wrapper').addEventListener('focusin', e => {
+    if (e.target && e.target.dataset && e.target.dataset.id) {
+      lastFocused.set(e.target.dataset.id, e.target);
+    }
+  });
+
+  // Auto-save on any blur
+  document.getElementById('resume-wrapper').addEventListener('focusout', () => {
+    extractEdits();
+    saveToStorage();
+  });
+})();
+</script>
+</body>
+</html>
