@@ -166,49 +166,102 @@ Generates a personalized prep plan including:
 
 ## Architecture
 
+```mermaid
+flowchart TD
+    A[Profile: config/profile.yml + env] --> B[Interactive / Direct CLI]
+    B --> C{hunt-job command}
+    C -->|scan / watch| D[scanAll: load companies from SQLite]
+    D --> E[Provider fan-out<br/>Greenhouse / Lever / Ashby / SR / Recruitee / Workable / JSON-LD]
+    E --> F[Normalize + India filter + archetype match]
+    F --> G[Content-hash upsert into jobs<br/>+ soft-close stale]
+    G --> H[AI Job Evaluator<br/>10 dimensions + fetch JD]
+    H --> I[Resume Generator<br/>keyword reorder + Playwright PDF]
+    H --> J[Interview Prep<br/>focus areas + YouTube + 4wk plan]
+    C -->|apply / auto-fill| K[autoFill: detect platform + adapters]
+    K --> L[Browser controlled fill<br/>Lever/GH + generic]
+    L --> M[Track in applications table]
+    M --> N[Web Dashboard: kanban pipeline<br/>http://127.0.0.1:7777]
+    N --> O[Drag status updates via PATCH /api]
+    style D fill:#1e2937,color:#e2e8f0
+    style E fill:#1e2937,color:#e2e8f0
+    style G fill:#1e2937,color:#e2e8f0
+    style H fill:#312e81,color:#c7d2fe
+    style N fill:#166534,color:#bbf7d0
 ```
-hunt-job/
-├── hunt-job.js                   # CLI entry point — arg-parser → dispatch
-├── src/
-│   ├── core/                     # Pure services — no console I/O, no inquirer
-│   │   ├── db.js                 # SQLite singleton + migrations (data/hunt-job.db)
-│   │   ├── jobEvaluator.js       # 10-dimension scoring — fetches the JD before the LLM call
-│   │   ├── resumeGenerator.js    # PDF generation
-│   │   ├── interviewPrep.js      # Prep + YouTube
-│   │   ├── profileManager.js     # Profile CRUD
-│   │   ├── aiClient.js           # Multi-provider AI
-│   │   ├── autoFill/             # ATS platform detection + form-fill adapters
-│   │   └── scan/                 # Scanner v2 — provider architecture
-│   │       ├── index.js          # orchestrator: scanAll()
-│   │       ├── detect.js         # ATS auto-detection
-│   │       ├── httpClient.js     # fetch + retry + rate-limit + ETag cache
-│   │       ├── normalize.js      # NormalizedJob shape + India/archetype filters
-│   │       └── providers/        # greenhouse, lever, ashby, smartrecruiters,
-│   │                             # recruitee, workable, jsonld (fallback)
-│   ├── cli/
-│   │   ├── interactive.js        # Terminal menu shell
-│   │   ├── watch.js              # `hunt-job watch`
-│   │   ├── auditPortals.js       # `hunt-job audit-portals`
-│   │   ├── flows/                # One file per interactive-menu flow
-│   │   └── evaluateJob.js, etc.
-│   └── web/
-│       ├── server.js             # `hunt-job dashboard` — stdlib http + JSON API
-│       └── dashboard.html        # Single-file local dashboard UI
-├── config/
-│   ├── profile.yml               # Your profile (generated)
-│   └── company-portals.json      # Seed data for the `companies` table
-├── data/
-│   ├── hunt-job.db               # SQLite — companies, jobs, evaluations, applications, documents
-│   ├── logs/                     # JSONL logs
-│   └── resumes/                  # Generated PDFs
-├── README.md                     # Command reference (you are here)
-├── QUICKSTART.md                # 10-min setup
-├── SETUP_GUIDE.md                # Complete guide + optimization + templates
-├── FAQ.md                        # Q&A
-├── COMPARISON.md                 # Original vs fork
-├── VS_LINKEDIN.md                # vs LinkedIn
-└── CLAUDE.md                     # Feature specification
+
+**Core layers:**
+- **Pure core** (src/core): db.js (SQLite), scan/* (providers + orchestrator), jobEvaluator, resumeGenerator, interviewPrep, aiClient (Claude/Gemini/Groq/OpenRouter/NVIDIA), autoFill/*, profileManager.
+- **CLI** (src/cli): thin dispatch in hunt-job.js + interactive shell + per-feature flows + watch/audit.
+- **Web** (src/web): zero-dep http server + single-file SPA dashboard backed by same SQLite.
+- **Tests**: vitest (scan, db, eval, resume, prep, server) + runner + fixtures for every ATS provider.
+
+**Data flow highlights (latest):**
+- Companies registry lives in `data/hunt-job.db` (seeded via audit-portals or first scans from company-portals.json).
+- Every scan dedupes by URL + content hash, tracks posted_at for "fresh 48h" and sorts newest-first.
+- Companies auto-disable after 5 failures; `audit-portals` or `detect` heals them.
+- Dashboard uses only `/api/*` JSON + PATCH for status; falls back to rich mock when offline.
+
+## Minimal Commands to Run & Setup
+
+**First time (copy-paste):**
+
+```bash
+# 1. Install
+npm install
+npx playwright install chromium   # PDF + auto-fill
+
+# 2. Configure AI (pick any 1+)
+npm run setup
+# or export GEMINI_API_KEY=...   # free & recommended start
+# or export GROQ_API_KEY=...
+# or export ANTHROPIC_API_KEY=...
+
+# 3. Profile (interactive or env-based)
+npm run profile:init
+# OR set HUNT_JOB_* env vars for zero-prompt runs
+
+# 4. Launch
+npm start                 # beautiful interactive menu
+# or
+node hunt-job.js          # same
 ```
+
+**Daily / Common usage (all you need 90% of time):**
+
+```bash
+npm start                                # menu (recommended for most)
+
+node hunt-job.js hunt --archetype "Backend Engineer" --limit 8
+node hunt-job.js scan --archetype "DevOps Engineer"
+node hunt-job.js watch --archetype "SRE" --interval 20   # + toast notifications
+
+npm run dashboard                        # open http://127.0.0.1:7777
+
+node hunt-job.js evaluate "https://..."
+node hunt-job.js resume <job-id-from-eval>
+node hunt-job.js prep "job-description.txt"
+
+node hunt-job.js audit-portals           # re-verify 100+ company ATS mappings
+node hunt-job.js detect https://careers.acme.com
+```
+
+**Testing & verification:**
+
+```bash
+npm test                 # vitest + pure runner (covers scan, eval, db, resume, prep, server)
+npm run test:vitest
+```
+
+**Other useful:**
+
+```bash
+npm run generate-resume -- <id>
+npm run prepare-interview -- "Senior Backend at ..."
+npm run profile:edit
+node hunt-job.js parse-resume ./resume.pdf
+```
+
+See QUICKSTART.md for 5-minute path and SETUP_GUIDE.md for templates + optimization.
 
 ---
 

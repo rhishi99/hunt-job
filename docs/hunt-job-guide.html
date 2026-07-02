@@ -5,124 +5,120 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Hunt-Job — Complete Guide</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+
   :root {
-    --bg: #0b0d10;
-    --surface: #12151a;
-    --surface-2: #191d24;
-    --border: #262c36;
-    --text: #e6e9ee;
-    --muted: #8b94a3;
-    --accent: #4f8cff;
-    --accent-soft: rgba(79,140,255,.12);
-    --green: #3ecf8e;
-    --amber: #f5b83d;
-    --red: #f0616d;
+    --bg: #0a0b0f;
+    --surface: #111318;
+    --surface-2: #171a21;
+    --surface-3: #1f232c;
+    --border: #272b35;
+    --text: #f1f5f9;
+    --muted: #8b92a3;
+    --accent: #6366f1;
+    --accent-soft: rgba(99,102,241,.12);
+    --green: #22c55e;
+    --amber: #eab308;
+    --red: #f43f5e;
     --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
-    --sans: -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+    --sans: 'Inter', system_ui, -apple-system, sans-serif;
+    --radius: 12px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html { scroll-behavior: smooth; }
-  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; font-size: 15px; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; font-size: 14.8px; }
 
   .layout { display: flex; min-height: 100vh; }
   nav {
-    width: 230px; flex-shrink: 0; position: sticky; top: 0; height: 100vh;
-    border-right: 1px solid var(--border); padding: 28px 0; overflow-y: auto;
+    width: 226px; flex-shrink: 0; position: sticky; top: 0; height: 100vh;
+    border-right: 1px solid var(--border); padding: 24px 10px; overflow-y: auto; background: var(--surface);
   }
-  nav .logo { padding: 0 22px 20px; font-weight: 700; font-size: 17px; letter-spacing: -.02em; }
+  nav .logo { padding: 0 18px 16px; font-weight: 700; font-size: 17px; letter-spacing: -.025em; font-family: 'Space Grotesk', Inter, sans-serif; }
   nav .logo span { color: var(--accent); }
   nav .logo small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; margin-top: 2px; }
   nav a {
-    display: block; padding: 7px 22px; color: var(--muted); text-decoration: none; font-size: 13.5px;
-    border-left: 2px solid transparent; transition: color .15s, border-color .15s;
+    display: block; padding: 8px 16px; color: var(--muted); text-decoration: none; font-size: 13.3px;
+    border-left: 3px solid transparent; border-radius: 0 8px 8px 0; transition: all .12s ease;
   }
-  nav a:hover, nav a.active { color: var(--text); border-left-color: var(--accent); background: var(--accent-soft); }
-  nav .nav-group { margin-top: 14px; padding: 0 22px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #5a6272; }
+  nav a:hover, nav a.active { color: var(--text); background: var(--surface-2); border-left-color: var(--accent); }
+  nav .nav-group { margin: 18px 0 4px; padding: 0 16px; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: #64748b; }
 
-  main { flex: 1; max-width: 880px; padding: 48px 56px 120px; }
-  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+  main { flex: 1; max-width: 860px; padding: 42px 48px 90px; }
+  section { margin-bottom: 66px; scroll-margin-top: 20px; }
 
-  h1 { font-size: 34px; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 10px; }
-  h1 .grad { background: linear-gradient(90deg, var(--accent), #8b6cf5); -webkit-background-clip: text; background-clip: text; color: transparent; }
-  .lede { color: var(--muted); font-size: 17px; max-width: 620px; margin-bottom: 26px; }
-  h2 { font-size: 21px; letter-spacing: -.02em; margin-bottom: 6px; padding-top: 8px; }
-  h2 .hash { color: var(--accent); margin-right: 6px; opacity: .6; }
-  h3 { font-size: 15.5px; margin: 22px 0 8px; }
-  .sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
-  p { margin-bottom: 12px; }
+  h1 { font-size: 32px; letter-spacing: -.03em; line-height: 1.1; margin-bottom: 8px; }
+  h1 .grad { background: linear-gradient(90deg, var(--accent), #a5b4fc); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { color: var(--muted); font-size: 16px; max-width: 620px; margin-bottom: 22px; }
+  h2 { font-size: 19px; letter-spacing: -.015em; margin-bottom: 4px; padding-top: 6px; }
+  h2 .hash { color: var(--accent); margin-right: 4px; opacity: .65; }
+  h3 { font-size: 15px; margin: 18px 0 6px; }
+  .sub { color: var(--muted); font-size: 13.4px; margin-bottom: 14px; }
+  p { margin-bottom: 11px; }
   strong { font-weight: 600; }
 
-  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
+  .badges { display: flex; gap: 7px; flex-wrap: wrap; margin-bottom: 22px; }
   .badge {
-    font-size: 11.5px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--border);
+    font-size: 11px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border);
     color: var(--muted); background: var(--surface);
   }
-  .badge.hot { color: var(--green); border-color: rgba(62,207,142,.35); }
+  .badge.hot { color: var(--green); border-color: #166534; }
 
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(226px, 1fr)); gap: 12px; margin: 14px 0; }
   .card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px;
-    transition: border-color .15s;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px;
+    transition: transform .18s cubic-bezier(0.4,0,0.2,1), border-color .15s, box-shadow .18s;
   }
-  .card:hover { border-color: #39414e; }
-  .card .icon { font-size: 20px; margin-bottom: 10px; }
-  .card h4 { font-size: 14.5px; margin-bottom: 5px; }
-  .card p { font-size: 13px; color: var(--muted); margin: 0; }
-  .card code { font-size: 11.5px; }
+  .card:hover { transform: translateY(-3px); border-color: #3b4150; box-shadow: 0 8px 14px -4px rgb(0 0 0 / .25); }
+  .card .icon { font-size: 19px; margin-bottom: 8px; }
+  .card h4 { font-size: 14px; margin-bottom: 3px; }
+  .card p { font-size: 12.6px; color: var(--muted); margin: 0; }
 
   code {
-    font-family: var(--mono); font-size: 13px; background: var(--surface-2);
-    padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 12.6px; background: var(--surface-2);
+    padding: 1px 6px; border-radius: 5px; border: 1px solid var(--border);
   }
   pre {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px 18px; overflow-x: auto; margin: 14px 0; font-size: 13px; line-height: 1.55;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; overflow-x: auto; margin: 12px 0; font-size: 12.7px; line-height: 1.5;
   }
   pre code { background: none; border: none; padding: 0; }
-  pre .c { color: #5a6272; }
+  pre .c { color: #64748b; }
   pre .k { color: var(--accent); }
   pre .s { color: var(--green); }
-  pre .prompt { color: #5a6272; user-select: none; }
+  pre .prompt { color: #64748b; user-select: none; }
 
-  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13.5px; }
-  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 8px 12px; border-bottom: 1px solid var(--border); }
-  td { padding: 9px 12px; border-bottom: 1px solid #1b2027; vertical-align: top; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.3px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: .06em; padding: 8px 11px; border-bottom: 1px solid var(--border); }
+  td { padding: 8px 11px; border-bottom: 1px solid #1f242e; vertical-align: top; }
   tr:last-child td { border-bottom: none; }
-  td code { white-space: nowrap; }
 
-  .pill { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 99px; font-weight: 600; }
-  .pill.g { background: rgba(62,207,142,.12); color: var(--green); }
-  .pill.a { background: rgba(245,184,61,.12); color: var(--amber); }
-  .pill.r { background: rgba(240,97,109,.12); color: var(--red); }
-  .pill.b { background: var(--accent-soft); color: var(--accent); }
+  .pill { display: inline-flex; align-items:center; font-size: 10.5px; padding: 1px 8px; border-radius: 999px; font-weight: 600; }
+  .pill.g { background: #052e16; color: var(--green); border:1px solid #166534; }
+  .pill.a { background: #3f2a00; color: var(--amber); border:1px solid #854d0e; }
+  .pill.r { background: #3b0f1c; color: var(--red); border:1px solid #881337; }
+  .pill.b { background: var(--accent-soft); color: #a5b4fc; border-color: rgba(99,102,241,.3); }
 
-  .flow { display: flex; align-items: stretch; gap: 0; margin: 20px 0; flex-wrap: wrap; }
+  .flow { display: flex; align-items: stretch; gap: 1px; margin: 16px 0; flex-wrap: wrap; background: var(--border); padding:1px; border-radius: 12px; }
   .flow .step {
-    flex: 1; min-width: 118px; background: var(--surface); border: 1px solid var(--border);
-    padding: 14px 12px; text-align: center; position: relative;
+    flex: 1; min-width: 108px; background: var(--surface); padding: 11px 10px; text-align: center;
+    transition: transform .2s ease, background .2s;
   }
-  .flow .step:first-child { border-radius: 10px 0 0 10px; }
-  .flow .step:last-child { border-radius: 0 10px 10px 0; }
-  .flow .step + .step { border-left: none; }
-  .flow .step .n { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-bottom: 7px; }
-  .flow .step b { display: block; font-size: 13px; }
-  .flow .step small { color: var(--muted); font-size: 11.5px; }
+  .flow .step:hover { background: var(--surface-2); transform: translateY(-1px); }
+  .flow .step .n { display: inline-flex; width: 18px; height: 18px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 10px; font-weight: 700; align-items: center; justify-content: center; margin-bottom: 5px; }
+  .flow .step b { display: block; font-size: 12.5px; }
+  .flow .step small { color: var(--muted); font-size: 10.8px; }
 
   .callout {
     border-left: 3px solid var(--accent); background: var(--accent-soft);
-    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13.5px;
+    padding: 11px 14px; border-radius: 0 10px 10px 0; margin: 14px 0; font-size: 13px;
   }
-  .callout.warn { border-color: var(--amber); background: rgba(245,184,61,.08); }
-  .callout.good { border-color: var(--green); background: rgba(62,207,142,.08); }
+  .callout.warn { border-color: var(--amber); background: rgba(234,179,8,.08); }
+  .callout.good { border-color: var(--green); background: rgba(34,197,94,.08); }
 
-  .tree { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--muted); }
-  .tree b { color: var(--text); font-weight: 600; }
-  .tree .new { color: var(--green); }
+  .kbd-row { display: flex; gap: 6px; flex-wrap: wrap; margin: 10px 0; }
 
-  .kbd-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
-
-  footer { color: #5a6272; font-size: 12px; border-top: 1px solid var(--border); padding-top: 20px; }
-  @media (max-width: 860px) { nav { display: none; } main { padding: 32px 22px 80px; } }
+  footer { color: #64748b; font-size: 12px; border-top: 1px solid var(--border); padding-top: 16px; margin-top: 30px; }
+  @media (max-width: 880px) { nav { display: none; } main { padding: 28px 18px 60px; } }
 </style>
 </head>
 <body>
@@ -279,27 +275,39 @@
 </section>
 
 <section id="architecture">
-  <h2><span class="hash">#</span>Architecture</h2>
-  <p class="sub">Thin CLI over pure core services.</p>
-<div class="tree"><pre>
-hunt-job.js                  <b>entry point</b> — dispatch to CLI scripts
-src/
-├── core/                    <b>services (no UI)</b>
-│   ├── aiClient.js          multi-provider LLM client, retry + fallback
-│   ├── portalScanner.js     Lever + Greenhouse parallel scan, India filter
-│   ├── jobCache.js          SQLite scan cache (4h fresh / 7d TTL)
-│   ├── jobEvaluator.js      10-dimension scoring
-│   ├── resumeGenerator.js   keywords → tailored content → EJS → PDF
-│   ├── interviewPrep.js     prep plan generation + HTML render
-│   ├── profileManager.js    profile CRUD (yml + md)
-│   └── autoFill/            platform detect → adapter → fill report
-│       └── adapters/        lever · greenhouse · workday · smartrecruiters · generic(AI)
-├── cli/
-│   ├── interactive.js       full menu — all flows
-│   └── *.js                 one script per command
-config/                      profile.yml · settings.json · company-portals.json
-data/                        SQLite + JSON stores + generated artifacts
-</pre></div>
+  <h2><span class="hash">#</span>Architecture &amp; Data Flow</h2>
+  <p class="sub">Provider-first scanner, SQLite source of truth, pure services + flows, zero-dep web dashboard.</p>
+
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin:14px 0;font-size:13px;line-height:1.45">
+    <strong>Latest flow (2026):</strong><br>
+    <code>companies (db)</code> → <code>scanAll()</code> (fanout 6 ATS + jsonld) → normalize + India/archetype → upsert jobs (hash dedupe + posted_at) → <code>jobEvaluator</code> (fetch JD + 10-dim) → resume / prep / autoFill → dashboard kanban (drag updates via API)
+  </div>
+
+<pre style="background:#0f1117;border:1px solid var(--border);padding:14px;border-radius:10px;font-size:12.6px">
+hunt-job.js                # thin launcher (dispatch + help)
+src/core/
+  db.js                    # better-sqlite3, migrations, companies/jobs/evaluations/applications
+  aiClient.js              # Claude • Gemini • Groq • OpenRouter • NVIDIA
+  scan/                    # v2 orchestrator
+    index.js               # scanAll(), concurrency + health tracking
+    detect.js              # auto ATS platform detection
+    providers/             # greenhouse, lever, ashby, smartrecruiters, recruitee, workable, jsonld
+    normalize.js           # India + archetype filters
+    httpClient.js          # fetch + ETag + rate limit + retry
+  jobEvaluator.js          # always fetches real JD before LLM
+  resumeGenerator.js
+  interviewPrep.js
+  profileManager.js
+  autoFill/
+  logger.js
+src/cli/
+  interactive.js + flows/* # menu + isolated flows
+  watch.js auditPortals.js # timers + health tooling
+src/web/                   # stdlib http server + modern SPA
+test/                      # vitest + fixtures for every provider
+</pre>
+
+  <p style="margin-top:12px"><strong>Testing:</strong> <code>npm test</code> (vitest for core + runner for pure funcs). Every provider has fixtures. In-memory DB in tests.</p>
 </section>
 
 <section id="roadmap">
