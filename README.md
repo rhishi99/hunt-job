@@ -64,7 +64,7 @@ npm start
 Launches terminal UI:
 ```
 ┌──────────────────────────────────────────┐
-│   🎯  CAREER-OPS  —  Job Search Agent    │
+│   🎯  Hunt-Job  —  AI Job Search Agent   │
 └──────────────────────────────────────────┘
 
   🚀  Full Apply Workflow  (eval → prep → resume)
@@ -73,6 +73,7 @@ Launches terminal UI:
   🎯  Interview Prep
   📄  Generate Resume
   📋  Application Tracker
+  🖥️   Web Dashboard
   👤  Update Profile
 ```
 
@@ -92,11 +93,13 @@ npm run scan-portals -- --archetype "Cloud Engineer"
 npm run watch -- --archetype "Cloud Engineer"
 
 # Re-verify every company's ATS platform/slug, or a single career page
-node hunt-job.js audit-portals
+npm run audit-portals
 node hunt-job.js detect https://careers.company.com
+# (audit-portals also: node src/cli/auditPortals.js)
 
 # Local web dashboard (pipeline board, job list, timelines) — localhost:7777
 npm run dashboard
+# Pipeline statuses: scanned, evaluated, applied, interview, offer, rejected (exact from server.js)
 
 # Generate ATS-optimized resume
 npm run generate-resume -- job_123
@@ -110,6 +113,9 @@ npm run prepare-interview -- "job_description.txt"
 ---
 
 ## Features
+
+**Pipeline Statuses** (exact values from `src/web/server.js` APP_STATUSES + dashboard kanban + DB):  
+`scanned`, `evaluated`, `applied`, `interview`, `offer`, `rejected` (kanban columns: scanned → evaluated → applied → interview → offer / rejected).
 
 ### 1. Job Evaluation — 10 Dimensions
 
@@ -142,6 +148,8 @@ Want alerts instead of re-running scans by hand? `node hunt-job.js watch --arche
 - Extracts 15–20 most relevant keywords from the JD
 - Reorders your experience bullets by relevance to the role
 - Outputs clean, ATS-compatible PDF via Playwright
+
+**Standalone extra tool:** Open `resume-builder/index.html` directly in a browser (6 editable templates, live preview, export to PDF). Also launchable via `hunt-job.bat` → [R].
 
 ### 4. Interview Prep
 
@@ -241,7 +249,7 @@ node hunt-job.js evaluate "https://..."
 node hunt-job.js resume <job-id-from-eval>
 node hunt-job.js prep "job-description.txt"
 
-node hunt-job.js audit-portals           # re-verify 100+ company ATS mappings
+npm run audit-portals                    # re-verify 100+ company ATS mappings (or node src/cli/auditPortals.js)
 node hunt-job.js detect https://careers.acme.com
 ```
 
@@ -383,7 +391,7 @@ npm run profile:init
 3. **Prep early** — Generate interview prep 2–4 weeks before likely interviews.
 4. **Review PDFs** — Always read generated resume before submitting.
 5. **Keep profile fresh** — Update quarterly with new projects.
-6. **Pair with LinkedIn** — Use LinkedIn for networking/signals, Career-Ops for evaluation and prep.
+6. **Pair with LinkedIn** — Use LinkedIn for networking/signals, Hunt-Job for evaluation and prep.
 
 **When to use which:** [VS_LINKEDIN.md](VS_LINKEDIN.md)
 

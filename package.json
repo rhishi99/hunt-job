@@ -2,7 +2,7 @@
   "name": "hunt-job",
   "version": "1.0.0",
   "description": "AI-powered job search agent built with Claude (Extended from Career-Ops)",
-  "main": "career-ops.js",
+  "main": "hunt-job.js",
   "type": "module",
   "bin": {
     "hunt-job": "./hunt-job.js"

@@ -38,48 +38,90 @@ npm start
 
 ---
 
-## 🎯 Direct Commands (Skip the Menu)
+## 🎯 Quick Usage
 
 ```bash
-# Evaluate a job posting
-npm run evaluate-job
+npm start                 # interactive menu (recommended)
+node hunt-job.js          # same as above
 
-# Scan job portals for matches
-npm run scan-portals
+# Or direct:
+node hunt-job.js scan --archetype "Backend Engineer"
+node hunt-job.js watch --archetype "DevOps Engineer" --interval 30
+npm run dashboard         # open http://127.0.0.1:7777
+node hunt-job.js detect https://careers.company.com
+npm run audit-portals
+```
 
-# Generate a tailored resume
-npm run generate-resume
+**Multi-provider AI supported** (any of: ANTHROPIC, GEMINI, GROQ, OPENROUTER, NVIDIA). Set keys in `.env`; auto-selects best available.
 
-# Prepare for an interview
-npm run prepare-interview
+**Env-based profile** (no prompts): use `HUNT_JOB_NAME`, `HUNT_JOB_EMAIL`, `HUNT_JOB_ROLE`, `HUNT_JOB_ARCHETYPES`, `HUNT_JOB_SALARY_MIN/MAX`, etc. See README.
 
-# Edit your profile
-npm run profile:edit
+### Flow
+```mermaid
+flowchart LR
+  Profile[Profile + Env] --> Scan[Scan / Watch]
+  Scan --> Eval[Evaluate]
+  Eval -->|high score| Resume[Resume + Prep]
+  Resume --> Apply[Apply + Track]
+  Apply --> Dashboard[Dashboard<br/>kanban]
+  Eval -->|watch| Alert[Toast + new matches]
+```
 
-# Setup API key
-npm run setup
+## 🎯 Direct Commands (npm scripts + hunt-job.js)
 
-# Initialize profile (first time only)
+**npm scripts:**
+```bash
+npm start
+npm run hunt -- --archetype "..."
+npm run watch -- --archetype "..."
+npm run dashboard
+npm run audit-portals
+npm run evaluate-job -- "<url>"
+npm run scan-portals -- --archetype "..."
+npm run generate-resume -- <job-id>
+npm run prepare-interview -- "jd.txt"
 npm run profile:init
+npm run profile:edit
+npm run setup
+npm run parse-resume -- resume.pdf
+```
+
+**Direct (via hunt-job.js):**
+```bash
+node hunt-job.js scan --archetype "Data Engineer"
+node hunt-job.js evaluate "https://..."
+node hunt-job.js resume <id>
+node hunt-job.js prep "description or file"
+node hunt-job.js watch --archetype "SRE" --interval 15 --once
+node hunt-job.js dashboard
+node hunt-job.js detect <careers-url>
+node hunt-job.js audit-portals   # (via npm or direct src/cli/auditPortals.js)
+node hunt-job.js profile init
+node hunt-job.js profile edit
+node hunt-job.js setup
+node hunt-job.js hunt --archetype "..."
 ```
 
 ---
 
 ## 📋 First-Time Setup
 
-1. **Set your API key:**
+1. **Set your API key** (pick any: Gemini free recommended, Groq, Claude, etc.):
    ```bash
    npm run setup
+   # or set GEMINI_API_KEY / GROQ_API_KEY / ANTHROPIC_API_KEY
    ```
 
 2. **Initialize your profile:**
    ```bash
    npm run profile:init
+   # OR set HUNT_JOB_* env vars for no-prompt runs
    ```
 
 3. **Start the app:**
    ```bash
    npm start
+   # or: node hunt-job.js
    ```
 
 ---
@@ -127,11 +169,11 @@ export ANTHROPIC_API_KEY="your_key"
 ## 📁 What Gets Created
 
 After first run:
-- `config/profile.yml` — Your profile (keep this private!)
-- `modes/_profile.md` — Profile backup
-- `data/hunt-job.db` — Job evaluations, applications, company registry (SQLite)
-- `data/resumes/` — Generated resume PDFs
-- `data/interview-prep/` — Interview prep guides
+- `config/profile.yml` + `modes/_profile.md` — Your profile (keep private!)
+- `data/hunt-job.db` — Jobs, evaluations, applications, companies (SQLite; v2 scanner)
+- `data/resumes/` — Generated ATS PDFs
+- `data/interview-prep/` — Prep guides + YouTube plans
+- `data/logs/` — JSONL logs
 
 ---
 
@@ -156,21 +198,22 @@ archetypes (e.g. `Backend Engineer`), salary range (lakhs), tech stack
 **3. Evaluate a job** (~2 min)
 ```bash
 npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
+# or: node hunt-job.js evaluate "..."
 ```
-Outputs a score out of 5 with a per-dimension breakdown (salary, tech
-stack, culture, ...) and an Apply / Maybe / Skip recommendation.
+Outputs a score out of 5 + per-dimension breakdown.
 
 **4. Generate a tailored resume**
 ```bash
-npm run generate-resume -- job_<id_from_step_3>
+npm run generate-resume -- job_<id>
 ```
 
-**5. Bonus — interview prep**
+**5. Bonus — interview prep + watch/dashboard**
 ```bash
 npm run prepare-interview -- "Senior Backend Engineer at Flipkart"
+npm run watch -- --archetype "Backend Engineer"
+npm run dashboard   # http://127.0.0.1:7777
 ```
-Produces focus areas, YouTube links per topic, a 4-week study schedule,
-and behavioral questions.
+Produces focus areas, YouTube + schedule. Use `audit-portals` / `detect` to maintain the SQLite company registry (provider scanner v2).
 
 **Next:** apply on the company portal, save the resume, work the prep
 plan, repeat for the next job.
@@ -201,4 +244,4 @@ cat config/profile.yml       # verify it exists
 
 **Built with ❤️ using Claude & Claude Code**
 
-**Based on:** Career-Ops (See [COMPARISON.md](COMPARISON.md) for feature comparison)
+**SQLite + v2 scanner** (providers: Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable + JSON-LD). Data in `data/hunt-job.db`.

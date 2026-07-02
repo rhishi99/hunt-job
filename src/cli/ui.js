@@ -6,7 +6,7 @@ export function clear() { process.stdout.write('\x1Bc'); }
 
 export function banner() {
   console.log(chalk.cyan.bold('╔══════════════════════════════════════════╗'));
-  console.log(chalk.cyan.bold('║') + chalk.white.bold('   🎯  CAREER-OPS  —  Job Search Agent    ') + chalk.cyan.bold('║'));
+  console.log(chalk.cyan.bold('║') + chalk.white.bold('   🎯  Hunt-Job  —  AI Job Search Agent   ') + chalk.cyan.bold('║'));
   console.log(chalk.cyan.bold('╚══════════════════════════════════════════╝'));
 }
 

@@ -1,4 +1,4 @@
-# Career-Ops Setup & Usage Guide
+# Hunt-Job Setup & Usage Guide
 
 ## Table of Contents
 1. [Installation & Setup](#installation--setup)
@@ -41,6 +41,8 @@ cd hunt-job
 npm install
 npx playwright install chromium   # for resume PDF + auto-fill
 ```
+
+Entry point: `npm start` or `node hunt-job.js` (interactive). Direct: `node hunt-job.js scan ...`, `npm run dashboard`, `npm run watch`, etc.
 
 ### Step 2: Get Your First API Key (Pick ONE)
 
@@ -126,6 +128,7 @@ npm run profile:init
 ```bash
 # Quick test with your configured provider
 npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
+# or node hunt-job.js evaluate "..."
 
 # Should show a score (if it works, you're ready!)
 ```
@@ -135,21 +138,22 @@ npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
 #### ✅ Fully Implemented & Working
 
 - **Job Evaluation** (10 dimensions) — Works with all providers
-- **Portal Scanning** (~108 companies) — Lever (~56) + Greenhouse (~52), sorted newest-first
-- **Early-Applier Advantage** — 🔥 badge on jobs posted < 48h, sorted by recency
+- **Portal Scanning** (provider v2: Greenhouse/Lever/Ashby/SmartRecruiters/Recruitee/Workable + JSON-LD fallback) — registry in SQLite (`data/hunt-job.db` companies table)
+- **Early-Applier Advantage** — 🔥 badge, newest-first
 - **Resume Generation** (ATS-optimized PDF) — Tailored per job
 - **Interview Prep** (4-week schedule + YouTube links) — Role-specific
-- **Profile Management** (YAML-based) — Local storage
-- **Profile Editor** — Edit specific sections without re-running full init
-- **Auto-fill Apply** (Lever & Greenhouse forms) — Browser automation
-- **Application Tracker** (JSON-based) — Manage applications, tracks duplicates
-- **Resume Parser** (PDF to profile) — Extract your resume data
-- **Multi-provider AI** (Gemini, Groq, OpenRouter, NVIDIA, Claude) — Auto-selects available
+- **Profile Management** (YAML + env HUNT_JOB_*) — Local
+- **Profile Editor** — Edit without full re-init
+- **Auto-fill Apply** — Browser for Lever/GH + generic
+- **Application Tracker + Web Dashboard** (`npm run dashboard` → http://127.0.0.1:7777; kanban with statuses scanned/evaluated/applied/interview/offer/rejected)
+- **Watch mode** (`npm run watch`) — periodic scan + notifications
+- **Audit / Detect** (`npm run audit-portals`, `node hunt-job.js detect <url>`)
+- **Resume Parser** — PDF to profile
+- **Multi-provider AI** (Gemini/Groq/OpenRouter/NVIDIA/Claude) — auto-select
 
-#### ❌ Not Implemented (Original Scope Items)
-
-- **Dashboard Mode** (Go terminal UI) — `npm run dashboard` is wired but no Go code exists; interactive menu replaces it
-- **Slash Commands** (e.g., `/evaluate-job`) — Original used Claude Code slash commands; use the interactive menu or `career-ops.bat` instead
+#### Notes
+- SQLite is the source of truth for jobs/companies/evals/apps (replaces legacy JSON).
+- `hunt-job.js` is the unified CLI entry (npm scripts delegate to it or direct src/cli/*). No Go dashboard.
 
 ---
 
@@ -209,10 +213,13 @@ projects:
 ### Step 6: Verify Setup
 
 ```bash
-# Test each command
+# Test each command (npm or direct)
 npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
-npm run scan-portals -- --archetype "Backend Engineer"
+node hunt-job.js scan --archetype "Backend Engineer"
 npm run prepare-interview -- "Job Description"
+npm run dashboard   # web UI
+npm run watch -- --archetype "..." --once   # test once
+npm run audit-portals
 
 # Should see successful outputs without errors
 ```
@@ -223,9 +230,9 @@ npm run prepare-interview -- "Job Description"
 
 ### About Claude Code
 
-Claude Code is Anthropic's official CLI tool that lets you interact with Claude directly in your terminal. It can orchestrate Career-Ops commands, batch process jobs, and provide AI analysis.
+Claude Code is Anthropic's official CLI tool that lets you interact with Claude directly in your terminal. It can orchestrate Hunt-Job commands, batch process jobs, and provide AI analysis.
 
-**Note:** Claude Code is OPTIONAL. Career-Ops works fine with just the CLI commands. This section is for power users who want faster, more interactive workflows.
+**Note:** Claude Code is OPTIONAL. Hunt-Job works fine with just the CLI commands (`node hunt-job.js`, npm scripts, `npm start`). This section is for power users.
 
 ### Installation (Optional)
 
@@ -240,7 +247,7 @@ claude login
 claude --version
 ```
 
-### Using Claude Code with Career-Ops
+### Using Claude Code with Hunt-Job
 
 Claude Code works with ANY of your configured AI providers (Gemini, Groq, OpenRouter, NVIDIA, Claude).
 
@@ -632,7 +639,7 @@ Create a 2-day intensive course including:
 
 ### 6. **YouTube Learning Optimization**
 
-Career-Ops provides YouTube links automatically. Optimize viewing:
+Hunt-Job provides YouTube links automatically. Optimize viewing:
 
 ```
 Watch Time: 2-3x speed (if comfortable)
@@ -641,7 +648,7 @@ Notes:      Keep parallel notes in Markdown
 Practice:   Implement what you learn immediately
 ```
 
-**Recommended Channels from Career-Ops:**
+**Recommended Channels from Hunt-Job:**
 
 | Topic | Channel | Why |
 |-------|---------|-----|

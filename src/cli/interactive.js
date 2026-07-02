@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import ProfileManager from '../core/profileManager.js';
 import { closeDb } from '../core/db.js';
 import { clear, banner, warn, success, hint, pressEnter, showProfileSummary } from './ui.js';
+// Hunt-Job interactive menu (uses modern Hunt-Job banner from ui.js)
 import { runSetupFlow, getProfileStatus } from './flows/setupFlow.js';
 import { runEvaluateFlow } from './flows/evaluateFlow.js';
 import { runScanFlow } from './flows/scanFlow.js';

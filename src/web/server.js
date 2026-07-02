@@ -58,7 +58,7 @@ function getJobs(db, query) {
       if (ev) { try { score = JSON.parse(ev.evaluation).overallScore ?? null; } catch { /* malformed blob */ } }
       return {
         id: j.id, company: resolveCompany(j.company_id, companies), title: j.title, location: j.location,
-        score, postedAt: j.posted_at ? new Date(j.posted_at).toISOString() : null, status: j.status
+        url: j.url || null, score, postedAt: j.posted_at ? new Date(j.posted_at).toISOString() : null, status: j.status
       };
     });
 

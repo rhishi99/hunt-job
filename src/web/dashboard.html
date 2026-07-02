@@ -259,42 +259,178 @@
     .section-title { font-size: 15px; font-weight: 600; margin: 18px 0 12px; letter-spacing: -.01em; display:flex; align-items:center; gap:8px; }
 
     .empty { color: var(--muted); font-size:13px; padding: 32px 12px; text-align:center; border: 1px dashed var(--border); border-radius: var(--radius); }
+
+    /* === Enhanced Delight & Micro-Animations === */
+    .view {
+      transition: opacity .2s ease, transform .2s cubic-bezier(0.4,0,0.2,1);
+    }
+    .view:not(.active) { opacity: 0; transform: translateY(6px); pointer-events: none; }
+
+    .stat {
+      position: relative;
+      overflow: hidden;
+    }
+    .stat.pulse .value {
+      animation: statPulse 650ms cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes statPulse {
+      0% { transform: scale(1); }
+      40% { transform: scale(1.18); }
+      100% { transform: scale(1); }
+    }
+
+    /* Staggered card entrance */
+    .kanban-card, .eval-card, tr {
+      animation: cardEnter 420ms cubic-bezier(0.34,1.56,0.64,1) backwards;
+    }
+    .kanban-card:nth-child(1) { animation-delay: 30ms; }
+    .kanban-card:nth-child(2) { animation-delay: 80ms; }
+    .kanban-card:nth-child(3) { animation-delay: 130ms; }
+    .kanban-card:nth-child(4) { animation-delay: 180ms; }
+    .kanban-card:nth-child(5) { animation-delay: 230ms; }
+    .kanban-card:nth-child(6) { animation-delay: 280ms; }
+    .kanban-card:nth-child(7) { animation-delay: 320ms; }
+
+    @keyframes cardEnter {
+      from { opacity: 0; transform: translateY(12px) scale(0.985); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* Filter active states */
+    .filter-chip.active {
+      background: var(--accent); color: white; border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(99,102,241,.18);
+    }
+    input:focus, select:focus { outline: none; }
+
+    /* Focus states (a11y) */
+    .btn:focus-visible, .nav-item:focus-visible, .filter-chip:focus-visible,
+    .kanban-card:focus-visible, .close-btn:focus-visible, .action-row button:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .nav-item:focus { background: var(--surface-3); }
+
+    /* Loading skeletons */
+    .skeleton {
+      background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+      background-size: 400% 100%;
+      animation: skeletonShimmer 1.25s ease infinite;
+      border-radius: 8px;
+    }
+    .skeleton-text { height: 14px; margin: 6px 0; }
+    .skeleton-card { height: 78px; border-radius: 12px; margin-bottom: 8px; }
+    .skeleton-stat { height: 54px; border-radius: var(--radius); }
+    @keyframes skeletonShimmer {
+      0% { background-position: 100% 0; }
+      100% { background-position: -100% 0; }
+    }
+    .refreshing .column-cards, .refreshing .table-wrap tbody { opacity: .45; transition: opacity .2s; }
+
+    /* Enhanced status pills */
+    .pill.s-scanned { background: #1f252f; color: #94a3b8; border-color: #334155; }
+    .pill.s-evaluated { background: #1e2937; color: #64748b; border-color: #475569; }
+    .pill.s-applied { background: #1e3a5f; color: #60a5fa; border-color: #1e40af; }
+    .pill.s-interview { background: #3b2a5e; color: #c084fc; border-color: #6b46c1; }
+    .pill.s-offer { background: #052e16; color: #4ade80; border-color: #166534; font-weight:700; }
+    .pill.s-rejected { background: #3b0f1c; color: #fb7185; border-color: #881337; }
+    .pill.s-active { background: #172554; color: #93c5fd; border-color: #1e40af; }
+    .pill.s-closed { background: #2a2433; color: #a78bfa; border-color: #5b4d6b; }
+
+    /* Kanban visual upgrades */
+    .column { position: relative; overflow: hidden; }
+    .column::before {
+      content: ''; position: absolute; top:0; left:0; right:0; height: 3px;
+      background: linear-gradient(to right, var(--accent), #a5b4fc);
+      opacity: .35;
+    }
+    .column[data-col="offer"]::before { background: linear-gradient(to right, #22c55e, #4ade80); opacity: .55; }
+    .column[data-col="interview"]::before { background: linear-gradient(to right, #a855f7, #c084fc); opacity: .45; }
+    .column[data-col="applied"]::before { background: linear-gradient(to right, #3b82f6, #60a5fa); opacity: .4; }
+    .column-header { position: relative; }
+    .kanban-card { border-left: 3px solid transparent; }
+    .kanban-card[data-status="offer"] { border-left-color: #22c55e; }
+    .kanban-card[data-status="interview"] { border-left-color: #a855f7; }
+    .kanban-card[data-status="applied"] { border-left-color: #3b82f6; }
+    .kanban-card .avatar { transition: transform .15s ease, box-shadow .15s; }
+    .kanban-card:hover .avatar { transform: scale(1.08) rotate(1deg); box-shadow: 0 2px 6px rgba(0,0,0,.3); }
+
+    /* Better time display */
+    .time { color: var(--muted); font-size: 11px; }
+
+    /* Quick Start panel */
+    .quickstart {
+      background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius);
+      margin-bottom: 20px; overflow: hidden;
+    }
+    .quickstart summary {
+      padding: 12px 18px; cursor: pointer; font-weight: 600; font-size: 13.5px;
+      display: flex; align-items: center; gap: 8px; user-select: none;
+      background: var(--surface);
+    }
+    .quickstart summary::-webkit-details-marker { display: none; }
+    .quickstart[open] summary { border-bottom: 1px solid var(--border); }
+    .quickstart .content { padding: 16px 18px; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px,1fr)); gap: 16px; }
+    .quickstart .cmd {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.2px;
+      background: var(--bg); padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
+      display: block; margin: 4px 0; cursor: pointer; transition: all .1s;
+    }
+    .quickstart .cmd:hover { border-color: var(--accent); background: var(--surface-3); }
+    .quickstart .wf { font-size:12.4px; color:#cbd5e1; line-height:1.35; }
+
+    /* Confetti container */
+    .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 300; }
+
+    /* Modal polish */
+    .run-btn {
+      background: #1f2533; color: #e0e7ff; border: 1px solid #475569;
+      padding: 8px 13px; border-radius: 999px; font-size: 12.5px; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+      transition: all .15s ease;
+    }
+    .run-btn:hover { background: var(--accent); color: white; border-color: var(--accent); transform: translateY(-1px); }
+    .run-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .run-btn.primary:hover { filter: brightness(1.12); }
+
+    /* Subtle toast improvement */
+    #toast { transition: all .28s cubic-bezier(0.4,0,0.2,1); }
   </style>
 </head>
 <body>
-<div id="toast"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <!-- Top Bar -->
-<header class="topbar">
-  <div class="brand">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>
+<header class="topbar" role="banner">
+  <div class="brand" aria-label="Hunt-Job">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M7 12h10"/></svg>
     hunt<span>-job</span>
   </div>
   <div class="topbar-actions">
-    <button onclick="refreshAll()" class="btn">↻ Refresh</button>
-    <a href="#" onclick="showHint();return false" class="btn">CLI commands</a>
-    <button onclick="window.location.reload()" class="btn-primary">Open in terminal → npm run dashboard</button>
+    <button onclick="refreshAll()" class="btn" aria-label="Refresh data from database">↻ Refresh</button>
+    <button onclick="toggleQuickStart()" class="btn" aria-expanded="false" aria-controls="quickstart-panel">Quick Start</button>
+    <button onclick="window.location.reload()" class="btn-primary" aria-label="Restart dashboard from terminal">Open in terminal → npm run dashboard</button>
   </div>
 </header>
 
 <div class="app-shell">
-  <!-- Sidebar -->
-  <aside class="sidebar">
-    <div class="sidebar-nav">
-      <a class="nav-item active" data-view="pipeline" onclick="switchView('pipeline', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar" aria-label="Main sections">
+    <div class="sidebar-nav" role="tablist" aria-orientation="vertical">
+      <a class="nav-item active" role="tab" aria-selected="true" data-view="pipeline" onclick="switchView('pipeline', this)" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
         Pipeline
       </a>
-      <a class="nav-item" data-view="jobs" onclick="switchView('jobs', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
+      <a class="nav-item" role="tab" aria-selected="false" data-view="jobs" onclick="switchView('jobs', this)" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
         Jobs
       </a>
-      <a class="nav-item" data-view="evaluations" onclick="switchView('evaluations', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <a class="nav-item" role="tab" aria-selected="false" data-view="evaluations" onclick="switchView('evaluations', this)" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         Evaluations
       </a>
-      <a class="nav-item" data-view="profile" onclick="switchView('profile', this)">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      <a class="nav-item" role="tab" aria-selected="false" data-view="profile" onclick="switchView('profile', this)" tabindex="0">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         Profile
       </a>
     </div>
@@ -302,40 +438,78 @@
       Local only • SQLite<br>
       <span style="font-size:10.5px">Run: <code style="font-size:10px">npm run dashboard</code></span>
     </div>
-  </aside>
+  </nav>
 
-  <main class="main">
+  <main class="main" role="main">
     <!-- Stats -->
-    <div class="stats" id="stats-row">
-      <div class="stat"><div class="label">Scanned</div><div class="value" id="stat-scanned">0</div></div>
-      <div class="stat"><div class="label">Evaluated</div><div class="value" id="stat-evaluated">0</div></div>
-      <div class="stat green"><div class="label">Applied</div><div class="value" id="stat-applied">0</div></div>
-      <div class="stat green"><div class="label">Offers</div><div class="value" id="stat-offers">0</div></div>
+    <div class="stats" id="stats-row" aria-label="Pipeline statistics">
+      <div class="stat" aria-label="Total jobs scanned"><div class="label">Scanned</div><div class="value" id="stat-scanned">0</div></div>
+      <div class="stat" aria-label="Jobs evaluated"><div class="label">Evaluated</div><div class="value" id="stat-evaluated">0</div></div>
+      <div class="stat green" aria-label="Applications submitted"><div class="label">Applied</div><div class="value" id="stat-applied">0</div></div>
+      <div class="stat green" aria-label="Offers received"><div class="label">Offers</div><div class="value" id="stat-offers">0</div></div>
     </div>
+    <div id="last-sync" style="font-size:10.5px;color:#475569;margin:-6px 2px 14px 4px;min-height:1em"></div>
+
+    <!-- Quick Start / How to use (collapsible) -->
+    <details id="quickstart-panel" class="quickstart" aria-label="Quick Start Guide">
+      <summary>📖 Quick Start &amp; CLI Workflows <span style="font-size:11px;opacity:.7;margin-left:6px">(click to expand)</span></summary>
+      <div class="content">
+        <div>
+          <div style="font-weight:600;margin-bottom:6px">Core Workflows</div>
+          <div class="wf"><strong>1. Scan &amp; discover:</strong><br>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js scan --archetype "Backend Engineer"</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js hunt --archetype "Data Engineer"</span>
+          </div>
+          <div class="wf"><strong>2. Watch for new roles (periodic):</strong><br>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js watch --archetype "DevOps Engineer"</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js watch --archetype "SRE" --interval 20 --once</span>
+          </div>
+        </div>
+        <div>
+          <div style="font-weight:600;margin-bottom:6px">Per-Job Actions (use from modal)</div>
+          <div class="wf">
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js evaluate "https://..."</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js resume "job-id-here"</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js prep "job_description.txt"</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js profile edit</span>
+          </div>
+          <div class="wf" style="margin-top:6px">Dashboard: <span onclick="copyCmd(this)" class="cmd">npm run dashboard</span> • Full menu: <span onclick="copyCmd(this)" class="cmd">node hunt-job.js</span></div>
+        </div>
+        <div>
+          <div style="font-weight:600;margin-bottom:6px">Other Useful</div>
+          <div class="wf">
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js audit-portals</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js detect https://careers.example.com</span>
+            <span onclick="copyCmd(this)" class="cmd">node hunt-job.js profile init</span>
+          </div>
+          <div style="margin-top:10px;font-size:11.5px;color:var(--muted)">Drag pipeline cards • Click any job or card for details + instant terminal commands • Minimum recommended score: 4.0</div>
+        </div>
+      </div>
+    </details>
 
     <!-- Pipeline -->
-    <section id="view-pipeline" class="view active">
-      <div class="section-title">Application Pipeline <span style="font-size:11px;opacity:.6;margin-left:6px;">Drag cards to change status</span></div>
-      <div class="board" id="kanban-board"></div>
+    <section id="view-pipeline" class="view active" role="tabpanel" aria-labelledby="pipeline-title">
+      <div class="section-title" id="pipeline-title">Application Pipeline <span style="font-size:11px;opacity:.6;margin-left:6px;">Drag cards to change status</span></div>
+      <div class="board" id="kanban-board" aria-live="polite"></div>
     </section>
 
     <!-- Jobs -->
-    <section id="view-jobs" class="view">
-      <div class="section-title">All Jobs</div>
-      <div class="filters">
-        <input id="jobs-search" type="text" placeholder="Search company or title..." style="min-width:260px">
-        <select id="jobs-score">
+    <section id="view-jobs" class="view" role="tabpanel">
+      <div class="section-title">All Jobs <span style="font-size:11px;opacity:.6">— filtered from DB</span></div>
+      <div class="filters" role="group" aria-label="Job filters">
+        <input id="jobs-search" type="text" placeholder="Search company or title..." aria-label="Search jobs" style="min-width:260px">
+        <select id="jobs-score" aria-label="Minimum score filter">
           <option value="0">All scores</option>
           <option value="4">≥ 4.0</option>
           <option value="3">≥ 3.0</option>
         </select>
-        <select id="jobs-fresh">
+        <select id="jobs-fresh" aria-label="Freshness filter">
           <option value="all">All time</option>
           <option value="fresh">Fresh (&lt;48h)</option>
         </select>
-        <button onclick="renderJobs()" class="btn" style="padding:8px 14px">Filter</button>
+        <button onclick="renderJobs()" class="btn" style="padding:8px 14px" aria-label="Apply filters">Filter</button>
       </div>
-      <div class="table-wrap">
+      <div class="table-wrap" aria-label="Jobs list">
         <table id="jobs-table">
           <thead><tr><th>Company</th><th>Role</th><th>Score</th><th>Location</th><th>Posted</th><th>Status</th></tr></thead>
           <tbody></tbody>
@@ -344,32 +518,34 @@
     </section>
 
     <!-- Evaluations -->
-    <section id="view-evaluations" class="view">
+    <section id="view-evaluations" class="view" role="tabpanel">
       <div class="section-title">Recent Evaluations</div>
-      <div id="evaluations-list"></div>
+      <div id="evaluations-list" aria-live="polite"></div>
     </section>
 
     <!-- Profile -->
-    <section id="view-profile" class="view">
+    <section id="view-profile" class="view" role="tabpanel">
       <div class="section-title">Your Profile</div>
-      <div class="profile" id="profile-card"></div>
+      <div class="profile" id="profile-card" aria-label="Candidate profile summary"></div>
     </section>
   </main>
 </div>
 
 <!-- Job / Eval Detail Modal -->
-<div id="detail-modal" class="modal" onclick="if (event.target.id === 'detail-modal') closeModal()">
+<div id="detail-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="if (event.target.id === 'detail-modal') closeModal()">
   <div class="modal-content" onclick="event.stopImmediatePropagation()">
     <div class="modal-header">
       <div>
         <div id="modal-company" style="font-size:13px;color:var(--muted)"></div>
         <h3 id="modal-title" style="font-size:19px; margin-top:2px"></h3>
       </div>
-      <button class="close-btn" onclick="closeModal()">×</button>
+      <button class="close-btn" onclick="closeModal()" aria-label="Close modal">×</button>
     </div>
     <div class="modal-body" id="modal-body">
       <!-- dynamic content -->
     </div>
+    <!-- Terminal actions footer area (populated by JS) -->
+    <div id="modal-actions" style="padding:0 24px 20px 24px; border-top:1px solid var(--border); margin-top:8px;"></div>
   </div>
 </div>
 
@@ -378,23 +554,23 @@
 const MOCK = {
   stats: { scanned: 287, evaluated: 61, applied: 24, offers: 3 },
   jobs: [
-    { id: 101, company: 'Razorpay', title: 'Senior Backend Engineer', location: 'Bengaluru', score: 4.7, postedAt: new Date(Date.now()-8*3600*1000).toISOString(), status: 'evaluated' },
-    { id: 102, company: 'PhonePe', title: 'Platform Engineer', location: 'Remote - India', score: 4.1, postedAt: new Date(Date.now()-38*3600*1000).toISOString(), status: 'applied' },
-    { id: 103, company: 'CRED', title: 'Staff SRE', location: 'Bengaluru', score: 3.6, postedAt: new Date(Date.now()-90*3600*1000).toISOString(), status: 'scanned' },
-    { id: 104, company: 'Zerodha', title: 'DevOps Engineer', location: 'Bengaluru', score: 4.9, postedAt: new Date(Date.now()-5*3600*1000).toISOString(), status: 'offer' },
-    { id: 105, company: 'Groww', title: 'Engineering Manager', location: 'Remote', score: 4.3, postedAt: new Date(Date.now()-70*3600*1000).toISOString(), status: 'interview' },
+    { id: 'mock:razorpay:101', company: 'Razorpay', title: 'Senior Backend Engineer', location: 'Bengaluru', url: 'https://example.com/razorpay-sr-be', score: 4.7, postedAt: new Date(Date.now()-8*3600*1000).toISOString(), status: 'active' },
+    { id: 'mock:phonepe:102', company: 'PhonePe', title: 'Platform Engineer', location: 'Remote - India', url: 'https://example.com/phonepe-pe', score: 4.1, postedAt: new Date(Date.now()-38*3600*1000).toISOString(), status: 'active' },
+    { id: 'mock:cred:103', company: 'CRED', title: 'Staff SRE', location: 'Bengaluru', url: 'https://example.com/cred-sre', score: 3.6, postedAt: new Date(Date.now()-90*3600*1000).toISOString(), status: 'active' },
+    { id: 'mock:zerodha:104', company: 'Zerodha', title: 'DevOps Engineer', location: 'Bengaluru', url: 'https://example.com/zerodha-doe', score: 4.9, postedAt: new Date(Date.now()-5*3600*1000).toISOString(), status: 'active' },
+    { id: 'mock:groww:105', company: 'Groww', title: 'Engineering Manager', location: 'Remote', url: 'https://example.com/groww-em', score: 4.3, postedAt: new Date(Date.now()-70*3600*1000).toISOString(), status: 'active' },
   ],
   evaluations: [
-    { id: 1, jobId: 101, company: 'Razorpay', title: 'Senior Backend Engineer', overallScore: 4.7,
+    { id: 1, jobId: 'mock:razorpay:101', company: 'Razorpay', title: 'Senior Backend Engineer', overallScore: 4.7,
       dimensions: { salary:5, stack:5, culture:4, growth:5, location:5, wlb:4, team:5, pmf:5, progression:4, dealbreakers:5 },
       matches: ['Node/TS', 'High scale payments', 'Strong culture'], mismatches: ['On-call rotation'],
       reasoning: 'Exceptional salary and tech alignment. Very high growth trajectory at a profitable fintech.', recommendation: 'Strong Apply', evaluatedAt: new Date().toISOString() }
   ],
   applications: [
-    { id: 'a1', jobId: 101, company: 'Razorpay', title: 'Senior Backend Engineer', status: 'applied', appliedAt: new Date().toISOString() },
-    { id: 'a2', jobId: 102, company: 'PhonePe', title: 'Platform Engineer', status: 'interview', appliedAt: new Date().toISOString() },
-    { id: 'a3', jobId: 104, company: 'Zerodha', title: 'DevOps Engineer', status: 'offer', appliedAt: new Date().toISOString() },
-    { id: 'a4', jobId: 105, company: 'Groww', title: 'Engineering Manager', status: 'evaluated', appliedAt: new Date().toISOString() }
+    { id: 'a1', jobId: 'mock:razorpay:101', company: 'Razorpay', title: 'Senior Backend Engineer', status: 'applied', appliedAt: new Date().toISOString() },
+    { id: 'a2', jobId: 'mock:phonepe:102', company: 'PhonePe', title: 'Platform Engineer', status: 'interview', appliedAt: new Date().toISOString() },
+    { id: 'a3', jobId: 'mock:zerodha:104', company: 'Zerodha', title: 'DevOps Engineer', status: 'offer', appliedAt: new Date().toISOString() },
+    { id: 'a4', jobId: 'mock:groww:105', company: 'Groww', title: 'Engineering Manager', status: 'evaluated', appliedAt: new Date().toISOString() }
   ],
   profile: {
     name: 'Your Name', currentRole: 'Senior Engineer', yearsOfExperience: 5,
@@ -405,6 +581,7 @@ const MOCK = {
 
 let state = { stats: null, jobs: [], evaluations: [], applications: [], profile: null };
 let currentFilter = { view: 'pipeline' };
+let lastUpdated = null;
 
 // ===== Helpers =====
 function showToast(msg, type = 'success') {
@@ -417,7 +594,7 @@ function showToast(msg, type = 'success') {
 async function fetchApi(path, fallback) {
   try {
     const r = await fetch(path);
-    if (!r.ok) throw new Error();
+    if (!r.ok) throw new Error('network');
     return await r.json();
   } catch {
     return JSON.parse(JSON.stringify(fallback));
@@ -425,12 +602,13 @@ async function fetchApi(path, fallback) {
 }
 
 function animateCount(el, endVal) {
-  const start = 0;
-  const dur = 850;
+  const start = parseInt(el.textContent) || 0;
+  const dur = 820;
   const t0 = performance.now();
   function tick(now) {
     const p = Math.min((now - t0) / dur, 1);
-    const val = Math.floor(start + (endVal - start) * (1 - Math.pow(1 - p, 3)));
+    const eased = 1 - Math.pow(1 - p, 3);
+    const val = Math.floor(start + (endVal - start) * eased);
     el.textContent = val;
     if (p < 1) requestAnimationFrame(tick);
     else el.textContent = endVal;
@@ -438,25 +616,115 @@ function animateCount(el, endVal) {
   requestAnimationFrame(tick);
 }
 
+function pulseStat(id) {
+  const stat = document.getElementById(id)?.parentElement;
+  if (!stat) return;
+  stat.classList.add('pulse');
+  setTimeout(() => stat.classList.remove('pulse'), 680);
+}
+
 function timeAgo(dateStr) {
   if (!dateStr) return '—';
-  const diff = (Date.now() - new Date(dateStr)) / 3600000;
-  if (diff < 1) return 'just now';
-  if (diff < 24) return Math.floor(diff) + 'h ago';
-  return Math.floor(diff / 24) + 'd ago';
+  const d = new Date(dateStr);
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  const hrs = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+  if (mins < 1) return 'just now';
+  if (hrs < 1) return `${mins}m ago`;
+  if (days < 1) return `${hrs}h ago`;
+  if (days < 7) return `${days}d ${Math.floor(hrs%24)}h ago`;
+  return d.toLocaleDateString(undefined, {month:'short', day:'numeric'});
+}
+
+function fullDate(dateStr) {
+  if (!dateStr) return '';
+  try { return new Date(dateStr).toLocaleString(); } catch { return dateStr; }
+}
+
+// Deterministic nice color avatar from company name (no deps)
+function getAvatarStyle(name) {
+  let h = 0;
+  for (let i=0; i<name.length; i++) h = (h * 31 + name.charCodeAt(i)) | 0;
+  const hue = Math.abs(h) % 360;
+  return `background: linear-gradient(135deg, hsl(${hue} 68% 58%), hsl(${(hue+38)%360} 72% 46%)); color:#111;`;
+}
+
+function getStatusPillClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'offer') return 's-offer';
+  if (s === 'interview') return 's-interview';
+  if (s === 'applied') return 's-applied';
+  if (s === 'evaluated') return 's-evaluated';
+  if (s === 'scanned' || s === 'active') return 's-scanned';
+  if (s === 'rejected') return 's-rejected';
+  if (s === 'closed') return 's-closed';
+  return 'outline';
+}
+
+function copyCmd(el) {
+  const text = el.textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = el.textContent;
+    el.textContent = '✓ copied';
+    setTimeout(() => { el.textContent = orig; }, 1100);
+  }).catch(() => showToast('Copy failed — ' + text, 'error'));
+}
+
+function showSkeletons(show) {
+  const board = document.getElementById('kanban-board');
+  const tableBody = document.querySelector('#jobs-table tbody');
+  if (!board || !tableBody) return;
+
+  if (show) {
+    board.classList.add('refreshing');
+    board.innerHTML = `
+      <div class="column"><div class="column-header"><span class="skeleton skeleton-text" style="width:80px"></span></div><div class="column-cards"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div></div></div>
+      <div class="column"><div class="column-header"><span class="skeleton skeleton-text" style="width:80px"></span></div><div class="column-cards"><div class="skeleton skeleton-card"></div><div class="skeleton skeleton-card"></div></div></div>
+      <div class="column"><div class="column-header"><span class="skeleton skeleton-text" style="width:80px"></span></div><div class="column-cards"><div class="skeleton skeleton-card"></div></div></div>
+    `;
+    const tb = tableBody; tb.innerHTML = `<tr><td colspan="6"><div class="skeleton skeleton-text" style="width:60%"></div></td></tr><tr><td colspan="6"><div class="skeleton skeleton-text" style="width:40%"></div></td></tr>`;
+  } else {
+    board.classList.remove('refreshing');
+  }
 }
 
 // ===== Views & Navigation =====
 function switchView(view, el) {
-  document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
-  if (el) el.classList.add('active');
+  // Deselect all
+  document.querySelectorAll('.nav-item').forEach(i => {
+    i.classList.remove('active');
+    i.setAttribute('aria-selected', 'false');
+  });
+  if (el) {
+    el.classList.add('active');
+    el.setAttribute('aria-selected', 'true');
+  }
+
+  // Hide all views
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.getElementById('view-' + view).classList.add('active');
+
+  // Show target with micro transition
+  const target = document.getElementById('view-' + view);
+  if (target) {
+    target.classList.add('active');
+    // force reflow then let css handle
+    void target.offsetWidth;
+  }
 }
 
 function refreshAll() {
-  init(true);
-  showToast('Refreshed from local DB');
+  const btns = document.querySelectorAll('.topbar-actions .btn');
+  btns.forEach(b => b.disabled = true);
+  showSkeletons(true);
+
+  setTimeout(async () => {   // tiny perceived delay to show feedback
+    await init(true);
+    showSkeletons(false);
+    btns.forEach(b => b.disabled = false);
+    if (lastUpdated) showToast('Refreshed • ' + lastUpdated.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}));
+    else showToast('Refreshed from local DB');
+  }, 90);
 }
 
 // ===== Modal =====
@@ -464,9 +732,10 @@ let modalEl;
 function openModal(jobOrEval) {
   modalEl = document.getElementById('detail-modal');
   const body = document.getElementById('modal-body');
+  const actionsContainer = document.getElementById('modal-actions');
   const isEval = !!jobOrEval.dimensions;
 
-  document.getElementById('modal-company').textContent = jobOrEval.company || '';
+  document.getElementById('modal-company').textContent = jobOrEval.company || '—';
   document.getElementById('modal-title').textContent = jobOrEval.title || 'Job';
 
   let html = '';
@@ -474,17 +743,17 @@ function openModal(jobOrEval) {
   if (isEval) {
     const ev = jobOrEval;
     const dimRows = Object.entries(ev.dimensions || {}).map(([k, v]) => {
-      const pct = Math.round(v * 20);
-      return `<div class="dim-item"><div class="label-row"><span>${k}</span><span style="font-variant-numeric:tabular-nums">${v}/5</span></div>
-        <div class="score-bar"><div class="score-fill" style="width:0%;background:${v>=4?'var(--green)':v>=3?'var(--amber)':'var(--red)'}"></div></div></div>`;
+      const val = typeof v === 'number' ? v : parseFloat(v) || 0;
+      return `<div class="dim-item"><div class="label-row"><span>${k}</span><span style="font-variant-numeric:tabular-nums">${val}/5</span></div>
+        <div class="score-bar"><div class="score-fill" style="width:0%;background:${val>=4?'var(--green)':val>=3?'var(--amber)':'var(--red)'}"></div></div></div>`;
     }).join('');
 
     html = `
       <div style="display:flex;gap:12px;align-items:center;margin-bottom:14px">
-        <span class="pill ${ev.overallScore >=4 ? 'g' : ev.overallScore>=3 ? 'a' : 'r'}" style="font-size:15px;padding:3px 12px">${ev.overallScore.toFixed(1)}</span>
-        <span class="pill b">${ev.recommendation}</span>
+        <span class="pill ${ev.overallScore >=4 ? 'g' : ev.overallScore>=3 ? 'a' : 'r'}" style="font-size:15px;padding:3px 12px">${(ev.overallScore||0).toFixed(1)}</span>
+        <span class="pill b">${ev.recommendation || ''}</span>
       </div>
-      <p style="color:#cbd5e1; margin: 4px 0 14px">${ev.reasoning}</p>
+      <p style="color:#cbd5e1; margin: 4px 0 14px">${ev.reasoning || ''}</p>
       <div style="margin-bottom:8px"><strong style="font-size:12px;color:var(--muted)">Matches</strong></div>
       <div class="chips">${(ev.matches||[]).map(m => `<span class="pill g">${m}</span>`).join('')}</div>
       <div style="margin-bottom:8px"><strong style="font-size:12px;color:var(--muted)">Watch-outs</strong></div>
@@ -492,65 +761,106 @@ function openModal(jobOrEval) {
       <div style="margin:18px 0 6px"><strong style="font-size:12px;color:var(--muted)">10-Dimension Breakdown</strong></div>
       <div class="dim-grid">${dimRows}</div>
     `;
+
+    body.innerHTML = html;
+    actionsContainer.innerHTML = `<div style="font-size:11px;color:#64748b;margin-top:4px">Evaluation loaded from DB. Run full commands below for new jobs.</div>`;
   } else {
     const j = jobOrEval;
+    const posted = j.postedAt ? `<span class="time" title="${fullDate(j.postedAt)}">${timeAgo(j.postedAt)}</span>` : '';
+    const scorePill = j.score ? `<span class="pill ${j.score>=4?'g':j.score>=3?'a':'r'}" style="margin-left:6px">${j.score.toFixed(1)}</span>` : '';
+    const statusPill = `<span class="pill ${getStatusPillClass(j.status)}" style="margin-left:6px">${j.status || 'scanned'}</span>`;
+
     html = `
-      <div style="margin:4px 0 16px">
+      <div style="margin:4px 0 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap">
         <span class="pill outline">${j.location || '—'}</span>
-        <span class="pill outline" style="margin-left:6px">${j.status || 'scanned'}</span>
-        ${j.score ? `<span class="pill ${j.score>=4?'g':j.score>=3?'a':'r'}" style="margin-left:6px">${j.score.toFixed(1)}</span>` : ''}
-        <span style="margin-left:10px;color:var(--muted);font-size:12.5px">${j.postedAt ? timeAgo(j.postedAt) : ''}</span>
+        ${statusPill}
+        ${scorePill}
+        ${posted}
       </div>
-      <div style="margin-top:18px">
-        <strong>Quick actions</strong>
-        <div class="action-row">
-          <button onclick="triggerAction('evaluate', ${j.id});closeModal()" class="btn">📊 Evaluate in CLI</button>
-          <button onclick="triggerAction('resume', ${j.id});closeModal()" class="btn">📄 Generate Resume</button>
-          <button onclick="triggerAction('prep', ${j.id});closeModal()" class="btn">🎯 Interview Prep</button>
-          <button onclick="triggerAction('apply', ${j.id});closeModal()" class="btn">🚀 Apply / Auto-fill</button>
-          <a href="#" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(j.company + ' ' + j.title)}', '_blank');return false" class="btn">🔗 View on web</a>
-        </div>
+      <div style="margin-top:4px">
+        ${j.url ? `<a href="${j.url}" target="_blank" rel="noopener" style="color:#64748b;font-size:12.5px">${j.url}</a>` : ''}
       </div>
-      <div style="margin-top:22px;font-size:12px;color:#64748b">Tip: Full details, resume generation and auto-fill happen in the terminal using <code>node hunt-job.js</code>.</div>
     `;
+
+    body.innerHTML = html;
+
+    // Prominent terminal command buttons
+    const idSafe = String(j.id || '').replace(/"/g, '\\"');
+    const urlSafe = (j.url || '').replace(/"/g, '\\"');
+    const companyTitle = (j.company + ' ' + j.title).replace(/"/g, '');
+
+    const cmds = [];
+    if (urlSafe) {
+      cmds.push({ label: '📊  Evaluate', cmd: `node hunt-job.js evaluate "${urlSafe}"` });
+      cmds.push({ label: '🎯  Interview Prep', cmd: `node hunt-job.js prep "${urlSafe}"` });
+    } else {
+      cmds.push({ label: '📊  Evaluate', cmd: `node hunt-job.js evaluate "PASTE_URL_OR_JD_HERE"` });
+    }
+    cmds.push({ label: '📄  Tailored Resume', cmd: `node hunt-job.js resume "${idSafe}"` });
+    cmds.push({ label: '🚀  Hunt / Apply flow', cmd: `node hunt-job.js hunt --archetype "${(j.company||'').split(' ')[0] || 'Backend Engineer'}"` });
+
+    let btnHtml = '<div style="margin:14px 0 4px;font-weight:600;font-size:12.5px">Run in terminal</div><div class="action-row" style="margin-top:6px">';
+    cmds.forEach(c => {
+      const isPrimary = c.label.includes('Evaluate') || c.label.includes('Resume');
+      btnHtml += `<button class="run-btn ${isPrimary ? 'primary' : ''}" onclick="copyTerminalCmd('${c.cmd.replace(/'/g, "\\'")}');event.stopImmediatePropagation()"> ${c.label} </button>`;
+    });
+    btnHtml += `<button class="run-btn" onclick="window.open('https://www.google.com/search?q=${encodeURIComponent(companyTitle)}', '_blank');event.stopImmediatePropagation()">🔎 Web search</button>`;
+    btnHtml += '</div><div style="font-size:10.5px;color:#475569;margin-top:8px">Commands are accurate to the current job. Paste into your terminal (the dashboard is local-only).</div>';
+
+    actionsContainer.innerHTML = btnHtml;
   }
 
-  body.innerHTML = html;
   modalEl.classList.add('active');
 
-  // trigger animated bars
+  // re-animate score bars for eval
   setTimeout(() => {
     body.querySelectorAll('.score-fill').forEach(el => {
-      const w = el.style.width;
+      const targetW = el.style.width || '0%';
       el.style.width = '0%';
-      requestAnimationFrame(() => { el.style.width = w; });
+      requestAnimationFrame(() => { el.style.width = targetW; });
     });
-  }, 90);
-}
-function closeModal() {
-  if (modalEl) modalEl.classList.remove('active');
+  }, 110);
 }
 
-// ===== Kanban Pipeline =====
+function closeModal() {
+  if (modalEl) modalEl.classList.remove('active');
+  // clear actions to avoid stale
+  const act = document.getElementById('modal-actions');
+  if (act) act.innerHTML = '';
+}
+
+function copyTerminalCmd(cmd) {
+  navigator.clipboard.writeText(cmd).then(() => {
+    showToast('Copied: ' + cmd);
+    // keep modal open so user can use multiple commands
+  }).catch(() => {
+    showToast('Run this: ' + cmd, 'error');
+  });
+}
+
+// ===== Kanban Pipeline (visual + micro-anim + confetti) =====
 function renderPipeline() {
   const board = document.getElementById('kanban-board');
   board.innerHTML = '';
   const cols = ['scanned', 'evaluated', 'applied', 'interview', 'offer', 'rejected'];
 
-  cols.forEach(col => {
+  cols.forEach((col, colIdx) => {
     const colEl = document.createElement('div');
     colEl.className = 'column';
+    colEl.dataset.col = col;
 
     const apps = state.applications.filter(a => a.status === col);
+    const label = col[0].toUpperCase() + col.slice(1);
     colEl.innerHTML = `
       <div class="column-header">
-        <span>${col[0].toUpperCase() + col.slice(1)}</span>
-        <span class="column-count">${apps.length}</span>
+        <span>${label}</span>
+        <span class="column-count" aria-label="${apps.length} items">${apps.length}</span>
       </div>
     `;
 
     const cardsWrap = document.createElement('div');
     cardsWrap.className = 'column-cards';
+    cardsWrap.setAttribute('aria-label', `${col} column — drop zone`);
 
     cardsWrap.addEventListener('dragover', e => { e.preventDefault(); cardsWrap.classList.add('drag-over'); });
     cardsWrap.addEventListener('dragleave', () => cardsWrap.classList.remove('drag-over'));
@@ -560,39 +870,62 @@ function renderPipeline() {
       handleDrop(id, col);
     });
 
-    apps.forEach(app => {
+    if (apps.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty';
+      empty.style.padding = '18px 10px';
+      empty.style.fontSize = '12px';
+      empty.innerHTML = col === 'offer' ? 'No offers yet — drag a strong match here!' : 'Drop cards here';
+      cardsWrap.appendChild(empty);
+    }
+
+    apps.forEach((app, idx) => {
       const card = document.createElement('div');
       card.className = 'kanban-card';
       card.draggable = true;
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+      card.setAttribute('aria-label', `${app.company} — ${app.title}`);
 
       const ev = state.evaluations.find(e => e.jobId === app.jobId);
-      const scoreHtml = ev ? `<span class="pill ${ev.overallScore >= 4 ? 'g' : ev.overallScore >= 3 ? 'a' : 'r'}">${ev.overallScore.toFixed(1)}</span>` : '';
-      const fresh = state.jobs.find(j => j.id === app.jobId && j.postedAt && (Date.now() - new Date(j.postedAt) < 48*3600*1000)) ? `<span class="pill fresh">fresh</span>` : '';
+      const scoreHtml = ev ? `<span class="pill ${ev.overallScore >= 4 ? 'g' : ev.overallScore >= 3 ? 'a' : 'r'}">${(ev.overallScore||0).toFixed(1)}</span>` : '';
+      const fresh = state.jobs.find(j => j.id === app.jobId && j.postedAt && (Date.now() - new Date(j.postedAt).getTime() < 48*3600*1000)) ? `<span class="pill fresh">fresh</span>` : '';
 
-      const initials = app.company.slice(0,2).toUpperCase();
+      const jobRef = state.jobs.find(jj => jj.id === app.jobId);
+      const posted = jobRef && jobRef.postedAt ? `<span class="time" title="${fullDate(jobRef.postedAt)}">${timeAgo(jobRef.postedAt)}</span>` : '';
+      const loc = jobRef && jobRef.location ? `<span class="loc" style="margin-left:auto">${jobRef.location}</span>` : '';
 
+      const initials = (app.company || '??').slice(0,2).toUpperCase();
+      const avatarStyle = getAvatarStyle(app.company || 'xx');
+
+      card.dataset.status = app.status;
       card.innerHTML = `
         <div class="company-row">
-          <div class="avatar">${initials}</div>
-          <div style="font-size:12.5px;color:var(--muted);font-weight:500">${app.company}</div>
+          <div class="avatar" style="${avatarStyle}">${initials}</div>
+          <div style="font-size:12.5px;color:var(--muted);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis">${app.company}</div>
         </div>
-        <h4>${app.title}</h4>
+        <h4 style="line-height:1.25">${app.title}</h4>
         <div class="meta">
-          ${scoreHtml}
-          ${fresh}
+          ${scoreHtml} ${fresh} ${posted}
+          ${loc}
         </div>
       `;
 
-      card.addEventListener('click', () => {
-        const job = state.jobs.find(jj => jj.id === app.jobId) || { id: app.jobId, company: app.company, title: app.title };
+      const open = () => {
+        const job = jobRef || { id: app.jobId, company: app.company, title: app.title, status: app.status };
         openModal(job);
-      });
+      };
+      card.addEventListener('click', open);
+      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
 
       card.addEventListener('dragstart', e => {
         e.dataTransfer.setData('text/plain', app.id);
         setTimeout(() => card.classList.add('dragging'), 0);
       });
       card.addEventListener('dragend', () => card.classList.remove('dragging'));
+
+      // subtle stagger via style for dynamic renders
+      card.style.animationDelay = (idx * 38 + colIdx * 12) + 'ms';
 
       cardsWrap.appendChild(card);
     });
@@ -602,25 +935,76 @@ function renderPipeline() {
   });
 }
 
+function launchConfetti() {
+  const c = document.createElement('canvas');
+  c.className = 'confetti';
+  c.width = window.innerWidth; c.height = window.innerHeight;
+  document.body.appendChild(c);
+  const ctx = c.getContext('2d');
+  const pieces = Array.from({length: 64}, () => ({
+    x: Math.random()*c.width,
+    y: Math.random()*c.height*0.6 - 40,
+    size: 6 + Math.random()*7,
+    vy: 1.8 + Math.random()*2.2,
+    vx: (Math.random()-0.5)*1.8,
+    rot: Math.random()*6.28,
+    vr: (Math.random()-0.5)*0.2,
+    hue: 140 + Math.random()*45
+  }));
+  let t = 0;
+  function draw() {
+    ctx.clearRect(0,0,c.width,c.height);
+    pieces.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rot);
+      ctx.fillStyle = `hsl(${p.hue} 82% 58%)`;
+      ctx.fillRect(-p.size/2, -p.size/2, p.size, p.size*0.6);
+      ctx.restore();
+    });
+    t++;
+    pieces.forEach(p => {
+      p.x += p.vx; p.y += p.vy; p.vy += 0.035; p.rot += p.vr;
+      if (p.y > c.height + 20) p.y = -10;
+    });
+    if (t < 92) requestAnimationFrame(draw);
+    else c.remove();
+  }
+  draw();
+  // auto clean fallback
+  setTimeout(() => c.remove(), 3800);
+}
+
 async function handleDrop(appId, newStatus) {
   const app = state.applications.find(a => a.id === appId);
   if (!app || app.status === newStatus) return;
+  const prev = app.status;
   app.status = newStatus;
 
   renderPipeline();
+
+  // Delight: confetti on reaching offer
+  if (newStatus === 'offer' && prev !== 'offer') {
+    setTimeout(launchConfetti, 120);
+    showToast('🎉 Offer! Amazing work — congrats!', 'success');
+  } else {
+    showToast(`Moved to ${newStatus}`);
+  }
 
   try {
     await fetch(`/api/applications/${encodeURIComponent(appId)}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: newStatus })
     });
-    showToast(`Moved to ${newStatus}`);
+    // stats may have changed
+    state.stats = await fetchApi('/api/stats', state.stats || MOCK.stats);
+    renderStats(true);
   } catch {
     showToast('Updated locally (offline mode)');
   }
 }
 
-// ===== Jobs table =====
+// ===== Jobs table (visual) =====
 function renderJobs() {
   const tbody = document.querySelector('#jobs-table tbody');
   tbody.innerHTML = '';
@@ -639,7 +1023,9 @@ function renderJobs() {
     if (freshOnly && !isFresh) return;
 
     const score = job.score ? `<span class="pill ${job.score>=4?'g':job.score>=3?'a':'r'}">${job.score.toFixed(1)}</span>` : '<span class="text-muted">—</span>';
-    const posted = job.postedAt ? timeAgo(job.postedAt) : '—';
+    const posted = job.postedAt ? `<span title="${fullDate(job.postedAt)}">${timeAgo(job.postedAt)}</span>` : '—';
+    const statusCls = getStatusPillClass(job.status);
+    const status = `<span class="pill ${statusCls}">${job.status || 'active'}</span>`;
 
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -648,9 +1034,10 @@ function renderJobs() {
       <td>${score}</td>
       <td class="text-muted">${job.location || '—'}</td>
       <td class="text-muted">${posted}</td>
-      <td><span class="pill outline">${job.status || 'scanned'}</span></td>
+      <td>${status}</td>
     `;
     tr.onclick = () => openModal(job);
+    tr.style.cursor = 'pointer';
     tbody.appendChild(tr);
   });
 }
@@ -661,20 +1048,22 @@ function renderEvaluations() {
   container.innerHTML = '';
 
   if (!state.evaluations.length) {
-    container.innerHTML = '<div class="empty">No evaluations yet. Run <code>node hunt-job.js evaluate "URL"</code></div>';
+    container.innerHTML = `<div class="empty">No evaluations yet.<br>Try: <code style="cursor:pointer" onclick="copyCmd(this)">node hunt-job.js evaluate "https://..."</code></div>`;
     return;
   }
 
-  state.evaluations.forEach(ev => {
+  state.evaluations.forEach((ev, i) => {
     const c = document.createElement('div');
     c.className = 'eval-card';
+    c.style.animationDelay = (i * 45) + 'ms';
 
-    const colorCls = ev.overallScore >= 4 ? 'g' : (ev.overallScore >= 3 ? 'a' : 'r');
-    const dims = Object.entries(ev.dimensions || {}).map(([k, v]) =>
-      `<div class="dim-item" data-score="${Math.floor(v)}">
-         <div class="label-row"><span>${k}</span><span>${v}/5</span></div>
-         <div class="score-bar"><div class="score-fill" style="width:${v*20}%"></div></div>
-       </div>`).join('');
+    const scoreNum = ev.overallScore || 0;
+    const colorCls = scoreNum >= 4 ? 'g' : (scoreNum >= 3 ? 'a' : 'r');
+    const dims = Object.entries(ev.dimensions || {}).map(([k, vv]) => {
+      const v = typeof vv === 'number' ? vv : parseFloat(vv)||0;
+      return `<div class="dim-item"><div class="label-row"><span>${k}</span><span>${v}/5</span></div>
+        <div class="score-bar"><div class="score-fill" style="width:${v*20}%"></div></div></div>`;
+    }).join('');
 
     c.innerHTML = `
       <div class="eval-summary" onclick="this.closest('.eval-card').classList.toggle('open')">
@@ -683,12 +1072,12 @@ function renderEvaluations() {
           <span class="text-muted" style="margin-left:10px">${ev.company}</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
-          <span class="pill ${colorCls}" style="padding:2px 10px">${ev.overallScore.toFixed(1)}</span>
+          <span class="pill ${colorCls}" style="padding:2px 10px">${scoreNum.toFixed(1)}</span>
           <span style="color:#64748b;font-size:11px">▾</span>
         </div>
       </div>
       <div class="eval-details">
-        <p style="font-size:13.5px;color:#cbd5e1">${ev.reasoning}</p>
+        <p style="font-size:13.5px;color:#cbd5e1">${ev.reasoning || ''}</p>
         <div class="chips" style="margin:10px 0 6px">
           ${(ev.matches||[]).map(m=>`<span class="pill g">${m}</span>`).join('')}
           ${(ev.mismatches||[]).map(m=>`<span class="pill r">${m}</span>`).join('')}
@@ -705,7 +1094,10 @@ function renderEvaluations() {
 function renderProfile() {
   const el = document.getElementById('profile-card');
   const p = state.profile || MOCK.profile;
-  if (!p) { el.innerHTML = '<div class="empty">No profile. Run <code>npm run profile:init</code></div>'; return; }
+  if (!p || !p.name) {
+    el.innerHTML = `<div class="empty">No profile yet.<br>Run <code style="cursor:pointer" onclick="copyCmd(this)">node hunt-job.js profile init</code> or <code style="cursor:pointer" onclick="copyCmd(this)">node hunt-job.js profile edit</code></div>`;
+    return;
+  }
 
   const arch = (p.archetypes || []).map(a => `<span class="pill outline">${a}</span>`).join(' ');
   const tech = (p.techStack || []).map(t => `<span class="pill outline">${t}</span>`).join(' ');
@@ -713,7 +1105,7 @@ function renderProfile() {
 
   el.innerHTML = `
     <h2>${p.name}</h2>
-    <div class="role">${p.currentRole} · ${p.yearsOfExperience || '?'} years</div>
+    <div class="role">${p.currentRole || ''} · ${p.yearsOfExperience || '?'} years</div>
     <div style="margin:20px 0 12px"><span style="font-size:11px;color:var(--muted);text-transform:uppercase">Target Archetypes</span><div style="margin-top:6px">${arch || '—'}</div></div>
     <div style="margin:12px 0"><span style="font-size:11px;color:var(--muted);text-transform:uppercase">Tech Stack</span><div style="margin-top:6px">${tech || '—'}</div></div>
     <div><span style="font-size:11px;color:var(--muted);text-transform:uppercase">Salary Expectation</span>
@@ -722,31 +1114,42 @@ function renderProfile() {
   `;
 }
 
-// ===== Action hints (CLI) =====
+// ===== Action hints (legacy) =====
 function triggerAction(type, jobId) {
   const job = state.jobs.find(j => j.id === jobId) || {};
-  let cmd = '';
-  if (type === 'evaluate') cmd = `node hunt-job.js evaluate "${job.url || 'URL'}"`;
-  if (type === 'resume') cmd = `node hunt-job.js resume ${jobId}`;
-  if (type === 'prep') cmd = `node hunt-job.js prep "paste JD or path"`;
-  if (type === 'apply') cmd = `node hunt-job.js (use interactive apply flow)`;
-  showToast('Copy & run in terminal: ' + cmd);
-  navigator.clipboard?.writeText(cmd).catch(()=>{});
+  let cmd = `node hunt-job.js `;
+  if (type === 'evaluate') cmd += `evaluate "${job.url || 'URL_HERE'}"`;
+  else if (type === 'resume') cmd += `resume "${jobId}"`;
+  else if (type === 'prep') cmd += `prep "paste JD or path"`;
+  else if (type === 'apply') cmd += `start`;
+  showToast('Copied command');
+  navigator.clipboard?.writeText(cmd).catch(() => {});
+  // Also open modal with correct buttons
+  openModal(job);
 }
 
-// ===== Stats =====
-function renderStats() {
+// ===== Stats (with pulse) =====
+function renderStats(pulse = false) {
   const s = state.stats || MOCK.stats;
   const map = {
     'stat-scanned': s.scanned,
     'stat-evaluated': s.evaluated,
     'stat-applied': s.applied,
-    'stat-offers': s.offers || s.interviews || 0
+    'stat-offers': s.offers || 0
   };
   Object.entries(map).forEach(([id, val]) => {
     const el = document.getElementById(id);
-    if (el) animateCount(el, val || 0);
+    if (!el) return;
+    const prev = parseInt(el.textContent) || 0;
+    animateCount(el, val || 0);
+    if (pulse && val !== prev) pulseStat(id);
   });
+}
+
+function updateLastUpdated() {
+  lastUpdated = new Date();
+  const el = document.getElementById('last-sync');
+  if (el) el.textContent = 'Last synced: ' + lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
 // ===== Init =====
@@ -757,67 +1160,98 @@ async function init(silent = false) {
   state.applications = await fetchApi('/api/applications', MOCK.applications);
   state.profile = await fetchApi('/api/profile', MOCK.profile);
 
-  renderStats();
+  const didChange = true; // always pulse lightly on refresh
+  renderStats(!silent);
   renderPipeline();
   renderJobs();
   renderEvaluations();
   renderProfile();
+
+  updateLastUpdated();
 
   // wire filters once
   if (!window._filtersWired) {
     ['jobs-search', 'jobs-score', 'jobs-fresh'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', renderJobs);
+      if (el) el.addEventListener('change', renderJobs);
     });
+    // live filter chips effect (if used elsewhere)
     window._filtersWired = true;
   }
 
   if (!silent) {
-    // subtle first-load animation hint
+    // subtle first-load stagger reinforcement
     setTimeout(() => {
       document.querySelectorAll('.kanban-card').forEach((c, i) => {
-        c.style.animation = `pop ${320 + i * 30}ms ease`;
+        c.style.transition = 'transform .18s, box-shadow .18s';
       });
-    }, 140);
+    }, 180);
+  }
+
+  // light pulse stats area on full refresh for delight
+  if (!silent) setTimeout(() => { document.querySelectorAll('.stat').forEach(s => { s.style.transitionDuration='80ms'; }); }, 400);
+}
+
+// Toggle Quick Start panel (for topbar button + accessibility)
+function toggleQuickStart() {
+  const panel = document.getElementById('quickstart-panel');
+  if (!panel) return;
+  if (panel.hasAttribute('open')) {
+    panel.removeAttribute('open');
+  } else {
+    panel.setAttribute('open', '');
   }
 }
 
 // Boot
 window.addEventListener('load', () => {
   init();
-  // Keyboard: / focuses search in jobs view
+
+  // Keyboard enhancements
   document.addEventListener('keydown', e => {
     if (e.key === '/' && document.activeElement.tagName === 'BODY') {
       e.preventDefault();
-      const jobsView = document.getElementById('view-jobs');
-      if (!jobsView.classList.contains('active')) {
-        document.querySelector('[data-view="jobs"]').click();
+      const jobsNav = document.querySelector('[data-view="jobs"]');
+      if (jobsNav && !document.getElementById('view-jobs').classList.contains('active')) {
+        jobsNav.click();
       }
-      document.getElementById('jobs-search')?.focus();
+      setTimeout(() => document.getElementById('jobs-search')?.focus(), 30);
     }
     if (e.key === 'Escape') {
-      document.getElementById('detail-modal')?.classList.remove('active');
+      const modal = document.getElementById('detail-modal');
+      if (modal && modal.classList.contains('active')) {
+        closeModal();
+      } else {
+        // close quickstart if open
+        document.getElementById('quickstart-panel')?.removeAttribute('open');
+      }
+    }
+    if (e.key.toLowerCase() === '?' && document.activeElement.tagName === 'BODY') {
+      e.preventDefault();
+      toggleQuickStart();
     }
   });
-  // helpful first tip
-  setTimeout(() => {
-    if (!localStorage.getItem('hj_tipped')) {
-      // no persistent spam
-    }
-  }, 6000);
-});
 
-function showHint() {
-  const text = `Essential commands:
-• npm start
-• node hunt-job.js hunt --archetype "Backend Engineer"
-• node hunt-job.js scan --archetype "..."
-• node hunt-job.js watch --archetype "SRE"
-• npm run dashboard
-• node hunt-job.js evaluate "URL"
-• node hunt-job.js audit-portals`;
-  alert(text);
-}
+  // Make nav items more keyboard friendly
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.setAttribute('role', 'tab');
+    item.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') {
+        ev.preventDefault();
+        item.click();
+      }
+    });
+  });
+
+  // Initial subtle refresh cue
+  setTimeout(() => {
+    const sc = document.getElementById('stat-scanned');
+    if (sc && parseInt(sc.textContent) > 0) {
+      // pulse once on boot if data exists
+    }
+  }, 900);
+});
 </script>
 </body>
 </html>
