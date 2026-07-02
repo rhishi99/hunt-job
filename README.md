@@ -10,7 +10,7 @@
 
 | I want to... | Read this | Time |
 |---|---|---|
-| **Get running NOW** | [QUICK_START.md](QUICK_START.md) | 10 min |
+| **Get running NOW** | [QUICKSTART.md](QUICKSTART.md) | 10 min |
 | **Understand everything** | [SETUP_GUIDE.md](SETUP_GUIDE.md) | 1 hour |
 | **Have questions** | [FAQ.md](FAQ.md) | 5 min |
 | **See feature comparison** | [COMPARISON.md](COMPARISON.md) | 10 min |
@@ -25,8 +25,10 @@
 | Interactive terminal UI | ❌ | ✅ |
 | 5 AI providers (Claude, Gemini, Groq, OpenRouter, NVIDIA) | ❌ | ✅ |
 | India-only location enforcement | ❌ | ✅ |
-| 108+ companies via Lever + Greenhouse APIs | ❌ | ✅ |
-| SQLite scan cache (no re-scanning daily) | ❌ | ✅ |
+| 6 ATS platforms (Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable) + JSON-LD fallback | ❌ | ✅ |
+| One SQLite database — jobs, evaluations, applications, dedup + change detection | ❌ | ✅ |
+| `hunt-job watch` — periodic scan + desktop notification on new matches | ❌ | ✅ |
+| Local web dashboard (`hunt-job dashboard`, `localhost:7777`) | ❌ | ✅ |
 | Interview prep with YouTube + 4-week schedule | ❌ | ✅ |
 | Browser auto-fill (form selectors) | ❌ | ✅ |
 
@@ -83,8 +85,18 @@ npm run hunt -- --archetype "Cloud Engineer" --limit 10
 # Evaluate any job posting
 npm run evaluate-job -- "https://company.com/jobs/123"
 
-# Scan 108+ Indian company portals
+# Scan Indian company portals across all 6 ATS platforms + JSON-LD fallback
 npm run scan-portals -- --archetype "Cloud Engineer"
+
+# Watch for new matches every 30 min + desktop notification (Ctrl+C to stop)
+npm run watch -- --archetype "Cloud Engineer"
+
+# Re-verify every company's ATS platform/slug, or a single career page
+node hunt-job.js audit-portals
+node hunt-job.js detect https://careers.company.com
+
+# Local web dashboard (pipeline board, job list, timelines) — localhost:7777
+npm run dashboard
 
 # Generate ATS-optimized resume
 npm run generate-resume -- job_123
@@ -117,15 +129,13 @@ Every job is scored across:
 
 ### 2. Portal Scanning — India Focused
 
-Scans **108+ companies** via Lever (~56) and Greenhouse (~52) public APIs. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
+Scans a registry of **200+ companies** (`data/hunt-job.db` → `companies` table, seeded from `config/company-portals.json`) via direct public JSON APIs across **6 ATS platforms** — Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable — with a **JSON-LD fallback** provider that reads schema.org `JobPosting` markup off the career page for everything else. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
 
-**Results are sorted by posting date (newest first)** — jobs posted in the last 48 hours get a 🔥 badge for early-applier advantage.
+Every scan **upserts into SQLite** with content-hash change detection and soft-closes postings the ATS stops reporting — "new since last scan" is a real query. **Results are sorted by posting date (newest first)** — jobs posted in the last 48 hours get a 🔥 badge for early-applier advantage.
 
-**Indian product companies (Lever):** Paytm, CRED, Groww, Meesho, Chargebee, BrowserStack, Freshworks, Juspay, ShareChat, Darwinbox, Zetwerk, MoEngage, Lenskart, BharatPe, Jupiter, Cars24, NoBroker, Physics Wallah, Yellow.ai, Observe.AI, Rapido, Whatfix, Khatabook, Simpl, and 30+ more.
+Run `node hunt-job.js audit-portals` to re-verify/re-detect ATS platform + slug for every company in the registry, or `node hunt-job.js detect <careers-url>` for a single one. Companies auto-disable after 5 consecutive scan failures and re-enable once `audit-portals` finds them healthy again.
 
-**Indian product companies (Greenhouse):** Razorpay, Flipkart, Swiggy, PhonePe, Ola, Zomato, Dream11, Nykaa, Zepto, InMobi, Acko, Scaler, Pocket FM, and 10+ more.
-
-**Global companies with India engineering:** Stripe, Cloudflare, Datadog, Databricks, Snowflake, MongoDB, Figma, HubSpot, Asana, HashiCorp, Brex, Miro, Intercom, Revolut, Anthropic, Cohere, GitLab, Scale AI, Rubrik, Plaid, and 15+ more.
+Want alerts instead of re-running scans by hand? `node hunt-job.js watch --archetype "..."` polls on an interval and pops a desktop notification when new matches appear.
 
 ### 3. Resume Generation
 
@@ -157,27 +167,42 @@ Generates a personalized prep plan including:
 ## Architecture
 
 ```
-career-ops/
+hunt-job/
+├── hunt-job.js                   # CLI entry point — arg-parser → dispatch
 ├── src/
-│   ├── core/
-│   │   ├── jobEvaluator.js       # 10-dimension scoring
-│   │   ├── portalScanner.js      # Lever + Greenhouse APIs
+│   ├── core/                     # Pure services — no console I/O, no inquirer
+│   │   ├── db.js                 # SQLite singleton + migrations (data/hunt-job.db)
+│   │   ├── jobEvaluator.js       # 10-dimension scoring — fetches the JD before the LLM call
 │   │   ├── resumeGenerator.js    # PDF generation
 │   │   ├── interviewPrep.js      # Prep + YouTube
 │   │   ├── profileManager.js     # Profile CRUD
-│   │   └── aiClient.js           # Multi-provider AI
-│   └── cli/
-│       ├── interactive.js        # Terminal menu
-│       └── evaluateJob.js, etc.
+│   │   ├── aiClient.js           # Multi-provider AI
+│   │   ├── autoFill/             # ATS platform detection + form-fill adapters
+│   │   └── scan/                 # Scanner v2 — provider architecture
+│   │       ├── index.js          # orchestrator: scanAll()
+│   │       ├── detect.js         # ATS auto-detection
+│   │       ├── httpClient.js     # fetch + retry + rate-limit + ETag cache
+│   │       ├── normalize.js      # NormalizedJob shape + India/archetype filters
+│   │       └── providers/        # greenhouse, lever, ashby, smartrecruiters,
+│   │                             # recruitee, workable, jsonld (fallback)
+│   ├── cli/
+│   │   ├── interactive.js        # Terminal menu shell
+│   │   ├── watch.js              # `hunt-job watch`
+│   │   ├── auditPortals.js       # `hunt-job audit-portals`
+│   │   ├── flows/                # One file per interactive-menu flow
+│   │   └── evaluateJob.js, etc.
+│   └── web/
+│       ├── server.js             # `hunt-job dashboard` — stdlib http + JSON API
+│       └── dashboard.html        # Single-file local dashboard UI
 ├── config/
 │   ├── profile.yml               # Your profile (generated)
-│   └── company-portals.json      # Portal config
+│   └── company-portals.json      # Seed data for the `companies` table
 ├── data/
-│   ├── evaluated-jobs.json       # Evaluation history
-│   ├── applications.json         # Tracker
+│   ├── hunt-job.db               # SQLite — companies, jobs, evaluations, applications, documents
+│   ├── logs/                     # JSONL logs
 │   └── resumes/                  # Generated PDFs
 ├── README.md                     # Command reference (you are here)
-├── QUICK_START.md                # 10-min setup
+├── QUICKSTART.md                # 10-min setup
 ├── SETUP_GUIDE.md                # Complete guide + optimization + templates
 ├── FAQ.md                        # Q&A
 ├── COMPARISON.md                 # Original vs fork
@@ -232,11 +257,10 @@ Set once via `npm start` → **Update Profile**:
 | Data | Where |
 |---|---|
 | Your profile | Local only (`config/profile.yml`) |
-| Evaluated jobs | Local only (`data/evaluated-jobs.json`) |
+| Scanned jobs, evaluations, applications | Local only (`data/hunt-job.db`, SQLite) |
 | Generated resumes | Local only (`data/resumes/`) |
 | Job descriptions | Sent to AI provider for analysis |
 | Profile info | Sent to AI provider (for resume/eval) |
-| Application data | Local only (`data/applications.json`) |
 
 **No data uploaded to job boards.** Only your chosen AI provider receives job/profile text for processing.
 
@@ -325,7 +349,7 @@ npm run profile:init
 
 | Question Type | See |
 |---|---|
-| How do I set up? | [QUICK_START.md](QUICK_START.md) (10 min) or [SETUP_GUIDE.md](SETUP_GUIDE.md) (1 hour) |
+| How do I set up? | [QUICKSTART.md](QUICKSTART.md) (10 min) or [SETUP_GUIDE.md](SETUP_GUIDE.md) (1 hour) |
 | How does feature X work? | [CLAUDE.md](CLAUDE.md) (full API reference) |
 | What's the difference from original? | [COMPARISON.md](COMPARISON.md) |
 | Should I use this or LinkedIn? | [VS_LINKEDIN.md](VS_LINKEDIN.md) |

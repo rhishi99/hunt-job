@@ -30,20 +30,19 @@ Analyzes job postings across 10 dimensions:
 - `Score the Data Engineer role at [Company]`
 
 ### 2. **Portal Scanning Mode** (`/scan-portals`)
-Scans 45+ pre-configured company career pages for matching roles in India.
+Scans companies via direct ATS JSON APIs — no HTML scraping for the platforms below:
 
-**Pre-configured Indian Companies (30+):**
-- **Tech Giants:** Google, Microsoft, Amazon, Apple, Meta
-- **Unicorns:** Flipkart, Swiggy, Zomato, OYO, Byju's, Unacademy
-- **Fintech:** Razorpay, PhonePe, CRED
-- **IT Services:** Infosys, TCS, Wipro, HCL, Tech Mahindra, Cognizant, Accenture
-- **SaaS:** Freshworks, Stripe India, Atlassian, GitLab, MuleSoft
-- **Emerging:** Ola Electric, Accelyst
-- And more in `config/company-portals.json`
+- **Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable** — official public JSON APIs (`src/core/scan/providers/`)
+- **JSON-LD fallback** (`providers/jsonld.js`) — for companies without a direct API integration: fetches the career page and reads the schema.org `JobPosting` markup most ATSes (even Workday/iCIMS) inject for Google Jobs SEO
+
+The `companies` table in `data/hunt-job.db` (seeded from `config/company-portals.json`) is the registry — each row tracks `ats_platform`, `slug`, `last_ok_at`, `fail_count`, and self-disables after 5 consecutive failures. Re-verify/re-detect the whole registry with `hunt-job audit-portals`, or a single URL with `hunt-job detect <careers-url>`.
+
+Every scan upserts into the `jobs` table (dedup + content-hash change detection) and soft-closes postings the ATS stops reporting — so "new since last scan" is a real query, not a heuristic. This powers `hunt-job watch` (§7 below).
 
 **Usage:**
 - `Scan for new roles matching my [Archetype]`
-- `Check Stripe's career page`
+- `node hunt-job.js scan --archetype "Backend Engineer"`
+- `node hunt-job.js detect https://careers.company.com`
 
 ### 3. **Resume Generation Mode** (`/generate-resume`)
 Creates ATS-optimized PDFs tailored to specific job listings.
@@ -92,61 +91,90 @@ Generates comprehensive interview preparation guides based on job descriptions.
 - `Prepare for this interview: [Job Description Text]`
 - `Generate prep plan from job_description.txt`
 
-### 6. **Dashboard Mode** (`/dashboard`)
-Terminal-based dashboard for tracking applications (requires Go).
+### 6. **Web Dashboard** (`hunt-job dashboard`)
+Local-only web dashboard — stdlib `http` server (no Express, no cloud) on `http://127.0.0.1:7777`, serving a single-file HTML UI + a JSON API backed directly by SQLite.
 
 **Features:**
-- Real-time job tracking
-- Application status management
-- Score trends
-- Quick actions
+- Pipeline board (Scanned → Evaluated → Applied → Interview → Offer)
+- Job list with score/freshness filters
+- Evaluation report view, application timeline, profile summary
+
+### 7. **Watch Mode** (`hunt-job watch`)
+Runs `scanAll()` on a timer and surfaces new matches as they appear — a cron-style alternative to re-running `scan` by hand.
+
+**Usage:**
+- `node hunt-job.js watch --archetype "DevOps Engineer"` — scans every 30 minutes (default)
+- `node hunt-job.js watch --archetype "DevOps Engineer" --interval 15` — custom interval, minimum 10 minutes
+- `node hunt-job.js watch --archetype "DevOps Engineer" --once` — single cycle then exit (for cron/Task Scheduler)
+
+Each cycle logs a summary line, prints a highlighted list of new matches, and fires a Windows toast notification (falls back to terminal bell + log on non-Windows, or if the toast fails). Stop with Ctrl+C.
 
 ## 📁 Directory Structure
 
 ```
-career-ops/
+hunt-job/
 ├── CLAUDE.md                          # This file
-├── package.json                       # Node dependencies
+├── README.md                          # Command reference
+├── package.json                       # Node dependencies, npm scripts
+├── hunt-job.js                        # CLI entry point — thin arg-parser → dispatch
+├── hunt-job.sh / hunt-job.bat          # Cross-platform launcher shims
+├── runner.mjs                         # Legacy pure-function test runner (part of `npm test`)
 ├── src/
-│   ├── index.js                       # Entry point
-│   ├── core/
-│   │   ├── jobEvaluator.js           # 10-dimension scoring
-│   │   ├── resumeGenerator.js        # PDF generation
-│   │   ├── portalScanner.js          # Job portal crawler
-│   │   └── profileManager.js         # Profile CRUD
-│   ├── agents/
-│   │   ├── evaluationAgent.js        # Claude agent for evaluation
-│   │   ├── scanningAgent.js          # Claude agent for scanning
-│   │   ├── resumeAgent.js            # Claude agent for resume gen
-│   │   └── interviewPrepAgent.js     # Claude agent for prep guide
-│   ├── templates/
-│   │   ├── resume.ejs                # Resume HTML template
-│   │   ├── evaluation-report.ejs     # Evaluation report template
-│   │   └── interview-prep.ejs        # Interview prep template
-│   └── cli/
-│       ├── evaluateJob.js            # CLI: evaluate job
-│       ├── scanPortals.js            # CLI: scan portals
-│       ├── generateResume.js         # CLI: generate resume
-│       ├── prepareInterview.js       # CLI: generate interview prep
-│       ├── profileInit.js            # CLI: initialize profile
-│       └── profileEdit.js            # CLI: edit profile
+│   ├── index.js                       # Programmatic exports
+│   ├── core/                          # Pure services — no console I/O, no inquirer
+│   │   ├── db.js                      # SQLite singleton + migrations (data/hunt-job.db)
+│   │   ├── aiClient.js                # Multi-provider AI client (Claude/Gemini/Groq/OpenRouter/NVIDIA)
+│   │   ├── logger.js                  # JSONL logger (data/logs/<date>.jsonl)
+│   │   ├── jobEvaluator.js            # 10-dimension scoring — fetches the JD before the LLM call
+│   │   ├── resumeGenerator.js         # PDF generation (Playwright + EJS)
+│   │   ├── resumeParser.js            # Parses an existing resume PDF into profile data
+│   │   ├── interviewPrep.js           # Prep guide generation + YouTube resources
+│   │   ├── profileManager.js          # Profile CRUD
+│   │   ├── portalScanner.js           # v1 scanner — kept for its pure helpers (India/archetype filters)
+│   │   ├── jobCache.js                # legacy scan-blob cache — superseded by scan/ + db.js `jobs` table
+│   │   ├── autoFillBrowser.js         # Playwright browser driver for auto-fill
+│   │   ├── autoFill/                  # ATS platform detection + form-fill adapters
+│   │   │   ├── index.js
+│   │   │   ├── platformDetector.js    # shared by scan/detect.js AND auto-fill
+│   │   │   └── profileMapper.js
+│   │   └── scan/                      # Scanner v2 provider architecture
+│   │       ├── index.js               # orchestrator: scanAll() — fan-out, normalize, upsert, soft-close
+│   │       ├── detect.js              # ATS auto-detection (URL regex + DOM fingerprint fallback)
+│   │       ├── httpClient.js          # fetch + timeout + retry + per-host rate limit + ETag cache
+│   │       ├── normalize.js           # NormalizedJob shape + India-location/archetype-match filters
+│   │       └── providers/             # one fetchJobs(companyRef) per ATS platform
+│   │           ├── greenhouse.js, lever.js, ashby.js, smartrecruiters.js,
+│   │           │   recruitee.js, workable.js
+│   │           └── jsonld.js          # schema.org JobPosting fallback provider
+│   ├── cli/
+│   │   ├── interactive.js             # Interactive menu shell
+│   │   ├── watch.js                   # `hunt-job watch`
+│   │   ├── auditPortals.js            # `hunt-job audit-portals`
+│   │   ├── hunt.js, evaluateJob.js, scanPortals.js, generateResume.js,
+│   │   │   prepareInterview.js, parseResume.js, profileInit.js,
+│   │   │   profileEdit.js, setupApiKey.js
+│   │   ├── ui.js                      # Shared terminal widgets (banner, scoreBar, section, colors)
+│   │   └── flows/                     # One file per interactive-menu flow
+│   │       ├── scanFlow.js, evaluateFlow.js, resumeFlow.js, prepFlow.js,
+│   │       │   applyFlow.js, huntFlow.js, setupFlow.js
+│   └── web/
+│       ├── server.js                  # `hunt-job dashboard` — stdlib http + /api/* JSON (SQLite-backed)
+│       └── dashboard.html             # Single-file local dashboard UI
 ├── config/
-│   ├── company-portals.json          # Pre-configured job portals
-│   ├/profile.yml                     # User profile (generated)
-│   └── settings.json                 # Claude Code settings
+│   ├── profile.yml                    # Your profile (generated)
+│   ├── company-portals.json           # Seed data for the `companies` table (not read at runtime)
+│   └── settings.json                  # Claude Code settings
 ├── modes/
-│   └── _profile.md                   # Profile storage (generated)
+│   └── _profile.md                    # Profile storage (generated)
 ├── data/
-│   ├── evaluated-jobs.json           # History of evaluated jobs
-│   ├── applications.json             # Application tracking
-│   ├── resumes/                      # Generated resume PDFs
-│   └── interview-prep/               # Generated prep plans
-├── cmd/
-│   └── dashboard/
-│       └── main.go                   # Terminal dashboard (Go)
-└── scripts/
-    ├── setup.sh                      # Initial setup
-    └── update-portals.sh             # Update company portals
+│   ├── hunt-job.db                    # SQLite — companies, jobs, evaluations, applications, documents
+│   ├── logs/                          # JSONL logs, one file per day
+│   ├── resumes/, interview-prep/      # Generated artifacts
+│   └── <company>_<role>_<date>/       # Per-application generated docs (resume PDF + prep guide)
+├── scripts/
+│   ├── e2e-test.js                    # Smoke test
+│   └── migrate-to-sqlite.js           # One-time JSON → SQLite migration (already run; kept for reference)
+└── test/                              # vitest unit tests, fixtures, and the runner.mjs pure-function suite
 ```
 
 ## 🚀 Getting Started
@@ -164,7 +192,7 @@ node src/cli/evaluateJob.js "https://job-posting-url"
 
 ### Scanning Job Portals
 ```bash
-node src/cli/scanPortals.js --archetype "Data Engineer" --company "Stripe"
+node hunt-job.js scan --archetype "Data Engineer"
 ```
 
 ### Generate Tailored Resume
@@ -178,6 +206,14 @@ node src/cli/prepareInterview.js "Paste job description here"
 node src/cli/prepareInterview.js job_description.txt
 ```
 
+### Watch for New Roles + Web Dashboard
+```bash
+node hunt-job.js watch --archetype "DevOps Engineer" --interval 30
+node hunt-job.js detect https://careers.company.com
+node hunt-job.js audit-portals
+node hunt-job.js dashboard        # http://127.0.0.1:7777
+```
+
 ## 🔑 Key Files
 
 ### Profile Configuration
@@ -189,9 +225,10 @@ node src/cli/prepareInterview.js job_description.txt
   - Tech stack preferences
   - Dealbreakers
 
-### Company Portals
-- **Location:** `config/company-portals.json`
-- **Contains:** 45+ pre-configured companies with career page URLs
+### Company Registry
+- **Location:** `data/hunt-job.db` → `companies` table (seeded once from `config/company-portals.json`; the JSON file itself isn't read at runtime)
+- **Contains:** company name, `ats_platform`, `slug`, `career_url`, `enabled`, `last_ok_at`, `fail_count`
+- Re-verify the whole registry with `node hunt-job.js audit-portals`
 
 ### Job Evaluation Scoring
 - **Algorithm:** 10-dimension scoring system
@@ -239,8 +276,7 @@ See `config/settings.json` for Claude Code customization:
 
 All user data is stored **locally** on your machine:
 - Profile information: `modes/_profile.md`, `config/profile.yml`
-- Evaluated jobs: `data/evaluated-jobs.json`
-- Applications: `data/applications.json`
+- Scanned jobs, evaluations, applications: `data/hunt-job.db` (SQLite — `jobs`, `evaluations`, `applications` tables)
 - Generated resumes: `data/resumes/` (never uploaded)
 
 No data is sent to external servers except:
@@ -263,11 +299,15 @@ const pdf = await generator.generate(jobPosting, resume);
 // Returns: PDF file path
 ```
 
-### Portal Scanner
+### Scanner v2
 ```javascript
-const scanner = new PortalScanner(config);
-const jobs = await scanner.scan(['anthropic', 'stripe']);
-// Returns: Array of job postings
+import { scanAll } from './src/core/scan/index.js';
+
+const { jobs, newJobs, closed, errors } = await scanAll('DevOps Engineer');
+// jobs:    all matching postings across enabled companies (newest first)
+// newJobs: subset not seen in a previous scan (real query, not a 48h heuristic)
+// closed:  count of previously-active postings the ATS stopped reporting
+// errors:  [{ company, error }] per-company fetch failures (non-fatal)
 ```
 
 ### Interview Prep Generator
@@ -305,7 +345,7 @@ A: Ensure ANTHROPIC_API_KEY is set: `echo $ANTHROPIC_API_KEY`
 A: Install Playwright browsers: `npx playwright install`
 
 **Q: Portal scanner returns no results**
-A: Check internet connection and company portal URLs in `config/company-portals.json`
+A: Check internet connection and company health with `node hunt-job.js audit-portals` — companies auto-disable after 5 consecutive scan failures.
 
 **Q: Profile not saving**
 A: Ensure `config/` and `modes/` directories exist and have write permissions

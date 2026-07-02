@@ -129,9 +129,73 @@ export ANTHROPIC_API_KEY="your_key"
 After first run:
 - `config/profile.yml` — Your profile (keep this private!)
 - `modes/_profile.md` — Profile backup
-- `data/evaluated-jobs.json` — Job evaluation history
+- `data/hunt-job.db` — Job evaluations, applications, company registry (SQLite)
 - `data/resumes/` — Generated resume PDFs
 - `data/interview-prep/` — Interview prep guides
+
+---
+
+## 🚶 Walkthrough: First Job, Start to Finish
+
+**1. Install**
+```bash
+node --version          # v16+
+git clone https://github.com/rhishi99/hunt-job.git && cd hunt-job
+npm install
+npm run setup           # set your ANTHROPIC_API_KEY
+```
+
+**2. Build your profile** (~3 min)
+```bash
+npm run profile:init
+```
+Answer: name/email/phone, current role, years of experience, target
+archetypes (e.g. `Backend Engineer`), salary range (lakhs), tech stack
+(comma-separated), dealbreakers.
+
+**3. Evaluate a job** (~2 min)
+```bash
+npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
+```
+Outputs a score out of 5 with a per-dimension breakdown (salary, tech
+stack, culture, ...) and an Apply / Maybe / Skip recommendation.
+
+**4. Generate a tailored resume**
+```bash
+npm run generate-resume -- job_<id_from_step_3>
+```
+
+**5. Bonus — interview prep**
+```bash
+npm run prepare-interview -- "Senior Backend Engineer at Flipkart"
+```
+Produces focus areas, YouTube links per topic, a 4-week study schedule,
+and behavioral questions.
+
+**Next:** apply on the company portal, save the resume, work the prep
+plan, repeat for the next job.
+
+---
+
+## 🆘 More Troubleshooting
+
+**API key error?**
+```bash
+echo $ANTHROPIC_API_KEY      # verify it's set
+npm run setup                # or set it interactively
+```
+
+**No PDF generated?**
+```bash
+npx playwright install
+npm run generate-resume -- job_id
+```
+
+**Profile not found?**
+```bash
+npm run profile:init
+cat config/profile.yml       # verify it exists
+```
 
 ---
 

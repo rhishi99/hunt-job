@@ -35,6 +35,8 @@ temp/
 *~
 .cache/
 .turbo/
+bash.exe.stackdump
+*.stackdump
 
 # Lock files (optional — comment out if you want to track them)
 # package-lock.json

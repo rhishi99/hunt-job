@@ -16,7 +16,6 @@
 import { spawn } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
-import * as readline from 'readline';
 import dotenv from 'dotenv';
 
 // Load .env if present
@@ -32,9 +31,10 @@ const command = args[0]?.toLowerCase();
  */
 function runScript(scriptPath, scriptArgs = []) {
     return new Promise((resolve, reject) => {
-        const child = spawn('node', [scriptPath, ...scriptArgs], {
+        // shell: true would re-parse args on Windows and strip quoting from
+        // multi-word values like --archetype "DevOps Engineer"
+        const child = spawn(process.execPath, [scriptPath, ...scriptArgs], {
             stdio: 'inherit',
-            shell: true,
         });
 
         child.on('close', (code) => {
@@ -44,122 +44,6 @@ function runScript(scriptPath, scriptArgs = []) {
 
         child.on('error', reject);
     });
-}
-
-/**
- * Show interactive menu
- */
-async function showMenu() {
-    const rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-    });
-
-    const question = (prompt) =>
-        new Promise((resolve) => rl.question(prompt, resolve));
-
-    // Check if we're on Windows (cmd.exe doesn't handle Unicode well)
-    const isWindowsCmd =
-        process.platform === 'win32' && !process.env.WT_SESSION;
-    const useUnicode = !isWindowsCmd;
-
-    console.clear?.() || console.log('\x1Bc');
-    console.log('');
-    if (useUnicode) {
-        console.log('  ╔══════════════════════════════════════════╗');
-        console.log('  ║   🎯  CAREER-OPS  —  Job Search Agent    ║');
-        console.log('  ╚══════════════════════════════════════════╝');
-    } else {
-        console.log('  ========================================');
-        console.log('    HUNT-JOB - Job Search Agent');
-        console.log('  ========================================');
-    }
-    console.log('');
-    if (useUnicode) {
-        console.log('  ── Job Search ─────────────────────────────');
-    } else {
-        console.log('  -- Job Search --------------------------');
-    }
-    console.log('   [1]  Full Interactive Menu  (recommended)');
-    console.log('   [2]  Evaluate a Job');
-    console.log('   [3]  Scan Job Portals');
-    console.log('   [4]  Generate Resume');
-    console.log('   [5]  Interview Prep');
-    console.log('');
-    if (useUnicode) {
-        console.log('  ── Profile ────────────────────────────────');
-    } else {
-        console.log('  -- Profile ----------------------------');
-    }
-    console.log('   [6]  Setup API Keys');
-    console.log('   [7]  Initialize Profile');
-    console.log('   [8]  Edit Profile');
-    console.log('   [9]  Parse Resume PDF  (build profile from PDF)');
-    console.log('');
-    console.log('   [0]  Exit');
-    console.log('');
-
-    const choice = await question('  Enter your choice: ');
-    rl.close();
-
-    try {
-        switch (choice) {
-            case '1':
-                await runScript('src/cli/interactive.js');
-                break;
-            case '2': {
-                const input = await question(
-                    '  Paste job URL or description: '
-                );
-                await runScript('src/cli/evaluateJob.js', [input]);
-                break;
-            }
-            case '3': {
-                const archetype = await question(
-                    '  Target archetype (e.g. Backend Engineer): '
-                );
-                await runScript('src/cli/scanPortals.js', [
-                    '--archetype',
-                    archetype,
-                ]);
-                break;
-            }
-            case '4': {
-                const jobId = await question('  Job ID from evaluation: ');
-                await runScript('src/cli/generateResume.js', [jobId]);
-                break;
-            }
-            case '5': {
-                const prep = await question(
-                    '  Job description text or path to .txt file: '
-                );
-                await runScript('src/cli/prepareInterview.js', [prep]);
-                break;
-            }
-            case '6':
-                await runScript('src/cli/setupApiKey.js');
-                break;
-            case '7':
-                await runScript('src/cli/profileInit.js');
-                break;
-            case '8':
-                await runScript('src/cli/profileEdit.js');
-                break;
-            case '9': {
-                const pdf = await question('  Path to resume PDF: ');
-                await runScript('src/cli/parseResume.js', [pdf]);
-                break;
-            }
-            case '0':
-                process.exit(0);
-            default:
-                console.log('Invalid choice');
-                process.exit(1);
-        }
-    } catch (error) {
-        console.error('Error:', error.message);
-        process.exit(1);
-    }
 }
 
 /**
@@ -205,6 +89,28 @@ async function main() {
             case 'hunt':
                 await runScript('src/cli/hunt.js', args.slice(1));
                 break;
+            case 'watch':
+                await runScript('src/cli/watch.js', args.slice(1));
+                break;
+            case 'dashboard': {
+                const port = process.env.HUNT_JOB_PORT || 7777;
+                console.log(`\nStarting Hunt-Job dashboard at http://127.0.0.1:${port} ...\n`);
+                await runScript('src/web/server.js');
+                break;
+            }
+            case 'detect': {
+                const url = args[1];
+                if (!url) {
+                    console.error('Usage: node hunt-job.js detect <careers-url>');
+                    process.exit(1);
+                }
+                const { detect } = await import('./src/core/scan/detect.js');
+                const result = await detect(url);
+                console.log(`\nPlatform: ${result.platform || 'unknown'}`);
+                console.log(`Token:    ${result.token || '-'}`);
+                console.log(`Method:   ${result.method}\n`);
+                break;
+            }
             case '--help':
             case '-h':
             case 'help':
@@ -218,6 +124,10 @@ COMMANDS:
   hunt --archetype <name>      Single-command full workflow
   evaluate <url>              Evaluate a job posting
   scan --archetype <name>     Scan job portals for matches
+  watch --archetype <name>    Periodic scan + desktop notification on new matches
+                                 [--interval <minutes>] (default 30, min 10) [--once]
+  detect <careers-url>        Detect a company's ATS platform from its careers URL
+  dashboard                   Start the local web dashboard (http://127.0.0.1:7777)
   resume <job-id>             Generate tailored resume
   prep <description|file>     Generate interview prep guide
   profile init                Initialize your profile
@@ -232,11 +142,12 @@ EXAMPLES:
   node hunt-job.js hunt --archetype "Backend Engineer" --limit 20
   node hunt-job.js evaluate "https://careers.google.com/..."
   node hunt-job.js scan --archetype "Backend Engineer"
+  node hunt-job.js watch --archetype "DevOps Engineer" --interval 30
   node hunt-job.js prep job_description.txt
             `);
                 break;
             default:
-                await showMenu();
+                await runScript('src/cli/interactive.js');
         }
     } catch (error) {
         console.error('\n❌ Error:', error.message);

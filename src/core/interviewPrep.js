@@ -28,6 +28,33 @@ function toStr(val) {
   return String(val);
 }
 
+// conceptsToMaster comes back from the LLM as a string[], an object[] with
+// {category, topics|concepts}, or a {category: [...]} object — normalize all
+// three shapes to {category: string[]} so callers never flatMap a non-array.
+function normalizeConceptsToMaster(raw) {
+  const categories = {};
+  if (Array.isArray(raw)) {
+    raw.forEach(c => {
+      if (typeof c === 'string') {
+        (categories['General'] = categories['General'] || []).push(c);
+      } else if (c && typeof c === 'object') {
+        const cat = c.category || 'General';
+        categories[cat] = categories[cat] || [];
+        if (Array.isArray(c.topics)) categories[cat].push(...c.topics.map(toStr));
+        else if (Array.isArray(c.concepts)) categories[cat].push(...c.concepts.map(toStr));
+        else categories[cat].push(c.name || c.category || toStr(c));
+      } else {
+        (categories['General'] = categories['General'] || []).push(toStr(c));
+      }
+    });
+  } else if (raw && typeof raw === 'object') {
+    Object.entries(raw).forEach(([k, v]) => {
+      categories[k] = Array.isArray(v) ? v.map(toStr) : [toStr(v)];
+    });
+  }
+  return categories;
+}
+
 class InterviewPrep {
   constructor() {
     this.client = getActiveClient('heavy');
@@ -36,6 +63,7 @@ class InterviewPrep {
 
   static makeJobSlug = makeJobSlug;
   static toStr = toStr;
+  static normalizeConceptsToMaster = normalizeConceptsToMaster;
   static parsePrepResponse = function(responseText) {
     try {
       // Strip markdown code fences if present (```json ... ```)
@@ -168,17 +196,7 @@ Format as valid JSON only.`;
       'Behavioral': ['Exponent', 'Don\'t Memorise']
     };
 
-    const rawConcepts = enriched.conceptsToMaster;
-    const conceptTopics = Array.isArray(rawConcepts)
-      ? rawConcepts.flatMap(c => {
-          if (typeof c === 'string') return [c];
-          if (c && typeof c === 'object') {
-            if (Array.isArray(c.topics)) return c.topics.map(toStr);
-            return [c.name || c.category || toStr(c)];
-          }
-          return [String(c)];
-        })
-      : (rawConcepts && typeof rawConcepts === 'object') ? Object.values(rawConcepts).flat().map(toStr) : [];
+    const conceptTopics = Object.values(normalizeConceptsToMaster(enriched.conceptsToMaster)).flat();
 
     const queryTopics = [
       ...(enriched.techStack || []).map(t => typeof t === 'object' ? (t.name || t.language || toStr(t)) : t).filter(t => typeof t === 'string'),
@@ -252,25 +270,7 @@ Format as valid JSON only.`;
 
     // ── Concepts ─────────────────────────────────────────────────────────────
     const conceptsHtml = (() => {
-      const raw = plan.conceptsToMaster || [];
-      const categories = {};
-      if (Array.isArray(raw)) {
-        raw.forEach(c => {
-          if (typeof c === 'string') {
-            (categories['General'] = categories['General'] || []).push(c);
-          } else if (c && typeof c === 'object') {
-            const cat = c.category || 'General';
-            categories[cat] = categories[cat] || [];
-            if (Array.isArray(c.topics)) categories[cat].push(...c.topics.map(toStr));
-            else if (Array.isArray(c.concepts)) categories[cat].push(...c.concepts.map(toStr));
-            else categories[cat].push(toStr(c));
-          }
-        });
-      } else if (raw && typeof raw === 'object') {
-        Object.entries(raw).forEach(([k, v]) => {
-          categories[k] = Array.isArray(v) ? v.map(toStr) : [toStr(v)];
-        });
-      }
+      const categories = normalizeConceptsToMaster(plan.conceptsToMaster);
       return Object.entries(categories).map(([cat, items]) => `
         <div class="concept-group">
           <div class="concept-cat">${cat}</div>
@@ -975,28 +975,7 @@ Format as valid JSON only.`;
 
     if (plan.conceptsToMaster) {
       output += '📚 CONCEPTS TO MASTER:\n';
-      const raw = plan.conceptsToMaster;
-      const categories = {};
-      if (Array.isArray(raw)) {
-        raw.forEach(concept => {
-          if (typeof concept === 'string') {
-            if (!categories['General']) categories['General'] = [];
-            categories['General'].push(concept);
-          } else if (concept && typeof concept === 'object') {
-            const category = concept.category || 'General';
-            if (!categories[category]) categories[category] = [];
-            if (Array.isArray(concept.topics)) {
-              categories[category].push(...concept.topics.map(toStr));
-            } else {
-              categories[category].push(toStr(concept));
-            }
-          }
-        });
-      } else if (raw && typeof raw === 'object') {
-        Object.entries(raw).forEach(([cat, items]) => {
-          categories[cat] = Array.isArray(items) ? items.map(toStr) : [toStr(items)];
-        });
-      }
+      const categories = normalizeConceptsToMaster(plan.conceptsToMaster);
       Object.entries(categories).forEach(([cat, items]) => {
         output += `\n${cat}:\n`;
         items.forEach(item => output += `  • ${toStr(item)}\n`);
@@ -1078,5 +1057,6 @@ export default InterviewPrep;
 export {
   makeJobSlug,
   toStr,
+  normalizeConceptsToMaster,
   InterviewPrep
 };

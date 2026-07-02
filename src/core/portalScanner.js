@@ -1,332 +1,144 @@
+/**
+ * portalScanner.js — thin back-compat wrapper around scan/index.js (Scanner
+ * v2, plan §2). Keeps the same class shape, return array shape, and named
+ * exports the rest of the codebase (interactive.js, migrate-to-sqlite.js)
+ * already depends on.
+ */
 import 'dotenv/config';
 import { createLogger } from './logger.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { getDb } from './db.js';
+import { scanAll } from './scan/index.js';
+import {
+  isIndiaLocation,
+  cleanHtml,
+  jobMatchesArchetype,
+  daysAgoLabel,
+} from './scan/normalize.js';
 
 const log = createLogger('portalScanner');
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const MAX_JOB_AGE_DAYS = 90; // Greenhouse/Lever boards often leave ancient reqs open — drop stale ones
 
-// ── Indian & global companies on Lever's public job board API ────────────────
+// Fallback seed used only if the `companies` table has no ATS-known rows yet
+// (fresh install before the first `npm run audit-portals` / migration).
 const LEVER_COMPANIES = [
-  // Indian product companies
-  { name: 'Paytm',           slug: 'paytm',            location: 'Noida / Bangalore' },
-  { name: 'Postman',         slug: 'postman',           location: 'Bangalore' },
-  { name: 'Sprinklr',        slug: 'sprinklr',          location: 'Gurgaon' },
-  { name: 'CleverTap',       slug: 'clevertap',         location: 'Mumbai / Bangalore' },
-  { name: 'Chargebee',       slug: 'chargebee',         location: 'Chennai / Bangalore' },
-  { name: 'BrowserStack',    slug: 'browserstack',      location: 'Mumbai' },
-  { name: 'Freshworks',      slug: 'freshworks',        location: 'Chennai / Bangalore' },
-  { name: 'Unacademy',       slug: 'unacademy',         location: 'Bangalore' },
-  { name: 'Groww',           slug: 'groww',             location: 'Bangalore' },
-  { name: 'Meesho',          slug: 'meesho',            location: 'Bangalore' },
-  { name: 'CRED',            slug: 'cred',              location: 'Bangalore' },
-  { name: 'Cashfree',        slug: 'cashfree',          location: 'Bangalore' },
-  { name: 'Darwinbox',       slug: 'darwinbox',         location: 'Hyderabad' },
-  { name: 'Zetwerk',         slug: 'zetwerk',           location: 'Bangalore' },
-  { name: 'Slice',           slug: 'sliceit',           location: 'Bangalore' },
-  { name: 'LeadSquared',     slug: 'leadsquared',       location: 'Bangalore' },
-  { name: 'Juspay',          slug: 'juspay',            location: 'Bangalore' },
-  { name: 'Hasura',          slug: 'hasura',            location: 'Bangalore' },
-  { name: 'Exotel',          slug: 'exotel',            location: 'Bangalore' },
-  { name: 'Ninjacart',       slug: 'ninjacart',         location: 'Bangalore' },
-  { name: 'ShareChat',       slug: 'sharechat',         location: 'Bangalore' },
-  { name: 'Niyo',            slug: 'niyo',              location: 'Bangalore' },
-  { name: 'Licious',         slug: 'licious',           location: 'Bangalore' },
-  { name: 'Vedantu',         slug: 'vedantu',           location: 'Bangalore' },
-  { name: 'Pixis',           slug: 'pixis',             location: 'Bangalore' },
-  { name: 'Whatfix',         slug: 'whatfix',           location: 'Bangalore' },
-  { name: 'Setu',            slug: 'setu',              location: 'Bangalore' },
-  { name: 'Jar',             slug: 'jar',               location: 'Bangalore' },
-  { name: 'Rapido',          slug: 'rapido',            location: 'Bangalore' },
-  { name: 'Dunzo',           slug: 'dunzo',             location: 'Bangalore' },
-  { name: 'BharatPe',        slug: 'bharatpe',          location: 'Delhi / Bangalore' },
-  { name: 'Lenskart',        slug: 'lenskart',          location: 'Gurugram' },
-  { name: 'MoEngage',        slug: 'moengage',          location: 'Bangalore' },
-  { name: 'Cars24',          slug: 'cars24',             location: 'Gurugram' },
-  { name: 'Icertis',         slug: 'icertis',            location: 'Pune / Hyderabad' },
-  { name: 'Jupiter Money',   slug: 'jupitermoney',       location: 'Bangalore' },
-  { name: 'Porter',          slug: 'porter-in',          location: 'Bangalore' },
-  { name: 'BlackBuck',       slug: 'blackbuck',          location: 'Bangalore' },
-  { name: 'Cult.fit',        slug: 'curefit',            location: 'Bangalore' },
-  { name: 'Shiprocket',      slug: 'shiprocket',         location: 'Delhi / Gurugram' },
-  { name: 'Innovaccer',      slug: 'innovaccer',         location: 'Noida / Bangalore' },
-  { name: 'NoBroker',        slug: 'nobroker',           location: 'Bangalore' },
-  { name: 'Smallcase',       slug: 'smallcase',          location: 'Bangalore' },
-  { name: 'Physics Wallah',  slug: 'physicswallah',      location: 'Noida' },
-  { name: 'Fi Money',        slug: 'epifi',              location: 'Bangalore' },
-  { name: 'Udaan',           slug: 'udaan',              location: 'Bangalore' },
-  // Added: Indian product & SaaS
-  { name: 'Yellow.ai',       slug: 'yellowai',           location: 'Bangalore' },
-  { name: 'WebEngage',       slug: 'webengage',          location: 'Mumbai / Bangalore' },
-  { name: 'Observe.AI',      slug: 'observeai',          location: 'Bangalore' },
-  { name: 'Shadowfax',       slug: 'shadowfax',          location: 'Bangalore' },
-  { name: 'Simpl',           slug: 'simpl',              location: 'Bangalore' },
-  { name: 'LocoNav',         slug: 'loconav',            location: 'Delhi / Gurugram' },
-  { name: 'Capillary Tech',  slug: 'capillary',          location: 'Bangalore' },
-  { name: 'Tractable',       slug: 'tractable',          location: 'Gurugram' },
-  { name: 'Mudrex',          slug: 'mudrex',             location: 'Bangalore' },
-  { name: 'Khatabook',       slug: 'khatabook',          location: 'Bangalore' },
-  { name: 'OKCredit',        slug: 'okcredit',           location: 'Bangalore' },
-  { name: 'Stanza Living',   slug: 'stanzaliving',       location: 'Gurugram' },
-  // Added: Global product companies with India engineering
-  { name: 'Highspot',        slug: 'highspot',           location: 'Hyderabad' },
-  { name: 'Samsara',         slug: 'samsara',            location: 'Bangalore / Hyderabad' },
-  { name: 'Verkada',         slug: 'verkada',            location: 'Bangalore' },
+  { name: 'Paytm',    slug: 'paytm',   location: 'Noida / Bangalore' },
+  { name: 'Meesho',   slug: 'meesho',  location: 'Bangalore' },
+  { name: 'CRED',     slug: 'cred',    location: 'Bangalore' },
+  { name: 'Fi Money', slug: 'epifi',   location: 'Bangalore' },
+  { name: 'Highspot', slug: 'highspot',location: 'Hyderabad' },
 ];
 
-// ── Greenhouse public board API ───────────────────────────────────────────────
 const GREENHOUSE_COMPANIES = [
-  // Indian product companies
-  { name: 'Razorpay',        slug: 'razorpay',           location: 'Bangalore' },
-  { name: 'Flipkart',        slug: 'flipkart',            location: 'Bangalore' },
-  { name: 'Swiggy',          slug: 'swiggy',              location: 'Bangalore' },
-  { name: 'PhonePe',         slug: 'phonepe',             location: 'Bangalore' },
-  { name: 'Ola',             slug: 'olacabs',             location: 'Bangalore' },
-  { name: 'Zomato',          slug: 'zomato',              location: 'Gurgaon' },
-  { name: 'BigBasket',       slug: 'bigbasket',           location: 'Bangalore' },
-  { name: 'Urban Company',   slug: 'urbancompany',        location: 'Gurgaon' },
-  { name: 'Delhivery',       slug: 'delhivery',           location: 'Gurgaon' },
-  { name: 'Dream11',         slug: 'dream11',             location: 'Mumbai' },
-  { name: 'Nykaa',           slug: 'nykaa',               location: 'Mumbai' },
-  { name: 'MPL',             slug: 'mpl',                 location: 'Bangalore' },
-  { name: 'InMobi',          slug: 'inmobi',              location: 'Bangalore' },
-  { name: 'Zepto',           slug: 'zepto',               location: 'Mumbai' },
-  { name: 'Pocket FM',       slug: 'pocketfm',            location: 'Bangalore' },
-  // Added: Indian product companies
-  { name: 'Acko',            slug: 'acko',                location: 'Bangalore' },
-  { name: 'Mobikwik',        slug: 'mobikwik',            location: 'Gurugram' },
-  { name: 'Rupeek',          slug: 'rupeek',              location: 'Bangalore' },
-  { name: 'Open Financial',  slug: 'open-financial',      location: 'Bangalore' },
-  { name: 'Scaler',          slug: 'scaler',              location: 'Bangalore' },
-  { name: 'Zetwerk',         slug: 'zetwerk',             location: 'Bangalore' },
-  { name: 'Ecom Express',    slug: 'ecomexpress',         location: 'Delhi' },
-  { name: 'Limeroad',        slug: 'limeroad',            location: 'Gurugram' },
-  // Global product companies with India engineering
-  { name: 'Thoughtworks',    slug: 'thoughtworks',        location: 'Bangalore / Pune' },
-  { name: 'Stripe',          slug: 'stripe',              location: 'Bangalore' },
-  { name: 'Cloudflare',      slug: 'cloudflare',          location: 'Bangalore' },
-  { name: 'HubSpot',         slug: 'hubspot',             location: 'Bangalore' },
-  { name: 'Zendesk',         slug: 'zendesk',             location: 'Bangalore / Pune' },
-  { name: 'CrowdStrike',     slug: 'crowdstrike',         location: 'Bangalore / Pune' },
-  { name: 'Okta',            slug: 'okta',                location: 'Bangalore / Hyderabad' },
-  { name: 'Figma',           slug: 'figma',               location: 'Bangalore' },
-  { name: 'Notion',          slug: 'notion',              location: 'Hyderabad' },
-  { name: 'Coursera',        slug: 'coursera',            location: 'Bangalore / Gurugram' },
-  { name: 'Reddit',          slug: 'reddit',              location: 'Bangalore' },
-  { name: 'Amplitude',       slug: 'amplitude',           location: 'Bangalore' },
-  { name: 'PagerDuty',       slug: 'pagerduty',           location: 'Bangalore' },
-  { name: 'ThoughtSpot',     slug: 'thoughtspot',         location: 'Bangalore' },
-  { name: 'New Relic',       slug: 'newrelic',            location: 'Bangalore' },
-  { name: 'Datadog',         slug: 'datadoghq',           location: 'Bangalore' },
-  { name: 'Grab',            slug: 'grab',                location: 'Bangalore' },
-  { name: 'Revolut',         slug: 'revolut',             location: 'Bangalore / Chennai' },
-  // Data / cloud infrastructure
-  { name: 'MongoDB',         slug: 'mongodb',             location: 'Gurgaon / Bangalore' },
-  { name: 'Elastic',         slug: 'elastic',             location: 'Bangalore' },
-  { name: 'Confluent',       slug: 'confluent',           location: 'Pune / Bangalore' },
-  { name: 'Nutanix',         slug: 'nutanix',             location: 'Bangalore / Pune' },
-  { name: 'Snowflake',       slug: 'snowflake',           location: 'Bangalore' },
-  { name: 'Databricks',      slug: 'databricks',          location: 'Bangalore' },
-  { name: 'Airbnb',          slug: 'airbnb',              location: 'Gurgaon' },
-  // Added: Global product with India offices
-  { name: 'Asana',           slug: 'asana',               location: 'Bangalore' },
-  { name: 'HashiCorp',       slug: 'hashicorp',           location: 'Bangalore / Hyderabad' },
-  { name: 'Brex',            slug: 'brex',                location: 'Bangalore' },
-  { name: 'Miro',            slug: 'realtimeboard',       location: 'Bangalore' },
-  { name: 'Lattice',         slug: 'lattice',             location: 'Bangalore' },
-  { name: 'Intercom',        slug: 'intercom',            location: 'Bangalore / Hyderabad' },
-  { name: 'Rubrik',          slug: 'rubrik',              location: 'Bangalore / Pune' },
-  { name: 'Plaid',           slug: 'plaid',               location: 'Bangalore' },
-  { name: 'GitLab',          slug: 'gitlab',              location: 'Remote-India' },
-  { name: 'Scale AI',        slug: 'scaleai',             location: 'Bangalore' },
-  { name: 'Cohere',          slug: 'cohere',              location: 'Bangalore' },
-  { name: 'Anthropic',       slug: 'anthropic',           location: 'Bangalore' },
+  { name: 'PhonePe',     slug: 'phonepe',     location: 'Bangalore' },
+  { name: 'InMobi',      slug: 'inmobi',      location: 'Bangalore' },
+  { name: 'Thoughtworks', slug: 'thoughtworks',location: 'Bangalore / Pune' },
+  { name: 'Stripe',      slug: 'stripe',      location: 'Bengaluru' },
+  { name: 'Cloudflare',  slug: 'cloudflare',  location: 'Bangalore' },
+  { name: 'Okta',        slug: 'okta',        location: 'Bangalore / Hyderabad' },
+  { name: 'Figma',       slug: 'figma',       location: 'Bangalore' },
+  { name: 'Coursera',    slug: 'coursera',    location: 'Bangalore / Gurugram' },
+  { name: 'Reddit',      slug: 'reddit',      location: 'Bangalore' },
+  { name: 'Amplitude',   slug: 'amplitude',   location: 'Bangalore' },
+  { name: 'PagerDuty',   slug: 'pagerduty',   location: 'Bangalore' },
+  { name: 'New Relic',   slug: 'newrelic',    location: 'Bangalore' },
+  { name: 'MongoDB',     slug: 'mongodb',     location: 'Gurgaon / Bangalore' },
+  { name: 'Elastic',     slug: 'elastic',     location: 'Bangalore' },
+  { name: 'Databricks',  slug: 'databricks',  location: 'Bengaluru' },
+  { name: 'Airbnb',      slug: 'airbnb',      location: 'Gurgaon' },
+  { name: 'Asana',       slug: 'asana',       location: 'Bangalore' },
+  { name: 'Brex',        slug: 'brex',        location: 'Bangalore' },
+  { name: 'Lattice',     slug: 'lattice',     location: 'Bangalore' },
+  { name: 'Intercom',    slug: 'intercom',    location: 'Bangalore / Hyderabad' },
+  { name: 'Rubrik',      slug: 'rubrik',      location: 'Bangalore / Pune' },
+  { name: 'GitLab',      slug: 'gitlab',      location: 'Remote-India' },
+  { name: 'Scale AI',    slug: 'scaleai',     location: 'Bangalore' },
+  { name: 'Anthropic',   slug: 'anthropic',   location: 'Bangalore' },
+  { name: 'HubSpot',     slug: 'hubspot',     location: 'Bangalore' },
 ];
 
-const FETCH_TIMEOUT_MS = 30000;
-
-const INDIA_LOCATION_KEYWORDS = [
-  'india', 'bangalore', 'bengaluru', 'mumbai', 'delhi', 'ncr', 'hyderabad',
-  'pune', 'chennai', 'gurgaon', 'gurugram', 'noida', 'kolkata', 'ahmedabad',
-  'jaipur', 'kochi', 'remote india', 'india remote',
-];
-
-function isIndiaLocation(location) {
-  if (!location || location.trim() === '') return true; // no location = Indian company default
-  const loc = location.toLowerCase();
-  return INDIA_LOCATION_KEYWORDS.some(kw => loc.includes(kw));
-}
-
-function cleanHtml(s) {
-  return (s || '')
-    .replace(/<li>/gi, '\n- ')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
-
-// Generic level/type words — not meaningful on their own for role matching
-const GENERIC_WORDS = new Set(['engineer', 'developer', 'lead', 'manager', 'architect',
-  'analyst', 'specialist', 'senior', 'junior', 'staff', 'principal', 'associate']);
-
-// Role keyword synonyms — OR groups keyed by archetype word
-const ROLE_SYNONYMS = {
-  devops:      ['devops', 'dev ops', 'devsecops', 'ci/cd', 'cicd', 'release engineer'],
-  sre:         ['sre', 'site reliability', 'reliability engineer'],
-  platform:    ['platform engineer', 'platform sre', 'platform infra', 'platform team', 'infrastructure platform'],
-  infra:       ['infrastructure', 'infra engineer', 'systems engineer', 'systems admin'],
-  cloud:       ['cloud engineer', 'cloud architect', 'cloud platform', 'cloud infra', 'cloud operations', 'cloud native'],
-  kubernetes:  ['kubernetes', 'k8s', 'container', 'openshift'],
-  data:        ['data engineer', 'data platform', 'analytics engineer', 'etl', 'pipeline engineer', 'data infrastructure'],
-  backend:     ['backend', 'back-end', 'server-side', 'api engineer', 'microservices'],
-  frontend:    ['frontend', 'front-end', 'ui engineer', 'react', 'angular', 'vue'],
-  fullstack:   ['fullstack', 'full-stack', 'full stack'],
-  ml:          ['machine learning', 'ml engineer', 'ai engineer', 'mlops', 'model', 'llm', 'generative ai'],
-  security:    ['security engineer', 'appsec', 'devsecops', 'cloud security', 'cybersecurity', 'infosec', 'vulnerability'],
-  mobile:      ['mobile engineer', 'android', 'ios engineer', 'react native', 'flutter'],
-  software:    ['software engineer', 'software developer', 'sde', 'swe'],
-  product:     ['product manager', 'product management', 'pm '],
-  architect:   ['solutions architect', 'enterprise architect', 'technical architect', 'cloud architect'],
-  qa:          ['quality assurance', 'qa engineer', 'test engineer', 'sdet', 'automation engineer'],
-};
-
-function jobMatchesArchetype(jobTitle, teamName, archetype) {
-  const haystack = `${jobTitle} ${teamName || ''}`.toLowerCase();
-
-  // 1. Full phrase match
-  if (haystack.includes(archetype.toLowerCase())) return true;
-
-  // 2. Check meaningful (non-generic) words — OR logic: any meaningful word matching = relevant
-  const meaningful = archetype.toLowerCase().split(/\s+/).filter(w => !GENERIC_WORDS.has(w));
-  if (!meaningful.length) return false;
-
-  return meaningful.some(word => {
-    const synonyms = ROLE_SYNONYMS[word] ?? [word];
-    return synonyms.some(kw => haystack.includes(kw));
-  });
-}
-
-async function fetchWithTimeout(url) {
-  const r = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
-  if (!r.ok) return null;
-  return r.json();
-}
-
-function daysAgoLabel(ms) {
-  if (!ms) return null;
-  const diff = Date.now() - ms;
-  const days = Math.floor(diff / 86400000);
-  if (days === 0) return 'today';
-  if (days === 1) return '1d ago';
-  return `${days}d ago`;
-}
-
-async function scanLever(archetype, companies) {
-  const results = await Promise.all(companies.map(async co => {
-    try {
-      const jobs = await fetchWithTimeout(`https://api.lever.co/v0/postings/${co.slug}?mode=json`);
-      if (!Array.isArray(jobs)) return [];
-      return jobs
-        .filter(j => jobMatchesArchetype(j.text, j.categories?.team, archetype))
-        .filter(j => isIndiaLocation(j.categories?.location))
-        .map(j => ({
-          title: j.text,
-          company: co.name,
-          location: j.categories?.location || co.location,
-          url: j.hostedUrl,
-          applyUrl: j.applyUrl,
-          description: cleanHtml(j.description).slice(0, 400),
-          source: 'lever',
-          id: j.id,
-          postedAt: j.createdAt || null,          // Unix ms from Lever API
-          postedLabel: daysAgoLabel(j.createdAt),
-        }));
-    } catch { return []; }
-  }));
-  return results.flat();
-}
-
-async function scanGreenhouse(archetype, companies) {
-  const results = await Promise.all(companies.map(async co => {
-    try {
-      const data = await fetchWithTimeout(`https://boards-api.greenhouse.io/v1/boards/${co.slug}/jobs`);
-      if (!data?.jobs) return [];
-      return data.jobs
-        .filter(j => jobMatchesArchetype(j.title, j.departments?.[0]?.name, archetype))
-        .filter(j => isIndiaLocation(j.location?.name))
-        .map(j => {
-          const postedMs = j.updated_at ? new Date(j.updated_at).getTime() : null;
-          return {
-            title: j.title,
-            company: co.name,
-            location: j.location?.name || co.location,
-            url: j.absolute_url,
-            applyUrl: j.absolute_url,
-            description: `${j.title} at ${co.name} in ${j.location?.name || co.location}`,
-            source: 'greenhouse',
-            id: String(j.id),
-            postedAt: postedMs,                   // converted to ms for uniform sorting
-            postedLabel: daysAgoLabel(postedMs),
-          };
-        });
-    } catch { return []; }
-  }));
-  return results.flat();
-}
-
-// All companies reachable via Lever / Greenhouse public APIs
-export const SCANNABLE_COMPANIES = [
+const HARDCODED_FALLBACK = [
   ...LEVER_COMPANIES.map(c => ({ ...c, api: 'lever' })),
   ...GREENHOUSE_COMPANIES.map(c => ({ ...c, api: 'greenhouse' })),
 ];
 
+function companiesFromDb() {
+  try {
+    const db = getDb();
+    const rows = db.prepare(`
+      SELECT name, slug, ats_platform, location FROM companies
+      WHERE ats_platform IS NOT NULL AND ats_platform != '' AND slug IS NOT NULL AND slug != ''
+    `).all();
+    return rows.map(r => ({ name: r.name, slug: r.slug, location: r.location, api: r.ats_platform }));
+  } catch {
+    return [];
+  }
+}
+
+// All companies reachable via a scan provider — DB-backed, falls back to the
+// hardcoded seed list if the companies table has no ATS-known rows yet.
+const dbCompanies = companiesFromDb();
+export const SCANNABLE_COMPANIES = dbCompanies.length ? dbCompanies : HARDCODED_FALLBACK;
+
 class PortalScanner {
   constructor() {
-    const portalsPath = path.join(__dirname, '../../config/company-portals.json');
-    const portalsData = JSON.parse(fs.readFileSync(portalsPath, 'utf-8'));
-    this.companies = portalsData.companies;
+    // config/company-portals.json seeded the companies table in Phase 1;
+    // getCompanies() below now reads from there.
   }
 
+  /**
+   * Runs Scanner v2 (src/core/scan/index.js) and returns the SAME array
+   * shape earlier hunt-job versions returned: title/company/location/url/
+   * applyUrl/description/source/id/postedAt/postedLabel.
+   */
   async scan(archetype, specificCompanies = null) {
-    let leverCompanies = LEVER_COMPANIES;
-    let ghCompanies = GREENHOUSE_COMPANIES;
-
+    let companies = null;
     if (specificCompanies?.length) {
       const filter = specificCompanies.map(s => s.toLowerCase());
-      leverCompanies = LEVER_COMPANIES.filter(c => filter.some(f => c.name.toLowerCase().includes(f) || c.slug.includes(f)));
-      ghCompanies = GREENHOUSE_COMPANIES.filter(c => filter.some(f => c.name.toLowerCase().includes(f) || c.slug.includes(f)));
-      // If nothing matched, scan all
-      if (!leverCompanies.length && !ghCompanies.length) {
-        leverCompanies = LEVER_COMPANIES;
-        ghCompanies = GREENHOUSE_COMPANIES;
-      }
+      companies = SCANNABLE_COMPANIES.filter(c =>
+        filter.some(f => c.name.toLowerCase().includes(f) || c.slug.includes(f))
+      ).map(c => ({ name: c.name, slug: c.slug, location: c.location, ats_platform: c.api }));
+      if (!companies.length) companies = null; // nothing matched — scan everything
     }
 
-    process.stdout.write(`  Scanning ${leverCompanies.length + ghCompanies.length} company job boards...\n`);
+    process.stdout.write(`  Scanning ${companies?.length ?? SCANNABLE_COMPANIES.length} company job boards...\n`);
 
-    const [leverJobs, ghJobs] = await Promise.all([
-      scanLever(archetype, leverCompanies),
-      scanGreenhouse(archetype, ghCompanies),
-    ]);
+    const { jobs, errors } = await scanAll(archetype, companies ? { companies } : {});
 
-    const all = [...leverJobs, ...ghJobs]
-      .sort((a, b) => (b.postedAt || 0) - (a.postedAt || 0)); // newest first
+    const all = jobs
+      .filter(j => Number.isFinite(j.postedAt) && (Date.now() - j.postedAt) < MAX_JOB_AGE_DAYS * 86400000)
+      .sort((a, b) => (b.postedAt || 0) - (a.postedAt || 0))
+      .map(j => ({
+        title: j.title,
+        company: j.company,
+        location: j.location,
+        url: j.url,
+        applyUrl: j.applyUrl,
+        description: (j.description || '').slice(0, 400),
+        source: j.source,
+        id: j.id.split(':').slice(2).join(':') || j.id, // externalId portion, matches legacy `id` values
+        postedAt: j.postedAt,
+        postedLabel: daysAgoLabel(j.postedAt),
+      }));
 
     const newCount = all.filter(j => j.postedAt && (Date.now() - j.postedAt) < 172800000).length; // < 48h
     process.stdout.write(`  Found ${all.length} matching jobs${newCount ? ` (${newCount} posted in last 48h 🔥)` : ''}.\n`);
-    log.op('scan_done', { archetype, total: all.length, lever: leverJobs.length, greenhouse: ghJobs.length, new48h: newCount });
+    if (errors.length) {
+      process.stdout.write(`  ${errors.length} company scan(s) failed (see logs).\n`);
+    }
+    log.op('scan_done', { archetype, total: all.length, new48h: newCount, errors: errors.length });
     return all;
   }
 
   getCompanies(filter = null) {
-    if (!filter) return this.companies;
-    return this.companies.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
+    try {
+      const db = getDb();
+      const rows = db.prepare('SELECT * FROM companies').all();
+      if (!filter) return rows;
+      return rows.filter(c => c.name.toLowerCase().includes(filter.toLowerCase()));
+    } catch {
+      return [];
+    }
   }
 }
 
@@ -337,6 +149,4 @@ export {
   cleanHtml,
   jobMatchesArchetype,
   daysAgoLabel,
-  scanLever,
-  scanGreenhouse
 };

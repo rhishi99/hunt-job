@@ -5,8 +5,9 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH  = path.join(__dirname, '../../data/job-cache.db');
-const TTL_DAYS = 7;
-const MAX_ROWS = 6;   // keep 2× display limit so pruning is gradual
+const TTL_DAYS    = 7;    // max age before rows are pruned from DB
+const TTL_HOURS   = 4;    // scans older than this are considered "stale" in the menu
+const MAX_ROWS    = 6;    // keep 2× display limit so pruning is gradual
 
 const DDL = `
   CREATE TABLE IF NOT EXISTS scan_cache (
@@ -51,8 +52,18 @@ export function getRecentScans(archetype, limit = 3) {
     jobCount:      row.job_count,
     scannedAt:     row.scanned_at,
     jobs:          JSON.parse(row.jobs),
+    ageMs:         Date.now() - new Date(row.scanned_at).getTime(),
   }));
 }
+
+/** Returns true if the most recent scan for this archetype is within TTL_HOURS */
+export function hasFreshScan(archetype) {
+  const scans = getRecentScans(archetype, 1);
+  if (!scans.length) return false;
+  return scans[0].ageMs < TTL_HOURS * 3_600_000;
+}
+
+export { TTL_HOURS };
 
 export function saveScans(archetype, jobs, companyFilter = null) {
   if (!jobs?.length) return;
@@ -77,6 +88,11 @@ export function saveScans(archetype, jobs, companyFilter = null) {
         )
     `).run(key, key, MAX_ROWS);
   })();
+}
+
+export function clearCache(archetype) {
+  const db = getDb();
+  db.prepare(`DELETE FROM scan_cache WHERE archetype = ?`).run(archetype.toLowerCase());
 }
 
 export function closeDb() {

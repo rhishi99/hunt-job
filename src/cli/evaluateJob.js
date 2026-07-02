@@ -39,6 +39,10 @@ async function evaluateJob() {
     console.log(recColor(`Recommendation: ${evaluation.recommendation}`));
   }
 
+  if (evaluation.reasoning) {
+    console.log(chalk.gray(`\n${evaluation.reasoning}`));
+  }
+
   if (evaluation.dimensions) {
     console.log(chalk.cyan('\nDimension Breakdown:'));
     Object.entries(evaluation.dimensions).forEach(([dim, score]) => {
@@ -56,8 +60,13 @@ async function evaluateJob() {
     evaluation.mismatches.forEach(m => console.log(`  - ${m}`));
   }
 
+  if (evaluation.analysis && !evaluation.matches && !evaluation.mismatches) {
+    console.log(chalk.yellow('\n⚠️ Could not parse a structured score — raw AI response:'));
+    console.log(chalk.gray(evaluation.analysis));
+  }
+
   console.log();
-  console.log(chalk.cyan('💾 Saved to:'), 'data/evaluated-jobs.json');
+  console.log(chalk.cyan('💾 Saved to:'), 'SQLite (data/hunt-job.db)');
   console.log(chalk.cyan('📌 Job ID:'), chalk.yellow(jobId));
   console.log(chalk.dim('\nUse Job ID to generate a tailored resume:'));
   console.log(chalk.dim(`  npm run generate-resume -- ${jobId}`));
