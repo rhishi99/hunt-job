@@ -49,7 +49,10 @@ class CareerOpsAgent {
   async generateResume(jobId) {
     const profile = await this.profileManager.loadProfile();
     const job = await this.jobEvaluator.getJobById(jobId);
-    const resume = await this.resumeGenerator.generate(job, profile);
+    if (!job) {
+      throw new Error(`Job with ID ${jobId} not found`);
+    }
+    const resume = await this.resumeGenerator.generate(job.url, profile);
     return resume;
   }
 

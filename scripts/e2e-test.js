@@ -128,7 +128,8 @@ import JobEvaluator from '../src/core/jobEvaluator.js';
 let evaluation;
 try {
   const evaluator = new JobEvaluator();
-  evaluation = await evaluator.evaluate(job.url, profile);
+  const res = await evaluator.evaluate(job.url, profile);
+  evaluation = res.evaluation;
   console.log('  (using real AI)');
 } catch (e) {
   if (e.message.includes('DAILY_QUOTA') || e.message.includes('429') || e.message.includes('quota')) {
@@ -137,7 +138,8 @@ try {
     // Inject stub into evaluator
     const evaluator = new JobEvaluator();
     evaluator.client = stubAiClient();
-    evaluation = await evaluator.evaluate(job.url, profile);
+    const res = await evaluator.evaluate(job.url, profile);
+    evaluation = res.evaluation;
   } else { throw e; }
 }
 
@@ -156,7 +158,8 @@ const prep = new InterviewPrep();
 if (aiMode === 'stub') prep.client = stubAiClient();
 
 const jobDescForPrep = `${job.title} at ${job.company}. ${job.description || ''}`;
-const prepPlan = await prep.generatePrepPlan(jobDescForPrep, profile);
+const prepResult = await prep.generatePrepPlan(jobDescForPrep, profile);
+const prepPlan = prepResult.plan;
 
 ok('Prep plan generated', !!prepPlan);
 ok('Has focus areas', prepPlan?.focusAreas?.length > 0);

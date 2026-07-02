@@ -154,7 +154,7 @@ async function runEvaluateFlow(profile, jobDescriptionOrUrl, skipNextStep = fals
 
   try {
     const evaluator = new JobEvaluator();
-    const evaluation = await evaluator.evaluate(jobInput, profile);
+    const { evaluation } = await evaluator.evaluate(jobInput, profile);
 
     section('Evaluation Results');
 
@@ -247,7 +247,7 @@ async function runInterviewPrepFlow(profile, jobDescriptionOrUrl) {
 
   try {
     const prep = new InterviewPrep();
-    const plan = await prep.generatePrepPlan(jobDescription, profile);
+    const { plan } = await prep.generatePrepPlan(jobDescription, profile);
 
     section('Prep Plan');
     console.log(prep.formatPrepPlanText(plan));
@@ -461,12 +461,12 @@ async function runScanFlow(profile) {
     try { await runEvaluateFlow(profile, jobInput, true); } catch (e) { err(`Evaluate failed: ${e.message}`); }
     try { await runInterviewPrepFlow(profile, jobInput); } catch (e) { err(`Prep failed: ${e.message}`); }
     try { await runResumeGenFlow(profile, jobInput); } catch (e) { err(`Resume failed: ${e.message}`); }
-    await applyToJob(selected, profile);
+    await applyToJob(selected, profile, jobInput);
   }
   if (action === 'evaluate') await runEvaluateFlow(profile, jobInput);
   if (action === 'prep') await runInterviewPrepFlow(profile, jobInput);
   if (action === 'resume') await runResumeGenFlow(profile, jobInput);
-  if (action === 'apply') await applyToJob(selected, profile);
+  if (action === 'apply') await applyToJob(selected, profile, jobInput);
 }
 
 function showApplicationDataCard(profile) {
@@ -496,7 +496,82 @@ function showApplicationDataCard(profile) {
   row('Salary Expectation', profile.salary?.min ? `₹${profile.salary.min}–${profile.salary.max} LPA` : null);
 }
 
-async function applyToJob(job, profile) {
+// ─── Auto-fill status display ─────────────────────────────────────────────────
+
+function showAutoFillReport(result) {
+  const { platform, platformName, filled, skipped, uploaded, aiMappingUsed, fieldValues, targetUrl } = result;
+
+  section('Auto-Fill Report');
+  console.log(chalk.gray(`  Platform : `) + chalk.cyan.bold(platformName || platform));
+  console.log(chalk.gray(`  URL      : `) + chalk.blue(targetUrl));
+  if (aiMappingUsed) {
+    console.log(chalk.gray(`  Method   : `) + chalk.magenta('🤖 AI field mapping + static sweep'));
+  }
+
+  // Group fields into categories for display
+  const CATEGORIES = {
+    '👤 Identity':   ['firstName', 'lastName', 'fullName', 'email', 'phone'],
+    '📍 Location':   ['location', 'currentTitle', 'currentCompany'],
+    '🔗 Links':      ['linkedin', 'github', 'website', 'twitter'],
+    '📚 Education':  ['educationDegree', 'educationSchool', 'educationField', 'educationYear'],
+    '💼 Experience': ['yearsOfExperience', 'skills', 'workAuthorization', 'noticePeriod', 'salaryExpectation'],
+    '✉️  Content':    ['coverLetter', 'summary'],
+  };
+
+  const allFilled  = new Set(filled.map(f => f.replace('(AI)', '')));
+  const allSkipped = new Set(skipped);
+
+  console.log();
+  for (const [cat, fields] of Object.entries(CATEGORIES)) {
+    const catFilled  = fields.filter(f => allFilled.has(f));
+    const catSkipped = fields.filter(f => allSkipped.has(f) && fieldValues[f]);
+    const catMissing = fields.filter(f => allSkipped.has(f) && !fieldValues[f]);
+    if (!catFilled.length && !catSkipped.length) continue;
+
+    console.log(chalk.white.bold(`  ${cat}`));
+    catFilled.forEach(f  => console.log(chalk.green(`    ✓ ${f}`)));
+    catSkipped.forEach(f => console.log(chalk.yellow(`    ⚠ ${f}  ${chalk.gray('(not found on form)')}`)));
+    catMissing.forEach(f => console.log(chalk.gray(`    · ${f}  ${chalk.italic.gray('(not in profile)')}`)));
+  }
+
+  // Resume upload status
+  console.log();
+  if (uploaded) {
+    console.log(chalk.green('  📎 Resume PDF uploaded successfully'));
+  } else if (fieldValues.resumePath) {
+    console.log(chalk.yellow('  📎 Resume found but file input not detected on this form'));
+  } else {
+    console.log(chalk.gray('  📎 No resume PDF — generate one first with "Generate Resume"'));
+  }
+
+  const fillCount = filled.length;
+  const total     = filled.length + skipped.filter(f => fieldValues[f]).length;
+  const pct       = total > 0 ? Math.round((fillCount / total) * 100) : 0;
+  console.log();
+  console.log(
+    chalk.white('  Coverage: ') +
+    (pct >= 70 ? chalk.green : pct >= 40 ? chalk.yellow : chalk.red)(`${pct}%`) +
+    chalk.gray(` (${fillCount}/${total} fields filled)`)
+  );
+}
+
+async function runAutoFill(job, profile, jobContext) {
+  console.log(chalk.gray('\n  Preparing AI cover letter + field values...'));
+  console.log(chalk.gray('  This takes ~5 seconds, then the browser will open.\n'));
+
+  const { autoFillApplication } = await import('../core/autoFillBrowser.js');
+  const result = await autoFillApplication(
+    job.url,
+    job.applyUrl || null,
+    profile,
+    jobContext || ''
+  );
+
+  showAutoFillReport(result);
+  return result;
+}
+
+async function applyToJob(job, profile, jobContext = '') {
   clear(); banner();
   section('Apply to Job');
 
@@ -515,7 +590,7 @@ async function applyToJob(job, profile) {
     return;
   }
 
-  console.log(chalk.white(`\n  Job:     `) + chalk.cyan.bold(job.title));
+  console.log(chalk.white(`\n  Job:     `) + chalk.cyan.bold(job.title || job.jobTitle));
   console.log(chalk.white(`  Company: `) + chalk.white(job.company));
   console.log(chalk.white(`  URL:     `) + chalk.blue.underline(job.url || 'N/A'));
 
@@ -525,7 +600,7 @@ async function applyToJob(job, profile) {
     return;
   }
 
-  // Show data card always so user can copy-paste
+  // Show data card so user can copy-paste if needed
   showApplicationDataCard(profile);
 
   const { applyMethod } = await inquirer.prompt([{
@@ -533,43 +608,59 @@ async function applyToJob(job, profile) {
     name: 'applyMethod',
     message: 'How would you like to apply?',
     choices: [
-      { name: '🤖  Auto-fill form  (opens browser + fills fields automatically)', value: 'autofill' },
-      { name: '📋  Manual apply   (data card above — copy-paste into form yourself)', value: 'manual' },
-      { name: '↩  Skip', value: 'skip' },
+      { name: '🤖  Auto-fill form  (AI cover letter + browser auto-fill for 20+ fields)', value: 'autofill' },
+      { name: '📋  Manual apply   (data card above — copy-paste into form yourself)',      value: 'manual' },
+      { name: '↩  Skip',                                                                  value: 'skip' },
     ]
   }]);
 
   if (applyMethod === 'skip') { await pressEnter(); return; }
 
+  let autoFillResult = null;
+
   if (applyMethod === 'autofill') {
-    console.log(chalk.gray('\n  Opening browser and filling form fields...\n'));
     try {
-      const { autoFillApplication } = await import('../core/autoFillBrowser.js');
-      const result = await autoFillApplication(job.url, job.applyUrl || null, profile);
+      autoFillResult = await runAutoFill(job, profile, jobContext);
 
-      hint(`Platform: ${result.platform}  |  URL: ${result.targetUrl}`);
-      if (result.filled.length) {
-        success(`Auto-filled ${result.filled.length} field(s): ${result.filled.join(', ')}`);
-      } else {
-        warn('No fields were auto-filled — the form may use a non-standard structure. Use the data card above to copy-paste.');
-      }
-      if (result.skipped.length) {
-        hint(`Not filled (missing in profile or not found): ${result.skipped.filter(f => result.fieldValues[f]).join(', ') || 'none'}`);
+      // Offer retry if fill coverage was low
+      const fillCount = autoFillResult.filled.length;
+      const skippedWithValue = autoFillResult.skipped.filter(f => autoFillResult.fieldValues[f]).length;
+      const pct = (fillCount + skippedWithValue) > 0
+        ? Math.round((fillCount / (fillCount + skippedWithValue)) * 100)
+        : 0;
+
+      if (pct < 30 && skippedWithValue > 0) {
+        warn('Low fill coverage. The form may need a moment to load fully.');
+        const { retry } = await inquirer.prompt([{
+          type: 'confirm',
+          name: 'retry',
+          message: 'Retry auto-fill? (browser stays open)',
+          default: true
+        }]);
+        if (retry) {
+          try {
+            const { autoFillApplication } = await import('../core/autoFillBrowser.js');
+            const retryResult = await autoFillApplication(
+              job.url, job.applyUrl || null, profile, jobContext || ''
+            );
+            showAutoFillReport(retryResult);
+            autoFillResult = retryResult;
+          } catch (e) { err(`Retry failed: ${e.message}`); }
+        }
       }
 
-      console.log(chalk.yellow('\n  Browser is open — complete and submit the form manually.'));
+      console.log(chalk.yellow('\n  Browser is open — review, complete any remaining fields, and submit.'));
       console.log(chalk.gray('  Press Enter here AFTER you have submitted the form.\n'));
       await pressEnter();
 
-      // Close browser after user confirms submission
-      try { await result.browser.close(); } catch {}
+      try { await autoFillResult.browser.close(); } catch {}
     } catch (e) {
       err(`Auto-fill failed: ${e.message}`);
       hint(`Apply manually at: ${job.url}`);
       await pressEnter();
     }
   } else {
-    // Manual — just open URL hint, data card already shown above
+    // Manual — data card already shown above
     hint(`Open this URL to apply: ${job.url}`);
     console.log(chalk.gray('\n  Press Enter after you have submitted the form.\n'));
     await pressEnter();
@@ -589,15 +680,18 @@ async function applyToJob(job, profile) {
   }
 
   const application = {
-    id: `app_${Date.now()}`,
-    title: job.title,
-    company: job.company,
-    location: job.location,
-    url: job.url,
-    status: 'Applied',
-    appliedAt: new Date().toISOString(),
+    id:            `app_${Date.now()}`,
+    title:         job.title || job.jobTitle,
+    company:       job.company,
+    location:      job.location,
+    url:           job.url,
+    status:        'Applied',
+    appliedAt:     new Date().toISOString(),
     applicantName: profile?.name || 'Unknown',
     applyMethod,
+    platform:      autoFillResult?.platform || null,
+    fieldsFilledCount: autoFillResult?.filled?.length || 0,
+    resumeUploaded:    autoFillResult?.uploaded || false,
   };
 
   applications.push(application);
@@ -671,7 +765,8 @@ async function runFullWorkflow(profile) {
   let evaluation;
   try {
     const evaluator = new JobEvaluator();
-    evaluation = await evaluator.evaluate(jobInput, profile);
+    const evalResult = await evaluator.evaluate(jobInput, profile);
+    evaluation = evalResult.evaluation;
     const score = evaluation.overallScore || 0;
     console.log('\n  ' + chalk.bold('Overall Score:  ') + scoreBar(score));
     const recMap = { Apply: chalk.green.bold, Maybe: chalk.yellow.bold, Skip: chalk.red.bold };
@@ -717,7 +812,7 @@ async function runFullWorkflow(profile) {
     console.log(chalk.gray('\n  Generating prep plan...\n'));
     try {
       const prep = new InterviewPrep();
-      const plan = await prep.generatePrepPlan(jobInput, profile);
+      const { plan } = await prep.generatePrepPlan(jobInput, profile);
       console.log(prep.formatPrepPlanText(plan));
       success('Prep plan saved as HTML in data/');
     } catch (e) { err(`Prep failed: ${e.message}`); }
