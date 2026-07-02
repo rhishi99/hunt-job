@@ -1,0 +1,315 @@
+{
+  "offers": [
+    {
+      "position": 390,
+      "guid": "78r54",
+      "city": "Rotterdam",
+      "created_at": "2026-07-02 13:47:28 UTC",
+      "on_site": false,
+      "postal_code": null,
+      "country": "Nederland",
+      "state_name": "Zuid-Holland",
+      "options_photo": "off",
+      "sharing_title": "Work student Sales (German speaking)",
+      "department": "Sales",
+      "experience_code": "student_college",
+      "sharing_description": "Want to master the art of sales at a fast-growing scale-up?Are you a go-getter who isn’t afraid to pick up the phone? Do you want to help drive the digital revolution in logistics? Then this Working S",
+      "careers_url": "https://careers.shypple.com/o/work-student-sales-german-speaking-1",
+      "hybrid": true,
+      "options_phone": "required",
+      "title": "Work student Sales (German speaking)",
+      "min_hours": null,
+      "employment_type_code": "parttime_fixed_term",
+      "slug": "work-student-sales-german-speaking-1",
+      "location_question_visible": false,
+      "open_questions": [],
+      "country_code": "NL",
+      "company_name": "Shypple",
+      "salary": {
+        "max": null,
+        "min": null,
+        "period": null,
+        "currency": null
+      },
+      "updated_at": "2026-07-02 13:56:46 UTC",
+      "mailbox_email": "job.78r54@shypple.recruitee.com",
+      "max_hours": null,
+      "locations_question": "Welke werklocatie heeft je voorkeur?",
+      "published_at": "2026-07-02 13:51:04 UTC",
+      "requirements": "<p><strong><span style=\"color:#1c1053\">What you bring to the table</span></strong></p><p><span style=\"color:#1c1053\">We are looking for an ambitious student (preferably in their final year) who wants to gain commercial experience. You might be studying International Business, Economics, or Communications (HBO/WO/MBO), but your mindset is more important than your major.</span></p><ul><li><p><span style=\"color:#1c1053\">You don’t get discouraged by “no” and stay motivated to work towards a “yes”;</span></p></li><li><p><span style=\"color:#1c1053\">You’re comfortable with rejection and persist until results come;</span></p></li><li><p><span style=\"color:#1c1053\">You’re excited to sell a high-value B2B service, not low-value consumer products;</span></p></li><li><p><span style=\"color:#1c1053\">You are proactive, comfortable with cold calling, competitive, and a strong team player;</span></p></li><li><p><span style=\"color:#1c1053\">You are available for a long-term student role (minimum 1 year), 16–32 hours per week over 2–4 days;</span></p></li><li><p><span style=\"color:#1c1053\">You are fluent in both German and English, spoken and written.</span></p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong><span style=\"color:#1c1053\">What we offer</span></strong></p><ul><li><p><span style=\"color:#1c1053\"> Salary: €14.99 gross per hour;</span></p></li><li><p><span style=\"color:#1c1053\">Performance bonus: An extra reward for every qualitatively validated lead. The better you perform, the more you earn!</span></p></li><li><p><span style=\"color:#1c1053\">Coaching: intensive guidance to take your sales skills to the next level;</span></p></li><li><p><span style=\"color:#1c1053\">A spot in an ambitious, friendly team with a \"getting things done\" mentality;</span></p></li><li><p><span style=\"color:#1c1053\">The perks: daily breakfast, great coffee, and relaxation at the table football table.</span></p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong><span style=\"color:#1c1053\">Interested?</span></strong><span style=\"color:#1c1053\"><br>Apply by clicking the \"Apply\" button. We will let you know as soon as possible if you’ve been selected for an interview. If it’s a match, the job is yours! Questions? Contact Floor via </span><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\">people@shypple.com</a><span style=\"color:#1c1053\">.</span></p>",
+      "description": "<p><span style=\"color:#1c1053\">Want to master the art of sales at a fast-growing scale-up?</span></p><p><span style=\"color:#1c1053\">Are you a go-getter who isn’t afraid to pick up the phone? Do you want to help drive the digital revolution in logistics? </span><strong><span style=\"color:#1c1053\">Then this Working Student position at Shypple is perfect for you! Read on or apply directly.</span></strong></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">About Shypple<br></span></strong><span style=\"color:#1c1053\">Shypple makes shipping simple. We are revolutionizing the conservative logistics sector by making it digital and transparent. Our platform provides customers and all stakeholders with real-time visibility into every aspect of the supply chain. Through our platform, logistics teams can search, compare, book, and track air, rail, and sea freight shipments directly. As a \"digital forwarder,\" we make logistics more efficient than the industry is used to. The result? Fewer errors, better insights, less emailing, and lower costs.</span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Your role as Sales Working Student<br></span></strong><span style=\"color:#1c1053\">As a Sales Development Representative (SDR) Working Student, you will be part of our Sales team—the engine of our growth. You will work closely with our experienced sales professionals.</span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What will you do?<br></span></strong><span style=\"color:#1c1053\">Your main goal is to acquire new leads. You are the first link in our sales process and are responsible for:</span></p><ul><li><p><span style=\"color:#1c1053\">Lead Generation: finding and approaching potential customers (via email, phone, LinkedIn, etc.);</span></p></li><li><p><span style=\"color:#1c1053\">Lead qualification: determining if a lead fits our product (budget, need, timing);</span></p></li><li><p><span style=\"color:#1c1053\">Initial outreach: generating interest and understanding the prospect’s challenges;</span></p></li><li><p><span style=\"color:#1c1053\">Scheduling meetings: passing qualified leads to a Sales colleague;</span></p></li><li><p><span style=\"color:#1c1053\">CRM Management: correcting and logging all interactions and data;</span></p></li><li><p><span style=\"color:#1c1053\">Collaboration: providing feedback to Marketing and Sales regarding lead quality and campaigns.</span></p></li></ul>",
+      "locations": [
+        {
+          "id": 102511,
+          "name": "Rotterdam",
+          "state": "Zuid-Holland",
+          "country": "Nederland",
+          "city": "Rotterdam",
+          "translations": {
+            "en": {
+              "name": "Rotterdam",
+              "city": "Rotterdam",
+              "postal_code": null,
+              "street": null,
+              "note": null
+            },
+            "nl": {
+              "name": "Rotterdam",
+              "city": "Rotterdam",
+              "postal_code": null,
+              "street": null,
+              "note": null
+            }
+          },
+          "country_code": "NL",
+          "state_code": "ZH",
+          "postal_code": null,
+          "street": null,
+          "note": null
+        }
+      ],
+      "location": "Rotterdam, Zuid-Holland, Nederland",
+      "min_hours_per_week": null,
+      "education_code": "high_school",
+      "translations": {
+        "en": {
+          "description": "<p><span style=\"color:#1c1053\">Want to master the art of sales at a fast-growing scale-up?</span></p><p><span style=\"color:#1c1053\">Are you a go-getter who isn’t afraid to pick up the phone? Do you want to help drive the digital revolution in logistics? </span><strong><span style=\"color:#1c1053\">Then this Working Student position at Shypple is perfect for you! Read on or apply directly.</span></strong></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">About Shypple<br></span></strong><span style=\"color:#1c1053\">Shypple makes shipping simple. We are revolutionizing the conservative logistics sector by making it digital and transparent. Our platform provides customers and all stakeholders with real-time visibility into every aspect of the supply chain. Through our platform, logistics teams can search, compare, book, and track air, rail, and sea freight shipments directly. As a \"digital forwarder,\" we make logistics more efficient than the industry is used to. The result? Fewer errors, better insights, less emailing, and lower costs.</span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Your role as Sales Working Student<br></span></strong><span style=\"color:#1c1053\">As a Sales Development Representative (SDR) Working Student, you will be part of our Sales team—the engine of our growth. You will work closely with our experienced sales professionals.</span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What will you do?<br></span></strong><span style=\"color:#1c1053\">Your main goal is to acquire new leads. You are the first link in our sales process and are responsible for:</span></p><ul><li><p><span style=\"color:#1c1053\">Lead Generation: finding and approaching potential customers (via email, phone, LinkedIn, etc.);</span></p></li><li><p><span style=\"color:#1c1053\">Lead qualification: determining if a lead fits our product (budget, need, timing);</span></p></li><li><p><span style=\"color:#1c1053\">Initial outreach: generating interest and understanding the prospect’s challenges;</span></p></li><li><p><span style=\"color:#1c1053\">Scheduling meetings: passing qualified leads to a Sales colleague;</span></p></li><li><p><span style=\"color:#1c1053\">CRM Management: correcting and logging all interactions and data;</span></p></li><li><p><span style=\"color:#1c1053\">Collaboration: providing feedback to Marketing and Sales regarding lead quality and campaigns.</span></p></li></ul>",
+          "title": "Work student Sales (German speaking)",
+          "highlight": null,
+          "requirements": "<p><strong><span style=\"color:#1c1053\">What you bring to the table</span></strong></p><p><span style=\"color:#1c1053\">We are looking for an ambitious student (preferably in their final year) who wants to gain commercial experience. You might be studying International Business, Economics, or Communications (HBO/WO/MBO), but your mindset is more important than your major.</span></p><ul><li><p><span style=\"color:#1c1053\">You don’t get discouraged by “no” and stay motivated to work towards a “yes”;</span></p></li><li><p><span style=\"color:#1c1053\">You’re comfortable with rejection and persist until results come;</span></p></li><li><p><span style=\"color:#1c1053\">You’re excited to sell a high-value B2B service, not low-value consumer products;</span></p></li><li><p><span style=\"color:#1c1053\">You are proactive, comfortable with cold calling, competitive, and a strong team player;</span></p></li><li><p><span style=\"color:#1c1053\">You are available for a long-term student role (minimum 1 year), 16–32 hours per week over 2–4 days;</span></p></li><li><p><span style=\"color:#1c1053\">You are fluent in both German and English, spoken and written.</span></p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong><span style=\"color:#1c1053\">What we offer</span></strong></p><ul><li><p><span style=\"color:#1c1053\"> Salary: €14.99 gross per hour;</span></p></li><li><p><span style=\"color:#1c1053\">Performance bonus: An extra reward for every qualitatively validated lead. The better you perform, the more you earn!</span></p></li><li><p><span style=\"color:#1c1053\">Coaching: intensive guidance to take your sales skills to the next level;</span></p></li><li><p><span style=\"color:#1c1053\">A spot in an ambitious, friendly team with a \"getting things done\" mentality;</span></p></li><li><p><span style=\"color:#1c1053\">The perks: daily breakfast, great coffee, and relaxation at the table football table.</span></p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong><span style=\"color:#1c1053\">Interested?</span></strong><span style=\"color:#1c1053\"><br>Apply by clicking the \"Apply\" button. We will let you know as soon as possible if you’ve been selected for an interview. If it’s a match, the job is yours! Questions? Contact Floor via </span><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\">people@shypple.com</a><span style=\"color:#1c1053\">.</span></p>",
+          "sharing_image": null,
+          "sharing_title": "Work student Sales (German speaking)",
+          "sharing_description": "Want to master the art of sales at a fast-growing scale-up?Are you a go-getter who isn’t afraid to pick up the phone? Do you want to help drive the digital revolution in logistics? Then this Working S",
+          "locations_question": "Welke werklocatie heeft je voorkeur?"
+        },
+        "nl": {
+          "description": "<p><span style=\"color:#1c1053\">Want to master the art of sales at a fast-growing scale-up?</span></p><p><span style=\"color:#1c1053\">Are you a go-getter who isn’t afraid to pick up the phone? Do you want to help drive the digital revolution in logistics? </span><strong><span style=\"color:#1c1053\">Then this Working Student position at Shypple is perfect for you! Read on or apply directly.</span></strong></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">About Shypple<br></span></strong><span style=\"color:#1c1053\">Shypple makes shipping simple. We are revolutionizing the conservative logistics sector by making it digital and transparent. Our platform provides customers and all stakeholders with real-time visibility into every aspect of the supply chain. Through our platform, logistics teams can search, compare, book, and track air, rail, and sea freight shipments directly. As a \"digital forwarder,\" we make logistics more efficient than the industry is used to. The result? Fewer errors, better insights, less emailing, and lower costs.</span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Your role as Sales Working Student<br></span></strong><span style=\"color:#1c1053\">As a Sales Development Representative (SDR) Working Student, you will be part of our Sales team—the engine of our growth. You will work closely with our experienced sales professionals.</span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What will you do?<br></span></strong><span style=\"color:#1c1053\">Your main goal is to acquire new leads. You are the first link in our sales process and are responsible for:</span></p><ul><li><p><span style=\"color:#1c1053\">Lead Generation: finding and approaching potential customers (via email, phone, LinkedIn, etc.);</span></p></li><li><p><span style=\"color:#1c1053\">Lead qualification: determining if a lead fits our product (budget, need, timing);</span></p></li><li><p><span style=\"color:#1c1053\">Initial outreach: generating interest and understanding the prospect’s challenges;</span></p></li><li><p><span style=\"color:#1c1053\">Scheduling meetings: passing qualified leads to a Sales colleague;</span></p></li><li><p><span style=\"color:#1c1053\">CRM Management: correcting and logging all interactions and data;</span></p></li><li><p><span style=\"color:#1c1053\">Collaboration: providing feedback to Marketing and Sales regarding lead quality and campaigns.</span></p></li></ul>",
+          "title": "Work student Sales (German speaking)",
+          "highlight": null,
+          "requirements": "<p><strong><span style=\"color:#1c1053\">What you bring to the table</span></strong></p><p><span style=\"color:#1c1053\">We are looking for an ambitious student (preferably in their final year) who wants to gain commercial experience. You might be studying International Business, Economics, or Communications (HBO/WO/MBO), but your mindset is more important than your major.</span></p><ul><li><p><span style=\"color:#1c1053\">You don’t get discouraged by “no” and stay motivated to work towards a “yes”;</span></p></li><li><p><span style=\"color:#1c1053\">You’re comfortable with rejection and persist until results come;</span></p></li><li><p><span style=\"color:#1c1053\">You’re excited to sell a high-value B2B service, not low-value consumer products;</span></p></li><li><p><span style=\"color:#1c1053\">You are proactive, comfortable with cold calling, competitive, and a strong team player;</span></p></li><li><p><span style=\"color:#1c1053\">You are available for a long-term student role (minimum 1 year), 16–32 hours per week over 2–4 days;</span></p></li><li><p><span style=\"color:#1c1053\">You are fluent in both German and English, spoken and written.</span></p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong><span style=\"color:#1c1053\">What we offer</span></strong></p><ul><li><p><span style=\"color:#1c1053\"> Salary: €14.99 gross per hour;</span></p></li><li><p><span style=\"color:#1c1053\">Performance bonus: An extra reward for every qualitatively validated lead. The better you perform, the more you earn!</span></p></li><li><p><span style=\"color:#1c1053\">Coaching: intensive guidance to take your sales skills to the next level;</span></p></li><li><p><span style=\"color:#1c1053\">A spot in an ambitious, friendly team with a \"getting things done\" mentality;</span></p></li><li><p><span style=\"color:#1c1053\">The perks: daily breakfast, great coffee, and relaxation at the table football table.</span></p><p style=\"min-height: 1.7em;\"></p></li></ul><p><strong><span style=\"color:#1c1053\">Interested?</span></strong><span style=\"color:#1c1053\"><br>Apply by clicking the \"Apply\" button. We will let you know as soon as possible if you’ve been selected for an interview. If it’s a match, the job is yours! Questions? Contact Floor via </span><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\">people@shypple.com</a><span style=\"color:#1c1053\">.</span></p>",
+          "sharing_image": null,
+          "sharing_title": "Work student Sales (German speaking)",
+          "sharing_description": "Want to master the art of sales at a fast-growing scale-up?Are you a go-getter who isn’t afraid to pick up the phone? Do you want to help drive the digital revolution in logistics? Then this Working S",
+          "locations_question": "Welke werklocatie heeft je voorkeur?"
+        }
+      },
+      "remote": false,
+      "tags": [
+        "Work student"
+      ],
+      "state_code": "ZH",
+      "locations_question_type": "multiple_choice",
+      "highlight": null,
+      "locations_question_required": true,
+      "options_cv": "required",
+      "careers_apply_url": "https://careers.shypple.com/o/work-student-sales-german-speaking-1/c/new",
+      "max_hours_per_week": null,
+      "options_salutation": "off",
+      "id": 2664882,
+      "options_cover_letter": "optional",
+      "cover_image": null,
+      "close_at": null,
+      "options_title": "off",
+      "category_code": "logistics",
+      "status": "published",
+      "dynamic_fields": [],
+      "sharing_image": null
+    },
+    {
+      "position": 388,
+      "guid": "uesdg",
+      "city": "Shenzhen",
+      "created_at": "2026-06-04 13:11:20 UTC",
+      "on_site": true,
+      "postal_code": null,
+      "country": "China",
+      "state_name": "Zhejiang, Provincie",
+      "options_photo": "off",
+      "sharing_title": "Customer Service Specialist (Supplier Onboarding & Support)",
+      "department": "Procurement",
+      "experience_code": "mid_level",
+      "sharing_description": "Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shi",
+      "careers_url": "https://careers.shypple.com/o/customer-service-specialist-supplier-onboarding-support-1",
+      "hybrid": false,
+      "options_phone": "required",
+      "title": "Customer Service Specialist (Supplier Onboarding & Support)",
+      "min_hours": null,
+      "employment_type_code": "fulltime_fixed_term",
+      "slug": "customer-service-specialist-supplier-onboarding-support-1",
+      "location_question_visible": false,
+      "open_questions": [],
+      "country_code": "CN",
+      "company_name": "Shypple",
+      "salary": {
+        "max": null,
+        "min": null,
+        "period": null,
+        "currency": null
+      },
+      "updated_at": "2026-06-04 13:13:33 UTC",
+      "mailbox_email": "job.uesdg@shypple.recruitee.com",
+      "max_hours": null,
+      "locations_question": "What is your preferred work location?",
+      "published_at": "2026-06-04 13:13:33 UTC",
+      "requirements": "<p><strong><span style=\"color:#1c1053\">What you’ll bring</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Bachelor’s degree in Supply Chain, Business, or a related field.</span></p></li><li><p><span style=\"color:#1c1053\">Proven experience in supplier management, logistics, or platform operations.</span></p></li><li><p><span style=\"color:#1c1053\">Strong organizational and multitasking abilities.</span></p></li><li><p><span style=\"color:#1c1053\">Excellent communication skills in both English and Mandarin.</span></p></li><li><p><span style=\"color:#1c1053\">Ability to work independently and collaboratively in a fast-paced environment</span><strong><span style=\"color:#1c1053\"><br></span></strong></p></li></ul><p><strong><span style=\"color:#1c1053\">You get&nbsp;</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Attractive remuneration</span></p></li><li><p><span style=\"color:#1c1053\">The opportunity to be a part of a great adventure where you can grow, develop, and get the best out of yourself;</span></p></li><li><p><span style=\"color:#1c1053\">A great work environment that is supportive and encourages collaboration and responsibility, and where you can make a significant impact;</span></p></li></ul><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Interested?</span></strong></p><p><span style=\"color:#1c1053\">You can apply by clicking on the ‘apply now’ button on our website. You will hear from us within one week.<br>If you get selected for the first round, we will explain the next steps of our recruitment process.<br></span></p><p><em><span style=\"color:#1c1053\">If you have any questions related to this vacancy, please contact </span></em><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\"><span style=\"color:#1c1053\">people@shypple.com</span></a><em><span style=\"color:#1c1053\">.</span></em></p>",
+      "description": "<p><span style=\"color:#1c1053\">Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shippers - guiding them through platform integration and finding genuine satisfaction in helping them succeed? Do you get excited about connecting shippers to achieve seamless data integration for our clients? If so, then this might be the job for you!</span></p><p style=\"text-align:start;\"><strong><span style=\"color:#1c1053\">Read more below or apply via the “apply” button!</span></strong><span style=\"color:#1c1053\"><br><br></span><strong><span style=\"color:#1c1053\">About Shypple</span></strong></p><p><span style=\"color:#1c1053\">Shypple makes shipping simple.<br>With our easy-to-use platform and expert services, we are simplifying the complex world of logistics and providing our customers with a seamless shipping experience. Our platform acts as a centralized dashboard, offering real-time visibility on every aspect of the supply chain and includes a wide range of features such as booking, planning, delivery, and communication possibilities. As a digital service provider, we are revolutionizing the logistics industry by bringing ease, accountability, and efficiency to the supply chain while lowering hassle, communication, and costs. We believe that the perfect solution to disrupting a traditional industry is a smartly developed system combined with a high-quality customer experience.</span></p><p><span style=\"color:#1c1053\"><br></span><strong><span style=\"color:#1c1053\">Your role as Customer Service Specialist</span></strong></p><p><span style=\"color:#1c1053\">We are seeking a highly motivated and detail-oriented professional to join our team as a </span><span style=\"color:#1C1053\">Customer Service Specialist</span><span style=\"color:#1c1053\">. This role is crucial in driving the adoption and optimization of our digital booking platform among suppliers in China. The ideal candidate will possess strong communication skills, a proactive approach to problem-solving, and the ability to manage multiple stakeholders effectively.<br></span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What you’ll be doing</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Lead the onboarding of Chinese suppliers onto the platform to enable self-service booking, order updates, and maintenance.</span></p></li><li><p><span style=\"color:#1c1053\">Participate in internal shipper onboarding kick-off meetings, monitor progress, provide timely updates to international teams, and facilitate issue resolution.</span></p></li><li><p><span style=\"color:#1c1053\">Create and maintain profiles for new and existing suppliers, and handle daily troubleshooting requests from agents and suppliers.</span></p></li><li><p><span style=\"color:#1c1053\">Ensure strict adherence to internal procedures for handling customer complaints and other operational issues.</span></p></li><li><p><span style=\"color:#1c1053\">Perform other duties as assigned by the supervisor.</span></p></li></ul>",
+      "locations": [
+        {
+          "id": 211499,
+          "name": "Shenzhen",
+          "state": "Zhejiang Sheng",
+          "country": "China",
+          "city": "Shenzhen",
+          "translations": {
+            "en": {
+              "name": "Shenzhen",
+              "city": "Shenzhen",
+              "postal_code": null,
+              "street": null,
+              "note": null
+            }
+          },
+          "country_code": "CN",
+          "state_code": "ZJ",
+          "postal_code": null,
+          "street": null,
+          "note": null
+        }
+      ],
+      "location": "Shenzhen, Zhejiang, Provincie, China",
+      "min_hours_per_week": null,
+      "education_code": "professional",
+      "translations": {
+        "en": {
+          "description": "<p><span style=\"color:#1c1053\">Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shippers - guiding them through platform integration and finding genuine satisfaction in helping them succeed? Do you get excited about connecting shippers to achieve seamless data integration for our clients? If so, then this might be the job for you!</span></p><p style=\"text-align:start;\"><strong><span style=\"color:#1c1053\">Read more below or apply via the “apply” button!</span></strong><span style=\"color:#1c1053\"><br><br></span><strong><span style=\"color:#1c1053\">About Shypple</span></strong></p><p><span style=\"color:#1c1053\">Shypple makes shipping simple.<br>With our easy-to-use platform and expert services, we are simplifying the complex world of logistics and providing our customers with a seamless shipping experience. Our platform acts as a centralized dashboard, offering real-time visibility on every aspect of the supply chain and includes a wide range of features such as booking, planning, delivery, and communication possibilities. As a digital service provider, we are revolutionizing the logistics industry by bringing ease, accountability, and efficiency to the supply chain while lowering hassle, communication, and costs. We believe that the perfect solution to disrupting a traditional industry is a smartly developed system combined with a high-quality customer experience.</span></p><p><span style=\"color:#1c1053\"><br></span><strong><span style=\"color:#1c1053\">Your role as Customer Service Specialist</span></strong></p><p><span style=\"color:#1c1053\">We are seeking a highly motivated and detail-oriented professional to join our team as a </span><span style=\"color:#1C1053\">Customer Service Specialist</span><span style=\"color:#1c1053\">. This role is crucial in driving the adoption and optimization of our digital booking platform among suppliers in China. The ideal candidate will possess strong communication skills, a proactive approach to problem-solving, and the ability to manage multiple stakeholders effectively.<br></span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What you’ll be doing</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Lead the onboarding of Chinese suppliers onto the platform to enable self-service booking, order updates, and maintenance.</span></p></li><li><p><span style=\"color:#1c1053\">Participate in internal shipper onboarding kick-off meetings, monitor progress, provide timely updates to international teams, and facilitate issue resolution.</span></p></li><li><p><span style=\"color:#1c1053\">Create and maintain profiles for new and existing suppliers, and handle daily troubleshooting requests from agents and suppliers.</span></p></li><li><p><span style=\"color:#1c1053\">Ensure strict adherence to internal procedures for handling customer complaints and other operational issues.</span></p></li><li><p><span style=\"color:#1c1053\">Perform other duties as assigned by the supervisor.</span></p></li></ul>",
+          "title": "Customer Service Specialist (Supplier Onboarding & Support)",
+          "highlight": null,
+          "requirements": "<p><strong><span style=\"color:#1c1053\">What you’ll bring</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Bachelor’s degree in Supply Chain, Business, or a related field.</span></p></li><li><p><span style=\"color:#1c1053\">Proven experience in supplier management, logistics, or platform operations.</span></p></li><li><p><span style=\"color:#1c1053\">Strong organizational and multitasking abilities.</span></p></li><li><p><span style=\"color:#1c1053\">Excellent communication skills in both English and Mandarin.</span></p></li><li><p><span style=\"color:#1c1053\">Ability to work independently and collaboratively in a fast-paced environment</span><strong><span style=\"color:#1c1053\"><br></span></strong></p></li></ul><p><strong><span style=\"color:#1c1053\">You get&nbsp;</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Attractive remuneration</span></p></li><li><p><span style=\"color:#1c1053\">The opportunity to be a part of a great adventure where you can grow, develop, and get the best out of yourself;</span></p></li><li><p><span style=\"color:#1c1053\">A great work environment that is supportive and encourages collaboration and responsibility, and where you can make a significant impact;</span></p></li></ul><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Interested?</span></strong></p><p><span style=\"color:#1c1053\">You can apply by clicking on the ‘apply now’ button on our website. You will hear from us within one week.<br>If you get selected for the first round, we will explain the next steps of our recruitment process.<br></span></p><p><em><span style=\"color:#1c1053\">If you have any questions related to this vacancy, please contact </span></em><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\"><span style=\"color:#1c1053\">people@shypple.com</span></a><em><span style=\"color:#1c1053\">.</span></em></p>",
+          "sharing_image": null,
+          "sharing_title": "Customer Service Specialist (Supplier Onboarding & Support)",
+          "sharing_description": "Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shi",
+          "locations_question": "What is your preferred work location?"
+        }
+      },
+      "remote": false,
+      "tags": [
+        "Permanent"
+      ],
+      "state_code": "ZJ",
+      "locations_question_type": "multiple_choice",
+      "highlight": null,
+      "locations_question_required": true,
+      "options_cv": "required",
+      "careers_apply_url": "https://careers.shypple.com/o/customer-service-specialist-supplier-onboarding-support-1/c/new",
+      "max_hours_per_week": null,
+      "options_salutation": "off",
+      "id": 2628469,
+      "options_cover_letter": "optional",
+      "cover_image": null,
+      "close_at": null,
+      "options_title": "off",
+      "category_code": "customer_service",
+      "status": "published",
+      "dynamic_fields": [],
+      "sharing_image": null
+    },
+    {
+      "position": 385,
+      "guid": "2ma1w",
+      "city": "Shanghai",
+      "created_at": "2026-06-04 12:42:21 UTC",
+      "on_site": true,
+      "postal_code": null,
+      "country": "China",
+      "state_name": "Zhejiang, Provincie",
+      "options_photo": "off",
+      "sharing_title": "Customer Service Specialist (Supplier Onboarding & Support)",
+      "department": "Procurement",
+      "experience_code": "mid_level",
+      "sharing_description": "Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shi",
+      "careers_url": "https://careers.shypple.com/o/customer-service-specialist-supplier-onboarding-support",
+      "hybrid": false,
+      "options_phone": "required",
+      "title": "Customer Service Specialist (Supplier Onboarding & Support)",
+      "min_hours": null,
+      "employment_type_code": "fulltime_fixed_term",
+      "slug": "customer-service-specialist-supplier-onboarding-support",
+      "location_question_visible": false,
+      "open_questions": [],
+      "country_code": "CN",
+      "company_name": "Shypple",
+      "salary": {
+        "max": null,
+        "min": null,
+        "period": null,
+        "currency": null
+      },
+      "updated_at": "2026-06-04 13:11:01 UTC",
+      "mailbox_email": "job.2ma1w@shypple.recruitee.com",
+      "max_hours": null,
+      "locations_question": "What is your preferred work location?",
+      "published_at": "2026-06-04 13:05:48 UTC",
+      "requirements": "<p><strong><span style=\"color:#1c1053\">What you’ll bring</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Bachelor’s degree in Supply Chain, Business, or a related field.</span></p></li><li><p><span style=\"color:#1c1053\">Proven experience in supplier management, logistics, or platform operations.</span></p></li><li><p><span style=\"color:#1c1053\">Strong organizational and multitasking abilities.</span></p></li><li><p><span style=\"color:#1c1053\">Excellent communication skills in both English and Mandarin.</span></p></li><li><p><span style=\"color:#1c1053\">Ability to work independently and collaboratively in a fast-paced environment</span><strong><span style=\"color:#1c1053\"><br></span></strong></p></li></ul><p><strong><span style=\"color:#1c1053\">You get&nbsp;</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Attractive remuneration</span></p></li><li><p><span style=\"color:#1c1053\">The opportunity to be a part of a great adventure where you can grow, develop, and get the best out of yourself;</span></p></li><li><p><span style=\"color:#1c1053\">A great work environment that is supportive and encourages collaboration and responsibility, and where you can make a significant impact;</span></p></li></ul><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Interested?</span></strong></p><p><span style=\"color:#1c1053\">You can apply by clicking on the ‘apply now’ button on our website. You will hear from us within one week.<br>If you get selected for the first round, we will explain the next steps of our recruitment process.<br></span></p><p><em><span style=\"color:#1c1053\">If you have any questions related to this vacancy, please contact </span></em><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\"><span style=\"color:#1c1053\">people@shypple.com</span></a><em><span style=\"color:#1c1053\">.</span></em></p>",
+      "description": "<p><span style=\"color:#1c1053\">Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shippers - guiding them through platform integration and finding genuine satisfaction in helping them succeed? Do you get excited about connecting shippers to achieve seamless data integration for our clients? If so, then this might be the job for you!</span></p><p style=\"text-align:start;\"><strong><span style=\"color:#1c1053\">Read more below or apply via the “apply” button!</span></strong><span style=\"color:#1c1053\"><br><br></span><strong><span style=\"color:#1c1053\">About Shypple</span></strong></p><p><span style=\"color:#1c1053\">Shypple makes shipping simple.<br>With our easy-to-use platform and expert services, we are simplifying the complex world of logistics and providing our customers with a seamless shipping experience. Our platform acts as a centralized dashboard, offering real-time visibility on every aspect of the supply chain and includes a wide range of features such as booking, planning, delivery, and communication possibilities. As a digital service provider, we are revolutionizing the logistics industry by bringing ease, accountability, and efficiency to the supply chain while lowering hassle, communication, and costs. We believe that the perfect solution to disrupting a traditional industry is a smartly developed system combined with a high-quality customer experience.</span></p><p><span style=\"color:#1c1053\"><br></span><strong><span style=\"color:#1c1053\">Your role as Customer Service Specialist</span></strong></p><p><span style=\"color:#1c1053\">We are seeking a highly motivated and detail-oriented professional to join our team as a </span><span style=\"color:#1C1053\">Customer Service Specialist</span><span style=\"color:#1c1053\">. This role is crucial in driving the adoption and optimization of our digital booking platform among suppliers in China. The ideal candidate will possess strong communication skills, a proactive approach to problem-solving, and the ability to manage multiple stakeholders effectively.<br></span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What you’ll be doing</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Lead the onboarding of Chinese suppliers onto the platform to enable self-service booking, order updates, and maintenance.</span></p></li><li><p><span style=\"color:#1c1053\">Participate in internal shipper onboarding kick-off meetings, monitor progress, provide timely updates to international teams, and facilitate issue resolution.</span></p></li><li><p><span style=\"color:#1c1053\">Create and maintain profiles for new and existing suppliers, and handle daily troubleshooting requests from agents and suppliers.</span></p></li><li><p><span style=\"color:#1c1053\">Ensure strict adherence to internal procedures for handling customer complaints and other operational issues.</span></p></li><li><p><span style=\"color:#1c1053\">Perform other duties as assigned by the supervisor.</span></p></li></ul>",
+      "locations": [
+        {
+          "id": 211497,
+          "name": "Shanghai",
+          "state": "Zhejiang Sheng",
+          "country": "China",
+          "city": "Shanghai",
+          "translations": {
+            "en": {
+              "name": "Shanghai",
+              "city": "Shanghai",
+              "postal_code": null,
+              "street": null,
+              "note": null
+            }
+          },
+          "country_code": "CN",
+          "state_code": "ZJ",
+          "postal_code": null,
+          "street": null,
+          "note": null
+        }
+      ],
+      "location": "Shanghai, Zhejiang, Provincie, China",
+      "min_hours_per_week": null,
+      "education_code": "professional",
+      "translations": {
+        "en": {
+          "description": "<p><span style=\"color:#1c1053\">Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shippers - guiding them through platform integration and finding genuine satisfaction in helping them succeed? Do you get excited about connecting shippers to achieve seamless data integration for our clients? If so, then this might be the job for you!</span></p><p style=\"text-align:start;\"><strong><span style=\"color:#1c1053\">Read more below or apply via the “apply” button!</span></strong><span style=\"color:#1c1053\"><br><br></span><strong><span style=\"color:#1c1053\">About Shypple</span></strong></p><p><span style=\"color:#1c1053\">Shypple makes shipping simple.<br>With our easy-to-use platform and expert services, we are simplifying the complex world of logistics and providing our customers with a seamless shipping experience. Our platform acts as a centralized dashboard, offering real-time visibility on every aspect of the supply chain and includes a wide range of features such as booking, planning, delivery, and communication possibilities. As a digital service provider, we are revolutionizing the logistics industry by bringing ease, accountability, and efficiency to the supply chain while lowering hassle, communication, and costs. We believe that the perfect solution to disrupting a traditional industry is a smartly developed system combined with a high-quality customer experience.</span></p><p><span style=\"color:#1c1053\"><br></span><strong><span style=\"color:#1c1053\">Your role as Customer Service Specialist</span></strong></p><p><span style=\"color:#1c1053\">We are seeking a highly motivated and detail-oriented professional to join our team as a </span><span style=\"color:#1C1053\">Customer Service Specialist</span><span style=\"color:#1c1053\">. This role is crucial in driving the adoption and optimization of our digital booking platform among suppliers in China. The ideal candidate will possess strong communication skills, a proactive approach to problem-solving, and the ability to manage multiple stakeholders effectively.<br></span></p><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">What you’ll be doing</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Lead the onboarding of Chinese suppliers onto the platform to enable self-service booking, order updates, and maintenance.</span></p></li><li><p><span style=\"color:#1c1053\">Participate in internal shipper onboarding kick-off meetings, monitor progress, provide timely updates to international teams, and facilitate issue resolution.</span></p></li><li><p><span style=\"color:#1c1053\">Create and maintain profiles for new and existing suppliers, and handle daily troubleshooting requests from agents and suppliers.</span></p></li><li><p><span style=\"color:#1c1053\">Ensure strict adherence to internal procedures for handling customer complaints and other operational issues.</span></p></li><li><p><span style=\"color:#1c1053\">Perform other duties as assigned by the supervisor.</span></p></li></ul>",
+          "title": "Customer Service Specialist (Supplier Onboarding & Support)",
+          "highlight": null,
+          "requirements": "<p><strong><span style=\"color:#1c1053\">What you’ll bring</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Bachelor’s degree in Supply Chain, Business, or a related field.</span></p></li><li><p><span style=\"color:#1c1053\">Proven experience in supplier management, logistics, or platform operations.</span></p></li><li><p><span style=\"color:#1c1053\">Strong organizational and multitasking abilities.</span></p></li><li><p><span style=\"color:#1c1053\">Excellent communication skills in both English and Mandarin.</span></p></li><li><p><span style=\"color:#1c1053\">Ability to work independently and collaboratively in a fast-paced environment</span><strong><span style=\"color:#1c1053\"><br></span></strong></p></li></ul><p><strong><span style=\"color:#1c1053\">You get&nbsp;</span></strong></p><ul><li><p><span style=\"color:#1c1053\">Attractive remuneration</span></p></li><li><p><span style=\"color:#1c1053\">The opportunity to be a part of a great adventure where you can grow, develop, and get the best out of yourself;</span></p></li><li><p><span style=\"color:#1c1053\">A great work environment that is supportive and encourages collaboration and responsibility, and where you can make a significant impact;</span></p></li></ul><p style=\"min-height: 1.7em;\"></p><p><strong><span style=\"color:#1c1053\">Interested?</span></strong></p><p><span style=\"color:#1c1053\">You can apply by clicking on the ‘apply now’ button on our website. You will hear from us within one week.<br>If you get selected for the first round, we will explain the next steps of our recruitment process.<br></span></p><p><em><span style=\"color:#1c1053\">If you have any questions related to this vacancy, please contact </span></em><a rel=\"noopener\" target=\"_blank\" href=\"mailto:people@shypple.com\"><span style=\"color:#1c1053\">people@shypple.com</span></a><em><span style=\"color:#1c1053\">.</span></em></p>",
+          "sharing_image": null,
+          "sharing_title": "Customer Service Specialist (Supplier Onboarding & Support)",
+          "sharing_description": "Are you a proactive problem-solver with a passion for supplier management and you have insight into the logistics industry? Do you thrive in a fast-paced environment and enjoy working closely with shi",
+          "locations_question": "What is your preferred work location?"
+        }
+      },
+      "remote": false,
+      "tags": [
+        "Permanent"
+      ],
+      "state_code": "ZJ",
+      "locations_question_type": "multiple_choice",
+      "highlight": null,
+      "locations_question_required": true,
+      "options_cv": "required",
+      "careers_apply_url": "https://careers.shypple.com/o/customer-service-specialist-supplier-onboarding-support/c/new",
+      "max_hours_per_week": null,
+      "options_salutation": "off",
+      "id": 2628390,
+      "options_cover_letter": "optional",
+      "cover_image": null,
+      "close_at": null,
+      "options_title": "off",
+      "category_code": "customer_service",
+      "status": "published",
+      "dynamic_fields": [],
+      "sharing_image": null
+    }
+  ]
+}

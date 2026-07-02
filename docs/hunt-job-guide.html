@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hunt-Job — Complete Guide</title>
+<style>
+  :root {
+    --bg: #0b0d10;
+    --surface: #12151a;
+    --surface-2: #191d24;
+    --border: #262c36;
+    --text: #e6e9ee;
+    --muted: #8b94a3;
+    --accent: #4f8cff;
+    --accent-soft: rgba(79,140,255,.12);
+    --green: #3ecf8e;
+    --amber: #f5b83d;
+    --red: #f0616d;
+    --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+    --sans: -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans); line-height: 1.6; font-size: 15px; }
+
+  .layout { display: flex; min-height: 100vh; }
+  nav {
+    width: 230px; flex-shrink: 0; position: sticky; top: 0; height: 100vh;
+    border-right: 1px solid var(--border); padding: 28px 0; overflow-y: auto;
+  }
+  nav .logo { padding: 0 22px 20px; font-weight: 700; font-size: 17px; letter-spacing: -.02em; }
+  nav .logo span { color: var(--accent); }
+  nav .logo small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; margin-top: 2px; }
+  nav a {
+    display: block; padding: 7px 22px; color: var(--muted); text-decoration: none; font-size: 13.5px;
+    border-left: 2px solid transparent; transition: color .15s, border-color .15s;
+  }
+  nav a:hover, nav a.active { color: var(--text); border-left-color: var(--accent); background: var(--accent-soft); }
+  nav .nav-group { margin-top: 14px; padding: 0 22px; font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #5a6272; }
+
+  main { flex: 1; max-width: 880px; padding: 48px 56px 120px; }
+  section { margin-bottom: 72px; scroll-margin-top: 24px; }
+
+  h1 { font-size: 34px; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 10px; }
+  h1 .grad { background: linear-gradient(90deg, var(--accent), #8b6cf5); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { color: var(--muted); font-size: 17px; max-width: 620px; margin-bottom: 26px; }
+  h2 { font-size: 21px; letter-spacing: -.02em; margin-bottom: 6px; padding-top: 8px; }
+  h2 .hash { color: var(--accent); margin-right: 6px; opacity: .6; }
+  h3 { font-size: 15.5px; margin: 22px 0 8px; }
+  .sub { color: var(--muted); font-size: 14px; margin-bottom: 18px; }
+  p { margin-bottom: 12px; }
+  strong { font-weight: 600; }
+
+  .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 30px; }
+  .badge {
+    font-size: 11.5px; padding: 4px 11px; border-radius: 99px; border: 1px solid var(--border);
+    color: var(--muted); background: var(--surface);
+  }
+  .badge.hot { color: var(--green); border-color: rgba(62,207,142,.35); }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; margin: 18px 0; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 18px;
+    transition: border-color .15s;
+  }
+  .card:hover { border-color: #39414e; }
+  .card .icon { font-size: 20px; margin-bottom: 10px; }
+  .card h4 { font-size: 14.5px; margin-bottom: 5px; }
+  .card p { font-size: 13px; color: var(--muted); margin: 0; }
+  .card code { font-size: 11.5px; }
+
+  code {
+    font-family: var(--mono); font-size: 13px; background: var(--surface-2);
+    padding: 2px 6px; border-radius: 5px; border: 1px solid var(--border);
+  }
+  pre {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px 18px; overflow-x: auto; margin: 14px 0; font-size: 13px; line-height: 1.55;
+  }
+  pre code { background: none; border: none; padding: 0; }
+  pre .c { color: #5a6272; }
+  pre .k { color: var(--accent); }
+  pre .s { color: var(--green); }
+  pre .prompt { color: #5a6272; user-select: none; }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 13.5px; }
+  th { text-align: left; color: var(--muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid #1b2027; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+
+  .pill { display: inline-block; font-size: 11px; padding: 2px 9px; border-radius: 99px; font-weight: 600; }
+  .pill.g { background: rgba(62,207,142,.12); color: var(--green); }
+  .pill.a { background: rgba(245,184,61,.12); color: var(--amber); }
+  .pill.r { background: rgba(240,97,109,.12); color: var(--red); }
+  .pill.b { background: var(--accent-soft); color: var(--accent); }
+
+  .flow { display: flex; align-items: stretch; gap: 0; margin: 20px 0; flex-wrap: wrap; }
+  .flow .step {
+    flex: 1; min-width: 118px; background: var(--surface); border: 1px solid var(--border);
+    padding: 14px 12px; text-align: center; position: relative;
+  }
+  .flow .step:first-child { border-radius: 10px 0 0 10px; }
+  .flow .step:last-child { border-radius: 0 10px 10px 0; }
+  .flow .step + .step { border-left: none; }
+  .flow .step .n { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-size: 11px; font-weight: 700; align-items: center; justify-content: center; margin-bottom: 7px; }
+  .flow .step b { display: block; font-size: 13px; }
+  .flow .step small { color: var(--muted); font-size: 11.5px; }
+
+  .callout {
+    border-left: 3px solid var(--accent); background: var(--accent-soft);
+    padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13.5px;
+  }
+  .callout.warn { border-color: var(--amber); background: rgba(245,184,61,.08); }
+  .callout.good { border-color: var(--green); background: rgba(62,207,142,.08); }
+
+  .tree { font-family: var(--mono); font-size: 12.5px; line-height: 1.7; color: var(--muted); }
+  .tree b { color: var(--text); font-weight: 600; }
+  .tree .new { color: var(--green); }
+
+  .kbd-row { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+
+  footer { color: #5a6272; font-size: 12px; border-top: 1px solid var(--border); padding-top: 20px; }
+  @media (max-width: 860px) { nav { display: none; } main { padding: 32px 22px 80px; } }
+</style>
+</head>
+<body>
+<div class="layout">
+<nav>
+  <div class="logo">🎯 hunt<span>-job</span><small>AI job search agent · local-first</small></div>
+  <div class="nav-group">Start here</div>
+  <a href="#overview">Overview</a>
+  <a href="#quickstart">Quickstart</a>
+  <a href="#workflow">The Workflow</a>
+  <div class="nav-group">Reference</div>
+  <a href="#commands">Commands</a>
+  <a href="#features">Features</a>
+  <a href="#providers">AI Providers</a>
+  <a href="#autofill">Auto-Fill Engine</a>
+  <a href="#data">Data &amp; Privacy</a>
+  <div class="nav-group">Under the hood</div>
+  <a href="#architecture">Architecture</a>
+  <a href="#roadmap">Revamp Roadmap</a>
+  <a href="#troubleshooting">Troubleshooting</a>
+</nav>
+<main>
+
+<section id="overview">
+  <h1>Land the offer.<br><span class="grad">Automate everything before it.</span></h1>
+  <p class="lede">Hunt-Job is a local-first AI agent that scans real company job boards, scores every role against <em>your</em> profile, tailors an ATS-proof resume, auto-fills the application form, and preps you for the interview. You stay the final gatekeeper.</p>
+  <div class="badges">
+    <span class="badge hot">100% local — your data never leaves your machine</span>
+    <span class="badge">Node.js CLI</span>
+    <span class="badge">India-focused, 30+ companies</span>
+    <span class="badge">5 AI providers with fallback</span>
+    <span class="badge">MIT License</span>
+  </div>
+  <div class="cards">
+    <div class="card"><div class="icon">📡</div><h4>Scan</h4><p>Pulls live openings straight from Lever &amp; Greenhouse public APIs — no LinkedIn spam, no stale aggregators.</p></div>
+    <div class="card"><div class="icon">🧠</div><h4>Score</h4><p>10-dimension AI evaluation: salary, stack, culture, growth, WLB, dealbreakers. Apply only above 4.0/5.</p></div>
+    <div class="card"><div class="icon">📄</div><h4>Tailor</h4><p>Generates a keyword-optimized PDF resume per job — reordered bullets, ATS-clean layout.</p></div>
+    <div class="card"><div class="icon">🤖</div><h4>Apply</h4><p>Detects the ATS platform and auto-fills the form in a real browser. You review, then hit submit.</p></div>
+    <div class="card"><div class="icon">🎤</div><h4>Prep</h4><p>4-week interview plan: concepts, system design, behavioral Qs, curated YouTube per topic.</p></div>
+    <div class="card"><div class="icon">📊</div><h4>Track</h4><p>Every evaluation and application logged locally. Know what's pending, interviewing, offered.</p></div>
+  </div>
+</section>
+
+<section id="quickstart">
+  <h2><span class="hash">#</span>Quickstart</h2>
+  <p class="sub">Four commands from zero to first scan.</p>
+<pre><code><span class="c"># 1. Install dependencies</span>
+<span class="prompt">$</span> npm install
+
+<span class="c"># 2. Set up an AI provider key (any ONE of these works)</span>
+<span class="prompt">$</span> node hunt-job.js setup        <span class="c"># guided — or set GEMINI_API_KEY / ANTHROPIC_API_KEY in .env</span>
+
+<span class="c"># 3. Build your profile — fastest: parse your existing resume PDF</span>
+<span class="prompt">$</span> node hunt-job.js parse-resume ./my_resume.pdf
+
+<span class="c"># 4. Hunt</span>
+<span class="prompt">$</span> npm run hunt -- --archetype <span class="s">"DevOps Engineer"</span></code></pre>
+  <div class="callout good"><strong>Tip:</strong> <code>node hunt-job.js</code> with no arguments opens the interactive menu — every feature is reachable from there. No flags to memorize.</div>
+</section>
+
+<section id="workflow">
+  <h2><span class="hash">#</span>The Workflow</h2>
+  <p class="sub">One loop, repeated until you sign an offer.</p>
+  <div class="flow">
+    <div class="step"><span class="n">1</span><b>Scan</b><small>live boards, newest first</small></div>
+    <div class="step"><span class="n">2</span><b>Evaluate</b><small>10-dim AI score</small></div>
+    <div class="step"><span class="n">3</span><b>Resume</b><small>tailored PDF</small></div>
+    <div class="step"><span class="n">4</span><b>Apply</b><small>auto-fill, you submit</small></div>
+    <div class="step"><span class="n">5</span><b>Prep</b><small>interview plan</small></div>
+    <div class="step"><span class="n">6</span><b>Track</b><small>status per app</small></div>
+  </div>
+  <p>The <strong>full workflow mode</strong> (<code>hunt</code> command or menu option) chains steps 1–4: scan → pick a job → evaluate → generate resume → open the application pre-filled in a browser. Jobs posted in the last 48 hours are flagged <span class="pill a">🔥 fresh</span> — apply to those first; early applicants get disproportionate recruiter attention.</p>
+  <div class="callout"><strong>You are the gatekeeper.</strong> Hunt-Job never submits an application by itself. It fills the form, shows you a report of every field, and waits. Review, fix anything, click submit yourself.</div>
+</section>
+
+<section id="commands">
+  <h2><span class="hash">#</span>Commands</h2>
+  <p class="sub">All via <code>node hunt-job.js &lt;command&gt;</code> or npm scripts.</p>
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><td><code>(no args)</code></td><td>Interactive menu — recommended starting point</td></tr>
+    <tr><td><code>hunt --archetype "X"</code></td><td>Full workflow: scan → evaluate → resume → apply in one run</td></tr>
+    <tr><td><code>scan --archetype "X"</code></td><td>Scan all configured job boards for matching roles</td></tr>
+    <tr><td><code>evaluate &lt;url|text&gt;</code></td><td>Score one job posting across 10 dimensions</td></tr>
+    <tr><td><code>resume &lt;job-id&gt;</code></td><td>Generate tailored ATS-optimized PDF for an evaluated job</td></tr>
+    <tr><td><code>prep &lt;text|file.txt&gt;</code></td><td>Generate interview prep plan with YouTube resources</td></tr>
+    <tr><td><code>parse-resume &lt;pdf&gt;</code></td><td>Build your profile automatically from an existing resume</td></tr>
+    <tr><td><code>profile init / edit</code></td><td>Create or update your candidate profile</td></tr>
+    <tr><td><code>setup</code></td><td>Guided API key configuration</td></tr>
+  </table>
+  <h3>Archetypes that scan well</h3>
+  <div class="kbd-row">
+    <span class="pill b">DevOps Engineer</span><span class="pill b">SRE</span><span class="pill b">Backend Engineer</span><span class="pill b">Data Engineer</span><span class="pill b">Platform Engineer</span><span class="pill b">ML Engineer</span><span class="pill b">Security Engineer</span><span class="pill b">Fullstack</span>
+  </div>
+  <p style="color:var(--muted);font-size:13px">Matching uses synonym groups — "DevOps" also hits DevSecOps, CI/CD, Release Engineer roles. Location filter keeps India cities + true-remote, drops region-locked "remote (US only)" listings.</p>
+</section>
+
+<section id="features">
+  <h2><span class="hash">#</span>Feature Deep-Dive</h2>
+
+  <h3>📡 Portal Scanner</h3>
+  <p>Hits <strong>Lever</strong> and <strong>Greenhouse</strong> public JSON APIs directly — the same data the career page renders, without the career page. 30 verified companies (Stripe, Databricks, PhonePe, CRED, Paytm, MongoDB, Airbnb, Anthropic…), scanned in parallel, results cached in SQLite for 4 hours, stale listings older than 90 days dropped.</p>
+
+  <h3>🧠 Job Evaluator</h3>
+  <p>Ten dimensions, each scored 1–5: salary alignment, tech-stack fit, culture, growth, location/remote, team, product-market fit, work-life balance, career progression, dealbreaker compliance. Returns matches, mismatches, reasoning, and an <span class="pill g">Apply</span> / <span class="pill a">Maybe</span> / <span class="pill r">Skip</span> verdict. Rule of thumb: don't apply below 4.0.</p>
+
+  <h3>📄 Resume Generator</h3>
+  <p>Extracts the top ~20 keywords from the JD, rewrites your summary and reorders experience bullets by relevance, renders through an ATS-safe EJS template, and prints to PDF via Playwright. Output lands in <code>data/&lt;Company&gt;_&lt;Role&gt;_&lt;date&gt;/</code>.</p>
+
+  <h3>🎤 Interview Prep</h3>
+  <p>From any JD: 10+ focus areas, concepts grouped by category (DSA, system design, DB…), likely interview rounds, 10+ behavioral questions, a 4-week study schedule, and curated YouTube links per topic. Saved as styled HTML you can open in the browser.</p>
+</section>
+
+<section id="providers">
+  <h2><span class="hash">#</span>AI Providers</h2>
+  <p class="sub">Bring any one key. The client picks in priority order and falls back on rate limits.</p>
+  <table>
+    <tr><th>Provider</th><th>Env var</th><th>Notes</th></tr>
+    <tr><td>Gemini</td><td><code>GEMINI_API_KEY</code></td><td>Generous free tier — best zero-cost option</td></tr>
+    <tr><td>Anthropic</td><td><code>ANTHROPIC_API_KEY</code></td><td>Highest quality evaluations/resumes</td></tr>
+    <tr><td>Groq</td><td><code>GROQ_API_KEY</code></td><td>Fast + free tier</td></tr>
+    <tr><td>OpenRouter</td><td><code>OPENROUTER_API_KEY</code></td><td>One key, many models</td></tr>
+    <tr><td>NVIDIA</td><td><code>NVIDIA_API_KEY</code></td><td>Free NIM endpoints</td></tr>
+  </table>
+  <p style="color:var(--muted);font-size:13px">Force a provider with <code>AI_PROVIDER=gemini</code>. "Light" tasks (keyword extraction, scanning) use cheaper models than "heavy" tasks (evaluation, resume writing) automatically.</p>
+</section>
+
+<section id="autofill">
+  <h2><span class="hash">#</span>Auto-Fill Engine</h2>
+  <p class="sub">The part that saves you 15 minutes per application.</p>
+  <p>When you choose <em>Apply</em>, Hunt-Job detects which ATS the company uses from the URL, opens a real (visible) Chromium window via Playwright, and runs the matching adapter:</p>
+  <table>
+    <tr><th>Platform</th><th>Adapter</th><th>Coverage</th></tr>
+    <tr><td>Lever</td><td>Dedicated</td><td><span class="pill g">Full form + resume upload</span></td></tr>
+    <tr><td>Greenhouse</td><td>Dedicated</td><td><span class="pill g">Full form + resume upload</span></td></tr>
+    <tr><td>Workday</td><td>Dedicated</td><td><span class="pill a">Multi-step, account pages vary</span></td></tr>
+    <tr><td>SmartRecruiters</td><td>Dedicated</td><td><span class="pill g">Full form</span></td></tr>
+    <tr><td>Everything else</td><td>AI generic</td><td><span class="pill b">LLM maps fields → best-effort fill</span></td></tr>
+  </table>
+  <p>It also generates a short tailored cover letter and role-fit summary on the fly, fills them where the form asks, uploads your latest resume PDF, then prints a field-by-field report: <strong>filled / skipped / uploaded</strong>. Browser stays open — you verify and submit.</p>
+</section>
+
+<section id="data">
+  <h2><span class="hash">#</span>Data &amp; Privacy</h2>
+  <p class="sub">Local-first is the whole point.</p>
+  <table>
+    <tr><th>What</th><th>Where it lives</th></tr>
+    <tr><td>Your profile (experience, salary, dealbreakers)</td><td><code>config/profile.yml</code> + <code>modes/_profile.md</code></td></tr>
+    <tr><td>Scan cache</td><td><code>data/job-cache.db</code> (SQLite)</td></tr>
+    <tr><td>Evaluations &amp; applications</td><td><code>data/evaluated-jobs.json</code>, <code>data/applications.json</code></td></tr>
+    <tr><td>Generated resumes &amp; prep plans</td><td><code>data/&lt;job-folders&gt;/</code></td></tr>
+  </table>
+  <p>Only two things ever leave your machine: requests to public job-board APIs, and prompts to the AI provider you configured. No telemetry, no accounts, no cloud storage.</p>
+</section>
+
+<section id="architecture">
+  <h2><span class="hash">#</span>Architecture</h2>
+  <p class="sub">Thin CLI over pure core services.</p>
+<div class="tree"><pre>
+hunt-job.js                  <b>entry point</b> — dispatch to CLI scripts
+src/
+├── core/                    <b>services (no UI)</b>
+│   ├── aiClient.js          multi-provider LLM client, retry + fallback
+│   ├── portalScanner.js     Lever + Greenhouse parallel scan, India filter
+│   ├── jobCache.js          SQLite scan cache (4h fresh / 7d TTL)
+│   ├── jobEvaluator.js      10-dimension scoring
+│   ├── resumeGenerator.js   keywords → tailored content → EJS → PDF
+│   ├── interviewPrep.js     prep plan generation + HTML render
+│   ├── profileManager.js    profile CRUD (yml + md)
+│   └── autoFill/            platform detect → adapter → fill report
+│       └── adapters/        lever · greenhouse · workday · smartrecruiters · generic(AI)
+├── cli/
+│   ├── interactive.js       full menu — all flows
+│   └── *.js                 one script per command
+config/                      profile.yml · settings.json · company-portals.json
+data/                        SQLite + JSON stores + generated artifacts
+</pre></div>
+</section>
+
+<section id="roadmap">
+  <h2><span class="hash">#</span>Revamp Roadmap</h2>
+  <p class="sub">Full plan in <code>docs/REVAMP_PLAN.md</code> — six phases to production-grade.</p>
+  <table>
+    <tr><th>Phase</th><th>Scope</th><th>Payoff</th></tr>
+    <tr><td><span class="pill b">1</span> Foundation</td><td>Single SQLite DB, migrate JSON stores, repo cleanup</td><td>One source of truth</td></tr>
+    <tr><td><span class="pill b">2</span> Scanner v2</td><td>+Ashby, SmartRecruiters, Recruitee, Workable APIs · JSON-LD fallback · ATS auto-detection · job-level dedup</td><td>3–4× more real openings</td></tr>
+    <tr><td><span class="pill b">3</span> Evaluator fix</td><td>Fetch JD before scoring (kills hallucinated scores) · ₹ LPA salary · show reasoning</td><td>Scores you can trust</td></tr>
+    <tr><td><span class="pill b">4</span> CLI split</td><td>Break 1000-line menu into flow modules + shared widgets</td><td>Maintainable, faster UI work</td></tr>
+    <tr><td><span class="pill b">5</span> Web dashboard</td><td>Local <code>localhost:7777</code> pipeline board: Scanned → Applied → Interview → Offer</td><td>See your whole hunt at a glance</td></tr>
+    <tr><td><span class="pill b">6</span> Watch mode</td><td><code>hunt-job watch</code> — periodic scan + notify on fresh matches</td><td>First-applicant advantage</td></tr>
+  </table>
+  <div class="callout warn"><strong>Deliberately rejected:</strong> scraping LinkedIn/Naukri/Instahyre (ToS bans, CAPTCHAs), auto-submitting applications (human stays in control), any cloud component.</div>
+</section>
+
+<section id="troubleshooting">
+  <h2><span class="hash">#</span>Troubleshooting</h2>
+  <table>
+    <tr><th>Symptom</th><th>Fix</th></tr>
+    <tr><td>"API key not set"</td><td>Run <code>node hunt-job.js setup</code>, or add key to <code>.env</code></td></tr>
+    <tr><td>PDF generation fails</td><td><code>npx playwright install chromium</code></td></tr>
+    <tr><td>Scan returns 0 jobs</td><td>Try a broader archetype ("Backend Engineer" not "Sr. Golang Microservices Dev"); check internet</td></tr>
+    <tr><td>Gemini rate-limit waits</td><td>Normal on free tier — client auto-retries; or set <code>AI_PROVIDER</code> to another key you have</td></tr>
+    <tr><td>Auto-fill misses fields</td><td>Expected on exotic ATS forms — the report lists skipped fields; fill those by hand</td></tr>
+    <tr><td>Profile not saving</td><td>Ensure <code>config/</code> and <code>modes/</code> exist and are writable</td></tr>
+  </table>
+</section>
+
+<footer>
+  Hunt-Job v1.0 · MIT · Built on Career-Ops · Local-first, forever. &nbsp;·&nbsp; Guide generated 2026-07-02
+</footer>
+</main>
+</div>
+<script>
+  const links = document.querySelectorAll('nav a');
+  const sections = [...document.querySelectorAll('section')];
+  const byId = Object.fromEntries([...links].map(a => [a.getAttribute('href').slice(1), a]));
+  new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(l => l.classList.remove('active'));
+        byId[e.target.id]?.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' }).observe && sections.forEach(s => {
+    new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { links.forEach(l => l.classList.remove('active')); byId[e.target.id]?.classList.add('active'); }
+    }), { rootMargin: '-20% 0px -70% 0px' }).observe(s);
+  });
+</script>
+</body>
+</html>

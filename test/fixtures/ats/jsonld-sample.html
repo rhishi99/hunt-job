@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Careers — Acme Corp</title>
+  <!-- Single JobPosting object, schema.org markup for Google Jobs -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "JobPosting",
+    "title": "Senior DevOps Engineer",
+    "description": "<p>Own our CI/CD pipeline and Kubernetes platform.</p><ul><li>5+ years experience</li></ul>",
+    "datePosted": "2026-06-28",
+    "hiringOrganization": {
+      "@type": "Organization",
+      "name": "Acme Corp",
+      "sameAs": "https://acme.example.com"
+    },
+    "jobLocation": {
+      "@type": "Place",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Bengaluru",
+        "addressRegion": "Karnataka",
+        "addressCountry": "IN"
+      }
+    },
+    "url": "https://careers.acme.example.com/jobs/senior-devops-engineer"
+  }
+  </script>
+</head>
+<body>
+  <h1>Open roles at Acme Corp</h1>
+
+  <!-- Second posting, wrapped in an @graph array alongside an unrelated node -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "name": "Acme Corp",
+        "url": "https://acme.example.com"
+      },
+      {
+        "@type": "JobPosting",
+        "title": "Platform SRE",
+        "description": "<p>Keep the lights on across our multi-region infra.</p>",
+        "datePosted": "2026-06-30",
+        "hiringOrganization": {
+          "@type": "Organization",
+          "name": "Acme Corp"
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Pune",
+            "addressRegion": "Maharashtra",
+            "addressCountry": "IN"
+          }
+        },
+        "url": "https://careers.acme.example.com/jobs/platform-sre"
+      }
+    ]
+  }
+  </script>
+
+  <!-- Malformed block on purpose — parser must skip it, not throw -->
+  <script type="application/ld+json">
+  { this is not valid json,,, }
+  </script>
+</body>
+</html>
