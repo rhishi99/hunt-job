@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunt-Job Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b0d10;
+      --surface: #12151a;
+      --surface-2: #191d24;
+      --border: #262c36;
+      --text: #e6e9ee;
+      --muted: #8b94a3;
+      --accent: #4f8cff;
+      --accent-soft: rgba(79,140,255,.12);
+      --green: #3ecf8e;
+      --amber: #f5b83d;
+      --red: #f0616d;
+      --mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, monospace;
+      --sans: -apple-system, "Segoe UI", Inter, Roboto, sans-serif;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; overflow: hidden; line-height: 1.5; }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
+
+    /* Layout */
+    .app { display: flex; height: 100vh; }
+    nav { width: 240px; background: var(--bg); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; flex-shrink: 0; }
+    main { flex: 1; display: flex; flex-direction: column; background: var(--surface); overflow: hidden; min-width: 0; }
+
+    /* Nav */
+    nav .logo { padding: 0 24px 32px; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+    nav .logo span { color: var(--accent); }
+    nav a { padding: 10px 24px; color: var(--muted); text-decoration: none; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: all 0.2s; border-left: 2px solid transparent; cursor: pointer; font-size: 13.5px; }
+    nav a:hover { color: var(--text); background: var(--surface-2); }
+    nav a.active { color: var(--text); background: var(--surface-2); border-left-color: var(--accent); }
+    nav a svg { opacity: 0.7; }
+    nav a:hover svg, nav a.active svg { opacity: 1; }
+
+    /* Header stats */
+    header { padding: 24px 32px; border-bottom: 1px solid var(--border); display: flex; gap: 16px; flex-shrink: 0; background: var(--bg); overflow-x: auto; }
+    .stat-tile { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; min-width: 140px; display: flex; flex-direction: column; gap: 6px; }
+    .stat-tile .label { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-tile .value { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; }
+
+    /* Views */
+    .view { display: none; flex: 1; overflow-y: auto; overflow-x: hidden; padding: 32px; }
+    #view-pipeline { padding: 24px 32px; display: none; flex-direction: column; }
+    .view.active, #view-pipeline.active { display: flex; }
+
+    /* Pipeline Board */
+    .board { display: flex; gap: 16px; flex: 1; overflow-x: auto; overflow-y: hidden; padding-bottom: 16px; }
+    .column { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; width: 300px; flex-shrink: 0; display: flex; flex-direction: column; }
+    .column-header { padding: 16px; border-bottom: 1px solid var(--border); font-weight: 600; display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    .column-count { font-size: 12px; color: var(--muted); background: var(--surface-2); padding: 2px 8px; border-radius: 99px; }
+    .column-cards { padding: 12px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; min-height: 100px; transition: background 0.2s; }
+    .column-cards.drag-over { background: var(--surface-2); }
+
+    /* Kanban Card */
+    .kanban-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px; cursor: grab; transition: border-color 0.2s, transform 0.2s; }
+    .kanban-card:hover { border-color: #39414e; transform: translateY(-2px); }
+    .kanban-card:active { cursor: grabbing; }
+    .kanban-card.dragging { opacity: 0.5; border-style: dashed; }
+    .kanban-card h4 { font-size: 14px; margin-bottom: 4px; font-weight: 600; }
+    .kanban-card .company { font-size: 13px; color: var(--muted); margin-bottom: 12px; }
+    .kanban-card .meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* Badges & Pills */
+    .pill { display: inline-flex; align-items: center; font-size: 11px; padding: 2px 8px; border-radius: 99px; font-weight: 600; border: 1px solid transparent; letter-spacing: 0.02em; }
+    .pill.g { background: rgba(62,207,142,.12); color: var(--green); border-color: rgba(62,207,142,.2); }
+    .pill.a { background: rgba(245,184,61,.12); color: var(--amber); border-color: rgba(245,184,61,.2); }
+    .pill.r { background: rgba(240,97,109,.12); color: var(--red); border-color: rgba(240,97,109,.2); }
+    .pill.b { background: var(--accent-soft); color: var(--accent); border-color: rgba(79,140,255,.2); }
+    .pill.outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+    .pill.fresh { color: var(--amber); border-color: rgba(245,184,61,.4); }
+
+    /* Table */
+    table { width: 100%; border-collapse: collapse; }
+    th { text-align: left; padding: 12px 16px; border-bottom: 1px solid var(--border); color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 13.5px; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: var(--surface-2); }
+    .table-container { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; overflow-x: auto; }
+    
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+    input, select { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-family: inherit; font-size: 13.5px; outline: none; transition: border-color 0.2s; }
+    input:focus, select:focus { border-color: var(--accent); }
+    input::placeholder { color: #5a6272; }
+
+    /* Evaluations List */
+    .eval-card { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 16px; overflow: hidden; transition: border-color 0.2s; }
+    .eval-card:hover { border-color: #39414e; }
+    .eval-summary { padding: 20px 24px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+    .eval-details { padding: 24px; border-top: 1px solid var(--border); display: none; background: var(--surface-2); }
+    .eval-card.open .eval-details { display: block; }
+    
+    .score-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+    .score-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+    
+    .dim-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; margin-top: 24px; margin-bottom: 8px; }
+    .dim-item { font-size: 12.5px; }
+    .dim-item .header { display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--muted); }
+    .dim-item .score-fill { background: var(--muted); }
+    .dim-item[data-score="5"] .score-fill { background: var(--green); }
+    .dim-item[data-score="4"] .score-fill { background: var(--amber); }
+    .dim-item[data-score="1"] .score-fill, .dim-item[data-score="2"] .score-fill { background: var(--red); }
+    
+    .chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+
+    /* Profile */
+    .profile-card { max-width: 600px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 32px; }
+    .profile-card h2 { font-size: 24px; margin-bottom: 6px; font-weight: 700; letter-spacing: -0.02em; }
+    .profile-card .role { color: var(--muted); margin-bottom: 32px; font-size: 15px; }
+    .profile-section { margin-bottom: 32px; }
+    .profile-section:last-child { margin-bottom: 0; }
+    .profile-section h4 { font-size: 12px; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; letter-spacing: 0.05em; }
+    .salary-range { font-size: 18px; font-weight: 600; color: var(--text); }
+
+    /* Toast */
+    #toast { position: fixed; bottom: 32px; right: 32px; background: var(--surface-2); border: 1px solid var(--border); padding: 14px 24px; border-radius: 8px; display: flex; align-items: center; gap: 12px; transform: translateY(100px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); z-index: 100; box-shadow: 0 8px 24px rgba(0,0,0,0.4); font-weight: 500; font-size: 13.5px; }
+    #toast.show { transform: translateY(0); opacity: 1; }
+    #toast.success { border-left: 3px solid var(--green); }
+    #toast.error { border-left: 3px solid var(--red); }
+
+    /* Utilities */
+    .text-muted { color: var(--muted); }
+    .flex-row { display: flex; gap: 12px; align-items: center; }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<div class="app">
+  <nav>
+    <div class="logo">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      hunt<span>-job</span>
+    </div>
+    <a href="#pipeline" class="active" data-view="pipeline">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="9" y1="21" x2="9" y2="9"></line></svg>
+      Pipeline
+    </a>
+    <a href="#jobs" data-view="jobs">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+      Jobs
+    </a>
+    <a href="#evaluations" data-view="evaluations">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+      Evaluations
+    </a>
+    <a href="#profile" data-view="profile">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      Profile
+    </a>
+  </nav>
+
+  <main>
+    <header>
+      <div class="stat-tile">
+        <span class="label">Scanned</span>
+        <span class="value" id="stat-scanned">-</span>
+      </div>
+      <div class="stat-tile">
+        <span class="label">Evaluated</span>
+        <span class="value" id="stat-evaluated">-</span>
+      </div>
+      <div class="stat-tile">
+        <span class="label">Applied</span>
+        <span class="value" id="stat-applied">-</span>
+      </div>
+      <div class="stat-tile">
+        <span class="label">Offers</span>
+        <span class="value" id="stat-offers">-</span>
+      </div>
+    </header>
+
+    <div id="view-pipeline" class="view active">
+      <div class="board" id="kanban-board"></div>
+    </div>
+
+    <div id="view-jobs" class="view">
+      <div class="filter-bar">
+        <input type="text" id="jobs-search" placeholder="Search company or title..." style="width: 280px;">
+        <select id="jobs-filter-score">
+          <option value="0">All Scores</option>
+          <option value="4">≥ 4.0 (Great Match)</option>
+          <option value="3">≥ 3.0 (Good Match)</option>
+        </select>
+        <select id="jobs-filter-fresh">
+          <option value="all">Any time</option>
+          <option value="fresh">Fresh (&lt;48h)</option>
+        </select>
+        <select id="jobs-filter-status">
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="closed">Closed</option>
+        </select>
+      </div>
+      <div class="table-container">
+        <table id="jobs-table">
+          <thead>
+            <tr>
+              <th>Company</th>
+              <th>Role</th>
+              <th>Score</th>
+              <th>Location</th>
+              <th>Posted</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="view-evaluations" class="view">
+      <div style="max-width: 800px;" id="evaluations-list"></div>
+    </div>
+
+    <div id="view-profile" class="view">
+      <div class="profile-card" id="profile-card"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Realistic fallback mock data
+  const MOCK = {
+    stats: { scanned: 342, evaluated: 45, applied: 18, interviews: 4, offers: 1 },
+    jobs: [
+      { id: 'j1', company: 'Stripe', title: 'Backend Engineer', location: 'Remote, India', score: 4.8, postedAt: new Date(Date.now()-10*3600000).toISOString(), status: 'evaluated' },
+      { id: 'j2', company: 'CRED', title: 'Site Reliability Engineer', location: 'Bengaluru', score: 3.2, postedAt: new Date(Date.now()-120*3600000).toISOString(), status: 'scanned' },
+      { id: 'j3', company: 'PhonePe', title: 'DevOps Engineer', location: 'Bengaluru', score: 4.1, postedAt: new Date(Date.now()-20*3600000).toISOString(), status: 'applied' },
+      { id: 'j4', company: 'Databricks', title: 'Platform Engineer', location: 'Remote', score: 4.9, postedAt: new Date(Date.now()-200*3600000).toISOString(), status: 'offer' }
+    ],
+    evaluations: [
+      { id: 'e1', jobId: 'j1', company: 'Stripe', title: 'Backend Engineer', overallScore: 4.8, dimensions: { salary: 5, stack: 4, culture: 5, growth: 5, wlb: 4, location: 5, team: 5, pmf: 5, progression: 5, dealbreakers: 5 }, matches: ['Node.js', 'Remote', 'High Pay'], mismatches: ['Go'], reasoning: 'Excellent match. The salary tier perfectly aligns with expectations, and the engineering culture is top-notch. The only minor mismatch is occasional Go usage.', recommendation: 'Apply', evaluatedAt: new Date().toISOString() }
+    ],
+    applications: [
+      { id: 'a1', jobId: 'j1', company: 'Stripe', title: 'Backend Engineer', status: 'interview', appliedAt: new Date().toISOString() },
+      { id: 'a2', jobId: 'j3', company: 'PhonePe', title: 'DevOps Engineer', status: 'applied', appliedAt: new Date().toISOString() },
+      { id: 'a3', jobId: 'j4', company: 'Databricks', title: 'Platform Engineer', status: 'offer', appliedAt: new Date().toISOString() },
+      { id: 'a4', jobId: 'j5', company: 'Anthropic', title: 'Infrastructure Engineer', status: 'rejected', appliedAt: new Date().toISOString() },
+      { id: 'a5', jobId: 'j6', company: 'Zerodha', title: 'Systems Engineer', status: 'scanned', appliedAt: new Date().toISOString() },
+      { id: 'a6', jobId: 'j7', company: 'Rippling', title: 'Backend Engineer', status: 'evaluated', appliedAt: new Date().toISOString() }
+    ],
+    profile: { name: 'Alex Hacker', currentRole: 'Senior SRE', yearsOfExperience: 5, archetypes: ['DevOps Engineer', 'SRE', 'Platform Engineer'], techStack: ['AWS', 'Kubernetes', 'Terraform', 'Node.js', 'Python', 'Go'], salary: { min: 4000000, max: 6000000, currency: 'INR' } }
+  };
+
+  const state = {
+    stats: null, jobs: [], evaluations: [], applications: [], profile: null
+  };
+
+  async function fetchApi(path, mockFallback) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error('Fetch failed');
+      return await res.json();
+    } catch (e) {
+      console.warn(`Fallback to mock for ${path}`);
+      return JSON.parse(JSON.stringify(mockFallback)); // Deep copy mock
+    }
+  }
+
+  async function patchApplication(id, newStatus) {
+    try {
+      const res = await fetch(`/api/applications/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      });
+      if (!res.ok) throw new Error('Patch failed');
+      showToast('Status updated successfully', 'success');
+    } catch (e) {
+      showToast('Mock mode: Status updated locally', 'success');
+    }
+  }
+
+  function showToast(msg, type='success') {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = `show ${type}`;
+    setTimeout(() => { if (t.className.includes('show')) t.className = ''; }, 3000);
+  }
+
+  async function init() {
+    state.stats = await fetchApi('/api/stats', MOCK.stats);
+    state.jobs = await fetchApi('/api/jobs', MOCK.jobs);
+    state.evaluations = await fetchApi('/api/evaluations', MOCK.evaluations);
+    state.applications = await fetchApi('/api/applications', MOCK.applications);
+    state.profile = await fetchApi('/api/profile', MOCK.profile);
+
+    setupNav();
+    renderStats();
+    renderPipeline();
+    renderJobs();
+    renderEvaluations();
+    renderProfile();
+  }
+
+  function setupNav() {
+    document.querySelectorAll('nav a').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault();
+        const viewId = a.dataset.view;
+        document.querySelectorAll('nav a').forEach(link => link.classList.remove('active'));
+        a.classList.add('active');
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+        document.getElementById('view-' + viewId).classList.add('active');
+      });
+    });
+
+    ['jobs-search', 'jobs-filter-score', 'jobs-filter-fresh', 'jobs-filter-status'].forEach(id => {
+      document.getElementById(id).addEventListener('input', renderJobs);
+    });
+  }
+
+  function renderStats() {
+    document.getElementById('stat-scanned').textContent = state.stats?.scanned || 0;
+    document.getElementById('stat-evaluated').textContent = state.stats?.evaluated || 0;
+    document.getElementById('stat-applied').textContent = state.stats?.applied || 0;
+    document.getElementById('stat-offers').textContent = state.stats?.offers || 0;
+  }
+
+  function renderPipeline() {
+    const board = document.getElementById('kanban-board');
+    board.innerHTML = '';
+    const COLUMNS = ['scanned', 'evaluated', 'applied', 'interview', 'offer', 'rejected'];
+    
+    COLUMNS.forEach(col => {
+      const colDiv = document.createElement('div');
+      colDiv.className = 'column';
+      
+      const header = document.createElement('div');
+      header.className = 'column-header';
+      const items = state.applications.filter(a => a.status === col);
+      header.innerHTML = `<span>${col.charAt(0).toUpperCase() + col.slice(1)}</span> <span class="column-count">${items.length}</span>`;
+      colDiv.appendChild(header);
+
+      const cardsDiv = document.createElement('div');
+      cardsDiv.className = 'column-cards';
+      
+      cardsDiv.addEventListener('dragover', e => {
+        e.preventDefault();
+        cardsDiv.classList.add('drag-over');
+      });
+      cardsDiv.addEventListener('dragleave', () => cardsDiv.classList.remove('drag-over'));
+      cardsDiv.addEventListener('drop', e => {
+        e.preventDefault();
+        cardsDiv.classList.remove('drag-over');
+        const id = e.dataTransfer.getData('text/plain');
+        if (id) handleDrop(id, col);
+      });
+
+      items.forEach(app => {
+        const card = document.createElement('div');
+        card.className = 'kanban-card';
+        card.draggable = true;
+        
+        const evalData = state.evaluations.find(e => e.jobId === app.jobId);
+        let scorePill = '';
+        if (evalData) {
+          const s = evalData.overallScore;
+          const color = s >= 4 ? 'g' : (s >= 3 ? 'a' : 'r');
+          scorePill = `<span class="pill ${color}">${s.toFixed(1)}</span>`;
+        }
+
+        const job = state.jobs.find(j => j.id === app.jobId);
+        let freshPill = '';
+        if (job && job.postedAt) {
+          const age = (Date.now() - new Date(job.postedAt).getTime()) / 3600000;
+          if (age < 48) freshPill = `<span class="pill outline fresh">Fresh</span>`;
+        }
+
+        card.innerHTML = `
+          <h4>${app.title}</h4>
+          <div class="company">${app.company}</div>
+          <div class="meta">${scorePill} ${freshPill}</div>
+        `;
+        
+        card.addEventListener('dragstart', e => {
+          e.dataTransfer.setData('text/plain', app.id);
+          setTimeout(() => card.classList.add('dragging'), 0);
+        });
+        card.addEventListener('dragend', () => card.classList.remove('dragging'));
+        
+        cardsDiv.appendChild(card);
+      });
+      
+      colDiv.appendChild(cardsDiv);
+      board.appendChild(colDiv);
+    });
+  }
+
+  function handleDrop(id, newStatus) {
+    const app = state.applications.find(a => a.id === id);
+    if (!app || app.status === newStatus) return;
+    app.status = newStatus;
+    renderPipeline();
+    patchApplication(id, newStatus);
+  }
+
+  function renderJobs() {
+    const tbody = document.querySelector('#jobs-table tbody');
+    const search = document.getElementById('jobs-search').value.toLowerCase();
+    const minScore = parseFloat(document.getElementById('jobs-filter-score').value);
+    const freshOnly = document.getElementById('jobs-filter-fresh').value === 'fresh';
+    const statusF = document.getElementById('jobs-filter-status').value;
+
+    const now = Date.now();
+    tbody.innerHTML = '';
+    
+    state.jobs.forEach(job => {
+      if (search && !job.company.toLowerCase().includes(search) && !job.title.toLowerCase().includes(search)) return;
+      if (job.score && job.score < minScore) return;
+      
+      const isFresh = job.postedAt && ((now - new Date(job.postedAt).getTime()) / 3600000 < 48);
+      if (freshOnly && !isFresh) return;
+      if (statusF !== 'all' && job.status !== statusF) return;
+
+      let scorePill = '<span class="text-muted">-</span>';
+      if (job.score) {
+        const color = job.score >= 4 ? 'g' : (job.score >= 3 ? 'a' : 'r');
+        scorePill = `<span class="pill ${color}">${job.score.toFixed(1)}</span>`;
+      }
+      
+      const freshBadge = isFresh ? `<span class="pill outline fresh" style="margin-left: 8px;">Fresh</span>` : '';
+      const dateStr = job.postedAt ? new Date(job.postedAt).toLocaleDateString(undefined, {month:'short', day:'numeric'}) : '-';
+
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong style="color:var(--text)">${job.company}</strong></td>
+        <td style="font-weight:500;">${job.title} ${freshBadge}</td>
+        <td>${scorePill}</td>
+        <td><span class="text-muted">${job.location}</span></td>
+        <td><span class="text-muted">${dateStr}</span></td>
+        <td><span class="pill outline">${job.status || 'scanned'}</span></td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function renderEvaluations() {
+    const container = document.getElementById('evaluations-list');
+    container.innerHTML = '';
+    state.evaluations.forEach(ev => {
+      const card = document.createElement('div');
+      card.className = 'eval-card';
+      
+      const color = ev.overallScore >= 4 ? 'g' : (ev.overallScore >= 3 ? 'a' : 'r');
+      
+      const dimsHtml = Object.entries(ev.dimensions).map(([k, v]) => {
+        const label = k.charAt(0).toUpperCase() + k.slice(1);
+        return `
+          <div class="dim-item" data-score="${v}">
+            <div class="header"><span>${label}</span><span>${v}/5</span></div>
+            <div class="score-bar"><div class="score-fill" style="width: ${v*20}%"></div></div>
+          </div>
+        `;
+      }).join('');
+
+      const matchesHtml = ev.matches.map(m => `<span class="pill g">${m}</span>`).join('');
+      const mismatchesHtml = ev.mismatches.map(m => `<span class="pill r">${m}</span>`).join('');
+
+      card.innerHTML = `
+        <div class="eval-summary" onclick="this.parentElement.classList.toggle('open')">
+          <div>
+            <strong style="font-size:15px">${ev.title}</strong>
+            <span class="text-muted" style="margin-left:12px; font-size:13.5px">${ev.company}</span>
+          </div>
+          <div class="flex-row">
+            <span class="pill b" style="padding:4px 10px">${ev.recommendation}</span>
+            <span class="pill ${color}" style="font-size:13px">${ev.overallScore.toFixed(1)}</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2" style="margin-left:4px"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+        </div>
+        <div class="eval-details">
+          <p style="margin-bottom: 20px; color: var(--text); font-size: 14px;">${ev.reasoning}</p>
+          <div class="chips" style="margin-bottom:24px;">
+            ${matchesHtml}
+            ${mismatchesHtml}
+          </div>
+          <h4 style="font-size:12px; text-transform:uppercase; color:var(--muted); letter-spacing:0.05em;">Dimensions</h4>
+          <div class="dim-grid">
+            ${dimsHtml}
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+  }
+
+  function renderProfile() {
+    const container = document.getElementById('profile-card');
+    const p = state.profile;
+    if (!p) return;
+    
+    const archHtml = p.archetypes.map(a => `<span class="pill outline">${a}</span>`).join('');
+    const stackHtml = p.techStack.map(s => `<span class="pill outline">${s}</span>`).join('');
+    
+    const formatSal = (val) => {
+      if (val >= 100000 && p.salary.currency === 'INR') return (val / 100000).toFixed(1) + 'L';
+      return val.toLocaleString();
+    };
+    
+    container.innerHTML = `
+      <h2>${p.name}</h2>
+      <div class="role">${p.currentRole} &middot; ${p.yearsOfExperience} years exp.</div>
+      
+      <div class="profile-section">
+        <h4>Archetypes</h4>
+        <div class="chips">${archHtml}</div>
+      </div>
+      
+      <div class="profile-section">
+        <h4>Tech Stack</h4>
+        <div class="chips">${stackHtml}</div>
+      </div>
+      
+      <div class="profile-section">
+        <h4>Target Salary</h4>
+        <div class="salary-range">
+          ${p.salary.currency} ${formatSal(p.salary.min)} &mdash; ${formatSal(p.salary.max)}
+        </div>
+      </div>
+    `;
+  }
+
+  init();
+</script>
+</body>
+</html>
