@@ -32,22 +32,33 @@ Applying to **10 jobs/week** becomes realistic instead of 2-3.
 
 ### Q: Can I customize the company list?
 
-**A:** Yes! Edit `config/company-portals.json`:
+**A:** Yes. The company registry is the `companies` **table** in `data/hunt-job.db` (SQLite) — not a JSON file at runtime. `config/company-portals.json` only *seeds* that table via `npm run seed:ats`.
 
-```json
-{
-  "companies": [
-    {
-      "name": "Your Company",
-      "url": "https://...",
-      "careerPageUrl": "https://careers.yourcompany.com",
-      "officeLocation": "Your City"
-    }
-  ]
-}
+To add a company, detect its ATS and let the registry heal itself:
+
+```bash
+node hunt-job.js detect https://careers.yourcompany.com   # find its ATS platform + slug
+node hunt-job.js audit-portals                            # re-verify/re-detect the whole registry
 ```
 
-Add or remove companies as needed.
+Companies auto-disable after 5 consecutive scan failures and re-enable once `audit-portals` finds them healthy again.
+
+---
+
+### Q: What's the difference between `scan` and `list`?
+
+**A:** `scan` hits company ATS boards over the network and upserts everything it finds into SQLite. `list` (aliases `jobs`, `browse`) is an **instant, offline** re-query of that saved `jobs` table — no network. Both accept the same filters (`-a/--archetype`, `-s/--since`, `--new`, `--new-hours`, `-n/--limit`, `-c/--company`, `-l/--location`, `--remote`, `--all`, `-p/--platform`, `--json`). Scan when you want fresh data; list when you just want to re-slice what you already scanned.
+
+```bash
+node hunt-job.js scan --archetype "Backend Engineer"        # live, populates the DB
+node hunt-job.js list --archetype "Backend Engineer" --new  # instant, offline
+```
+
+---
+
+### Q: How do I actually apply once I've found a job?
+
+**A:** `node hunt-job.js apply <job-url>` opens a real Chromium browser, navigates to the application form, and auto-fills fields from your profile (Lever / Greenhouse / SmartRecruiters adapters plus a generic AI fallback). You review, answer any custom questions, upload the resume, and hit submit yourself — Hunt-Job never submits for you. The application is then tracked in the dashboard.
 
 ---
 
@@ -94,13 +105,13 @@ wsl --install
 
 ---
 
-### Q: Can I use this offline?
+### Q: Can I use this offline? (Also: `hunt-job list`)
 
 **A:** Partially:
 
 **Offline Capabilities:**
 - ✅ View your profile (`config/profile.yml`)
-- ✅ Read previous evaluations (`data/evaluated-jobs.json`)
+- ✅ Browse already-scanned jobs & evaluations (`node hunt-job.js list`, backed by `data/hunt-job.db`)
 - ✅ View generated resumes (`data/resumes/`)
 - ✅ View prep plans (`data/interview-prep/`)
 
@@ -151,10 +162,10 @@ hunt-job/
 ├── config/profile.yml           ← Your profile
 ├── modes/_profile.md            ← Profile backup
 ├── data/
-│   ├── evaluated-jobs.json      ← Job scores
-│   ├── applications.json        ← Application tracking
+│   ├── hunt-job.db              ← SQLite: companies, jobs, evaluations, applications
 │   ├── resumes/                 ← Generated PDFs
-│   └── interview-prep/          ← Study plans
+│   ├── interview-prep/          ← Study plans
+│   └── logs/                    ← JSONL logs (one file per day)
 ```
 
 Nothing is sent to external servers except:
@@ -250,8 +261,9 @@ npm run generate-resume -- job_id
 **A:** Use built-in tracking:
 
 ```bash
-# After applying, update:
-# data/applications.json
+# Applications are stored in the `applications` table in data/hunt-job.db —
+# recorded automatically by the apply flow, and viewable in the web dashboard.
+# Each record looks like:
 
 {
   "applicationId": "app_001",
@@ -472,11 +484,11 @@ claude
 > "Help! I'm having [issue]. How do I fix it?"
 ```
 
-3. **Check logs:**
+3. **Check your data:**
 ```bash
-cat data/evaluated-jobs.json  # View all evaluations
-cat data/applications.json    # View all applications
-ls data/interview-prep/       # View all prep plans
+node hunt-job.js list --json   # jobs + evaluations from data/hunt-job.db
+ls data/interview-prep/        # View all prep plans
+ls data/logs/                  # Daily JSONL logs
 ```
 
 **Good luck with your job search! 🚀**

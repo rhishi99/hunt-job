@@ -69,7 +69,8 @@ Launches terminal UI:
 
   🚀  Full Apply Workflow  (eval → prep → resume)
   📊  Evaluate a Job
-  🏢  Scan Job Portals
+  🏢  Scan Job Portals  (live)
+  🔎  Browse Saved Jobs  (instant)
   🎯  Interview Prep
   📄  Generate Resume
   📋  Application Tracker
@@ -86,8 +87,15 @@ npm run hunt -- --archetype "Cloud Engineer" --limit 10
 # Evaluate any job posting
 npm run evaluate-job -- "https://company.com/jobs/123"
 
-# Scan Indian company portals across all 6 ATS platforms + JSON-LD fallback
+# Scan company ATS boards live (populates the SQLite jobs table)
 npm run scan-portals -- --archetype "Cloud Engineer"
+
+# INSTANT offline browse of already-scanned jobs (no network) — same filter flags as scan
+npm run list -- --archetype "Cloud Engineer" --new
+node hunt-job.js list -a "Data Engineer" --remote --json
+
+# AI auto-fill apply flow — opens a browser, you review & submit
+npm run apply -- "https://boards.greenhouse.io/acme/jobs/123"
 
 # Watch for new matches every 30 min + desktop notification (Ctrl+C to stop)
 npm run watch -- --archetype "Cloud Engineer"
@@ -106,6 +114,27 @@ npm run generate-resume -- job_123
 
 # Generate interview prep with YouTube links
 npm run prepare-interview -- "job_description.txt"
+
+# Seed the companies registry with live-verified ATS boards
+npm run seed:ats
+```
+
+### Filter flags (shared by `scan` and `list`)
+
+Both commands accept the same filters:
+
+```
+-a, --archetype <name>     match against your role archetype
+-s, --since <days>         only jobs posted within N days
+    --new                  only jobs new since the last scan
+    --new-hours <h>        only jobs newer than H hours
+-n, --limit <n>            cap the number of results
+-c, --company <text>       filter by company name
+-l, --location <text>      filter by location text
+    --remote               remote roles only
+    --all, --all-locations drop the India-only location filter
+-p, --platform <ats>       filter by ATS platform (greenhouse, lever, ...)
+    --json                 machine-readable JSON output
 ```
 
 **→ Full setup guide:** [SETUP_GUIDE.md](SETUP_GUIDE.md)
@@ -135,7 +164,7 @@ Every job is scored across:
 
 ### 2. Portal Scanning — India Focused
 
-Scans a registry of **200+ companies** (`data/hunt-job.db` → `companies` table, seeded from `config/company-portals.json`) via direct public JSON APIs across **6 ATS platforms** — Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable — with a **JSON-LD fallback** provider that reads schema.org `JobPosting` markup off the career page for everything else. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
+Scans **40+ live-verified companies across Greenhouse/Lever/Ashby/SmartRecruiters (200+ in the registry)** (`data/hunt-job.db` → `companies` table, seeded from `config/company-portals.json` via `npm run seed:ats`) via direct public JSON APIs. Providers also exist for Recruitee and Workable (unseeded), plus a **JSON-LD fallback** that reads schema.org `JobPosting` markup off the career page for everything else. **All results automatically filtered to India locations only** (Bangalore, Mumbai, Hyderabad, Pune, Delhi, Gurgaon, Noida, Chennai, remote-India).
 
 Every scan **upserts into SQLite** with content-hash change detection and soft-closes postings the ATS stops reporting — "new since last scan" is a real query. **Results are sorted by posting date (newest first)** — jobs posted in the last 48 hours get a 🔥 badge for early-applier advantage.
 
@@ -240,7 +269,9 @@ node hunt-job.js          # same
 npm start                                # menu (recommended for most)
 
 node hunt-job.js hunt --archetype "Backend Engineer" --limit 8
-node hunt-job.js scan --archetype "DevOps Engineer"
+node hunt-job.js scan --archetype "DevOps Engineer"          # live scan
+node hunt-job.js list --archetype "DevOps Engineer" --new    # instant offline browse
+node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"  # AI auto-fill
 node hunt-job.js watch --archetype "SRE" --interval 20   # + toast notifications
 
 npm run dashboard                        # open http://127.0.0.1:7777
@@ -249,7 +280,7 @@ node hunt-job.js evaluate "https://..."
 node hunt-job.js resume <job-id-from-eval>
 node hunt-job.js prep "job-description.txt"
 
-npm run audit-portals                    # re-verify 100+ company ATS mappings (or node src/cli/auditPortals.js)
+npm run audit-portals                    # re-verify every company's ATS mapping in the registry (or node src/cli/auditPortals.js)
 node hunt-job.js detect https://careers.acme.com
 ```
 

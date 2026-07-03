@@ -44,6 +44,15 @@ Every scan upserts into the `jobs` table (dedup + content-hash change detection)
 - `node hunt-job.js scan --archetype "Backend Engineer"`
 - `node hunt-job.js detect https://careers.company.com`
 
+**Filter flags** (shared by `scan` and `list`): `-a/--archetype <name>`, `-s/--since <days>`, `--new`, `--new-hours <h>`, `-n/--limit <n>`, `-c/--company <text>`, `-l/--location <text>`, `--remote`, `--all`/`--all-locations`, `-p/--platform <ats>`, `--json`.
+
+### 2b. **Browse Saved Jobs** (`hunt-job list`, aliases `jobs` / `browse`)
+INSTANT offline browse of the SQLite `jobs` table — no network. Same filter flags as `scan`. Use it to re-query what the last scan already saved.
+
+**Usage:**
+- `node hunt-job.js list --archetype "Backend Engineer" --new`
+- `node hunt-job.js list -a "Data Engineer" --remote --json`
+
 ### 3. **Resume Generation Mode** (`/generate-resume`)
 Creates ATS-optimized PDFs tailored to specific job listings.
 
@@ -57,6 +66,12 @@ Creates ATS-optimized PDFs tailored to specific job listings.
 **Usage:**
 - `Generate a resume for the Stripe job`
 - `Create a tailored application package for [Job Title]`
+
+### 3b. **Auto-Fill Apply Mode** (`hunt-job apply <url>`)
+Opens a real Chromium browser, navigates to the application form, and auto-fills fields from your profile. Platform-specific adapters (Lever, Greenhouse, SmartRecruiters) plus a generic AI fallback. You review, answer custom questions, upload the resume, and submit — Hunt-Job never submits on your behalf. Result is tracked in the `applications` table.
+
+**Usage:**
+- `node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"`
 
 ### 4. **Profile Management** (`/profile`)
 Manages your candidate profile stored locally.
@@ -139,6 +154,7 @@ hunt-job/
 │   │   │   └── profileMapper.js
 │   │   └── scan/                      # Scanner v2 provider architecture
 │   │       ├── index.js               # orchestrator: scanAll() — fan-out, normalize, upsert, soft-close
+│   │       ├── query.js               # offline query of the jobs table (powers `list`/browse + filters)
 │   │       ├── detect.js              # ATS auto-detection (URL regex + DOM fingerprint fallback)
 │   │       ├── httpClient.js          # fetch + timeout + retry + per-host rate limit + ETag cache
 │   │       ├── normalize.js           # NormalizedJob shape + India-location/archetype-match filters
@@ -148,6 +164,9 @@ hunt-job/
 │   │           └── jsonld.js          # schema.org JobPosting fallback provider
 │   ├── cli/
 │   │   ├── interactive.js             # Interactive menu shell
+│   │   ├── listJobs.js                # `hunt-job list` / `jobs` / `browse` — instant offline browse
+│   │   ├── jobBrowse.js               # shared job-list rendering helper (used by list + flows)
+│   │   ├── applyJob.js                # `hunt-job apply <url>` — AI auto-fill apply flow
 │   │   ├── watch.js                   # `hunt-job watch`
 │   │   ├── auditPortals.js            # `hunt-job audit-portals`
 │   │   ├── hunt.js, evaluateJob.js, scanPortals.js, generateResume.js,
@@ -155,8 +174,8 @@ hunt-job/
 │   │   │   profileEdit.js, setupApiKey.js
 │   │   ├── ui.js                      # Shared terminal widgets (banner, scoreBar, section, colors)
 │   │   └── flows/                     # One file per interactive-menu flow
-│   │       ├── scanFlow.js, evaluateFlow.js, resumeFlow.js, prepFlow.js,
-│   │       │   applyFlow.js, huntFlow.js, setupFlow.js
+│   │       ├── scanFlow.js, browseFlow.js, evaluateFlow.js, resumeFlow.js,
+│   │       │   prepFlow.js, applyFlow.js, huntFlow.js, setupFlow.js
 │   └── web/
 │       ├── server.js                  # `hunt-job dashboard` — stdlib http + /api/* JSON (SQLite-backed)
 │       └── dashboard.html             # Single-file local dashboard UI
@@ -173,6 +192,7 @@ hunt-job/
 │   └── <company>_<role>_<date>/       # Per-application generated docs (resume PDF + prep guide)
 ├── scripts/
 │   ├── e2e-test.js                    # Smoke test
+│   ├── seed-ats-companies.js          # Seed the companies table with live-verified ATS boards (npm run seed:ats)
 │   └── migrate-to-sqlite.js           # One-time JSON → SQLite migration (already run; kept for reference)
 └── test/                              # vitest unit tests, fixtures, and the runner.mjs pure-function suite
 ```
@@ -204,6 +224,12 @@ node src/cli/generateResume.js --job-id "job_123"
 ```bash
 node src/cli/prepareInterview.js "Paste job description here" 
 node src/cli/prepareInterview.js job_description.txt
+```
+
+### Browse Saved Jobs + Apply
+```bash
+node hunt-job.js list --archetype "Backend Engineer" --new   # instant, offline
+node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"
 ```
 
 ### Watch for New Roles + Web Dashboard
@@ -270,7 +296,7 @@ See `config/settings.json` for Claude Code customization:
 - **Follow YouTube schedule:** Use the 4-week prep plan with curated YouTube channels
 - **Review before submitting:** Always verify AI-generated content
 - **Keep profiles updated:** Refresh your profile quarterly with new projects
-- **India Focus:** All 30+ companies are hiring in India with established offices
+- **India Focus:** 40+ live-verified companies across Greenhouse/Lever/Ashby/SmartRecruiters (200+ in the registry), all hiring in India
 
 ## 🔒 Privacy & Security
 

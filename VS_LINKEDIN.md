@@ -12,13 +12,13 @@
 | Search across all industries & geographies | ✅ | ❌ |
 | India-specific job filtering | ✅ (manual filter) | ✅ (automatic, enforced) |
 | Direct scrape of company career portals | ❌ | ✅ |
-| 60+ companies scannable via public API | ❌ | ✅ |
+| 40+ live-verified companies (200+ in registry) scannable via public ATS APIs | ❌ | ✅ |
 | Role synonym matching (e.g. "cloud" → k8s, infra, cloud-native) | ❌ | ✅ |
 | Keyword relevance filtering (no false positives) | ❌ | ✅ |
 | Job alerts / notifications | ✅ | ❌ |
 | Recruiter-posted listings | ✅ | ❌ |
 | Saved jobs list | ✅ | ✅ (application tracker) |
-| Cached scan results (no re-scanning daily) | ❌ | ✅ (SQLite, 7-day TTL) |
+| Saved scan results (instant offline re-browse, no re-scan) | ❌ | ✅ (SQLite, hash-dedup + soft-close) |
 
 ---
 
@@ -60,7 +60,7 @@
 | One-click Easy Apply (LinkedIn-hosted form) | ✅ | ❌ |
 | Apply to external company portals | ✅ (redirect) | ✅ |
 | Auto-fill external apply forms | ❌ | ✅ (Playwright, headed) |
-| Platform-specific selectors (Lever / Greenhouse) | ❌ | ✅ |
+| Platform-specific selectors (Lever / Greenhouse / SmartRecruiters) + generic AI adapter | ❌ | ✅ |
 | React-controlled input compatibility | ❌ | ✅ |
 | Application data card (copy-paste ready) | ❌ | ✅ |
 | Track submitted applications | ✅ (basic status) | ✅ |
@@ -135,7 +135,7 @@
 | Evaluating if a specific JD is worth applying to | ❌ | ✅ |
 | Generating a tailored resume for a specific job | ❌ | ✅ |
 | Prepping for an upcoming interview | ❌ | ✅ |
-| Scanning 60+ company portals at once for India roles | ❌ | ✅ |
+| Scanning 40+ live-verified company portals (200+ in registry) at once for India roles | ❌ | ✅ |
 | Keeping job search data private | ❌ | ✅ |
 
 ---

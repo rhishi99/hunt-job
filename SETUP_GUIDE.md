@@ -42,7 +42,7 @@ npm install
 npx playwright install chromium   # for resume PDF + auto-fill
 ```
 
-Entry point: `npm start` or `node hunt-job.js` (interactive). Direct: `node hunt-job.js scan ...`, `npm run dashboard`, `npm run watch`, etc.
+Entry point: `npm start` or `node hunt-job.js` (interactive). Direct: `node hunt-job.js scan ...` (live), `node hunt-job.js list ...` (instant offline browse), `node hunt-job.js apply <url>` (AI auto-fill), `npm run dashboard`, `npm run watch`, etc.
 
 ### Step 2: Get Your First API Key (Pick ONE)
 
@@ -215,7 +215,9 @@ projects:
 ```bash
 # Test each command (npm or direct)
 npm run evaluate-job -- "https://careers.flipkart.com/jobs/backend-engineer"
-node hunt-job.js scan --archetype "Backend Engineer"
+node hunt-job.js scan --archetype "Backend Engineer"        # live scan
+node hunt-job.js list --archetype "Backend Engineer" --new  # instant offline browse
+node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"  # AI auto-fill apply
 npm run prepare-interview -- "Job Description"
 npm run dashboard   # web UI
 npm run watch -- --archetype "..." --once   # test once
@@ -314,15 +316,19 @@ PHASE 3: PREPARATION (2-3 hours/day)
 **Steps:**
 
 ```bash
-# 1. Scan multiple company portals
-npm run scan-portals -- --archetype "Your Target" --companies "Flipkart,Google,Amazon India"
+# 1. Scan the company registry (all enabled ATS boards); -c/--company filters by name
+npm run scan-portals -- --archetype "Your Target"
+npm run scan-portals -- --archetype "Your Target" -c "Flipkart"   # only companies matching "Flipkart"
+
+# ...then instantly re-browse what was saved (offline, no re-scan):
+npm run list -- --archetype "Your Target" --new
 
 # 2. Evaluate each job (2 mins each)
 npm run evaluate-job -- "https://company.com/job-1"
 npm run evaluate-job -- "https://company.com/job-2"
 
 # 3. Filter for scores >= 4.0
-# (View data/evaluated-jobs.json)
+# (Browse saved jobs + evaluations: node hunt-job.js list --json — data lives in data/hunt-job.db)
 ```
 
 **Use with Claude Code:**
@@ -352,8 +358,8 @@ npm run generate-resume -- job_<job_id>
 ```
 
 **Step 3: Apply** (5 mins)
-- Submit on company portal
-- Track in `data/applications.json`
+- Submit on the company portal (or use `node hunt-job.js apply <url>` for AI auto-fill)
+- Tracked automatically in the `applications` table (`data/hunt-job.db`) + web dashboard
 
 **Phase 2 Timeline:**
 - Job 1: 9:00-9:30 AM (Evaluate, Generate Resume, Apply)
@@ -451,7 +457,7 @@ claude
 # Upload resume, fill form, submit ✅
 
 # 5. Track (1 min)
-# Save to data/applications.json with date and score
+# Recorded in the applications table (data/hunt-job.db) with date and score; view in the dashboard
 ```
 
 ### Example 2: Interview Prep for Dream Job (3 days intensive)
@@ -526,9 +532,8 @@ Give feedback on what I need to improve."
 **Target:** Apply to 10 companies in 1 week
 
 ```bash
-# Monday: Scan and evaluate
-npm run scan-portals -- --archetype "Backend Engineer" \
-  --companies "Flipkart,Amazon India,Microsoft India,Google,Meta"
+# Monday: Scan and evaluate (scans all enabled companies; use -c/--company to narrow)
+npm run scan-portals -- --archetype "Backend Engineer"
 
 # Result: 12 jobs matching criteria
 
@@ -619,8 +624,8 @@ Create a 2-day intensive course including:
 ### 5. **Leverage Application Tracking**
 
 ```bash
-# After each application, update:
-# data/applications.json
+# Applications are tracked in the `applications` table (data/hunt-job.db),
+# recorded by the apply flow and shown in the web dashboard. Record shape:
 
 {
   "applicationId": "app_001",
@@ -1010,8 +1015,7 @@ claude
 
 **Day 1: Scan & Evaluate (1 hour)**
 ```bash
-npm run scan-portals -- --archetype "Your Target" \
-  --companies "Company1,Company2,Company3"
+npm run scan-portals -- --archetype "Your Target"   # add -c "Name" to filter by company
 
 claude
 > "I found 12 jobs. Evaluate all of them.

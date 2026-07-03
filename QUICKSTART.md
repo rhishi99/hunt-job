@@ -45,7 +45,9 @@ npm start                 # interactive menu (recommended)
 node hunt-job.js          # same as above
 
 # Or direct:
-node hunt-job.js scan --archetype "Backend Engineer"
+node hunt-job.js scan --archetype "Backend Engineer"          # live scan
+node hunt-job.js list -a "Backend Engineer" --new             # instant offline browse
+node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"  # AI auto-fill
 node hunt-job.js watch --archetype "DevOps Engineer" --interval 30
 npm run dashboard         # open http://127.0.0.1:7777
 node hunt-job.js detect https://careers.company.com
@@ -76,6 +78,9 @@ npm run hunt -- --archetype "..."
 npm run watch -- --archetype "..."
 npm run dashboard
 npm run audit-portals
+npm run seed:ats
+npm run list -- --archetype "..." --new
+npm run apply -- "<job-url>"
 npm run evaluate-job -- "<url>"
 npm run scan-portals -- --archetype "..."
 npm run generate-resume -- <job-id>
@@ -89,6 +94,8 @@ npm run parse-resume -- resume.pdf
 **Direct (via hunt-job.js):**
 ```bash
 node hunt-job.js scan --archetype "Data Engineer"
+node hunt-job.js list --archetype "Data Engineer" --new    # instant, offline
+node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"
 node hunt-job.js evaluate "https://..."
 node hunt-job.js resume <id>
 node hunt-job.js prep "description or file"
@@ -158,11 +165,17 @@ export ANTHROPIC_API_KEY="your_key"
 - Run: `npm install`
 
 **"API key not working"**
-- Run: `npm run setup`
-- Or create `.env` with your API key
+- Run: `npm run setup` (or create `.env` with your API key)
+- Verify it's set: `echo $ANTHROPIC_API_KEY`
 
 **Bat file gives "syntax error"**
 - Run: `npm start` instead (universal solution)
+
+**No PDF generated?**
+- Run: `npx playwright install`, then re-run `npm run generate-resume -- <job-id>`
+
+**Profile not found?**
+- Run: `npm run profile:init`, then verify `config/profile.yml` exists
 
 ---
 
@@ -217,28 +230,6 @@ Produces focus areas, YouTube + schedule. Use `audit-portals` / `detect` to main
 
 **Next:** apply on the company portal, save the resume, work the prep
 plan, repeat for the next job.
-
----
-
-## 🆘 More Troubleshooting
-
-**API key error?**
-```bash
-echo $ANTHROPIC_API_KEY      # verify it's set
-npm run setup                # or set it interactively
-```
-
-**No PDF generated?**
-```bash
-npx playwright install
-npm run generate-resume -- job_id
-```
-
-**Profile not found?**
-```bash
-npm run profile:init
-cat config/profile.yml       # verify it exists
-```
 
 ---
 

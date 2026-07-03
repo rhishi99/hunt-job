@@ -37,16 +37,16 @@
 
 | Capability | Original | This Fork |
 |---|:---:|:---:|
-| Lever API integration | ❌ | ✅ |
-| Greenhouse API integration | ❌ | ✅ |
+| Direct ATS JSON APIs (Greenhouse, Lever, Ashby, SmartRecruiters) | ❌ | ✅ |
+| Recruitee / Workable providers (unseeded) + JSON-LD fallback | ❌ | ✅ |
 | Playwright-based web scraping | ✅ | ✅ (replaced by API) |
-| India-only location filter | ❌ | ✅ |
+| India-only location filter (bypass with `--all`) | ❌ | ✅ |
 | Role synonym matching (e.g. "cloud" → cloud infra, k8s, etc.) | ❌ | ✅ |
 | AND-logic keyword filtering (no false positives) | ❌ | ✅ |
-| Scan result caching (SQLite, 7-day TTL) | ❌ | ✅ |
-| Load from cache instead of re-scanning | ❌ | ✅ |
-| 30+ Indian product companies | ❌ | ✅ |
-| 30+ global companies with India offices | ❌ | ✅ |
+| SQLite upsert with content-hash dedup + change detection | ❌ | ✅ |
+| Soft-close postings the ATS stops reporting ("new since last scan" is a real query) | ❌ | ✅ |
+| Instant offline browse of saved jobs (`hunt-job list`) | ❌ | ✅ |
+| 40+ live-verified companies across Greenhouse/Lever/Ashby/SmartRecruiters (200+ in the registry) | ❌ | ✅ |
 
 ---
 
@@ -88,9 +88,8 @@
 |---|:---:|:---:|
 | All data stored locally | ✅ | ✅ |
 | No external uploads | ✅ | ✅ |
-| SQLite scan cache | ❌ | ✅ |
-| Evaluated jobs history (`data/evaluated-jobs.json`) | ✅ | ✅ |
-| Applications tracker (`data/applications.json`) | ✅ | ✅ |
+| Single SQLite database (`data/hunt-job.db`) | ❌ | ✅ |
+| Scanned jobs, evaluations, applications, companies — all in SQLite tables | ✅ (was JSON) | ✅ |
 | Generated resumes (`data/resumes/`) | ✅ | ✅ |
 | Interview prep HTML files (`data/interview-prep/`) | ❌ | ✅ |
 
@@ -100,8 +99,8 @@
 
 | Feature | Original | This Fork |
 |---|:---:|:---:|
-| Indian companies in scanner | ✅ (config-based) | ✅ (30+ via API) |
-| Global companies with India offices | ❌ | ✅ (30+ via API) |
+| Companies scanned via direct ATS APIs | ✅ (config-based) | ✅ (40+ live-verified, 200+ in registry) |
+| Global companies with India offices | ❌ | ✅ (via public ATS APIs) |
 | Filter out non-India job postings | ❌ | ✅ |
 | Salary displayed in LPA (₹) | ❌ | ✅ |
 | Indian city location display | ❌ | ✅ |
@@ -113,9 +112,9 @@
 | Metric | Original | This Fork |
 |---|:---:|:---:|
 | AI providers supported | 1 | 5 |
-| Companies scannable via API | ~45 (scraping) | 60+ (public APIs) |
+| Companies scannable via API | ~45 (scraping) | 40+ live-verified, 200+ in registry (public APIs) |
 | India location enforcement | ❌ | ✅ |
 | Interactive menu UI | ❌ | ✅ |
 | Auto-fill browser support | ❌ | ✅ |
 | Interview prep module | ❌ | ✅ |
-| Scan result caching | ❌ | ✅ |
+| Instant offline browse (`hunt-job list`) | ❌ | ✅ |
