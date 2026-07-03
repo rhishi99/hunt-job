@@ -1,53 +1,52 @@
 #!/usr/bin/env node
-import PortalScanner from '../core/portalScanner.js';
+/**
+ * scanPortals.js — `hunt-job scan`: LIVE scan of company ATS boards, then
+ * filter + print. Every posting is upserted into the jobs table by scanAll(),
+ * so after one scan you can browse instantly with `hunt-job list`.
+ */
+import 'dotenv/config';
 import chalk from 'chalk';
+import { scanAll } from '../core/scan/index.js';
+import { filterJobs } from '../core/scan/query.js';
+import { closeDb } from '../core/db.js';
+import { parseFilterArgs, printJobs, FILTER_HELP } from './jobBrowse.js';
 
-const portalScanner = new PortalScanner();
+async function main() {
+  const o = parseFilterArgs(process.argv.slice(2));
 
-async function scanPortals() {
-  const args = process.argv.slice(2);
-  let archetype = null;
-  let companies = null;
-
-  for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--archetype' && args[i + 1]) {
-      archetype = args[i + 1];
-    } else if (args[i] === '--companies' && args[i + 1]) {
-      companies = args[i + 1].split(',').map(c => c.trim());
-    }
+  if (o.help || !o.archetype) {
+    if (!o.archetype && !o.help) console.error(chalk.red('Error: --archetype is required.'));
+    console.log(`\nUsage: node hunt-job.js scan --archetype "<role>" [filters]\n${FILTER_HELP}`);
+    console.log('  Tip: after one scan, `hunt-job list` re-filters saved jobs instantly (no network).\n');
+    process.exit(o.help ? 0 : 1);
   }
 
-  if (!archetype) {
-    console.error(chalk.red('Error: Please specify --archetype'));
-    console.log('Usage: npm run scan-portals -- --archetype "Data Engineer" [--companies "Stripe,Google"]');
-    process.exit(1);
-  }
+  console.log(chalk.cyan.bold(`\n🔍 Scanning live for "${o.archetype}" roles...\n`));
 
-  console.log(chalk.cyan.bold('\n🔍 Scanning job portals...\n'));
+  // Bypass scanAll's built-in India filter only when the user widened location
+  // scope, so their --location/--remote/--all filter can take over.
+  const wideLocation = Boolean(o.location || o.remote || o.allLocations);
+  const { jobs, newJobs, closed, errors } = await scanAll(o.archetype, { includeAllLocations: wideLocation });
 
-  const jobs = await portalScanner.scan(archetype, companies);
+  let results = (o.newHours ? newJobs : jobs).map(j => ({
+    id: j.id, title: j.title, company: j.company, location: j.location,
+    url: j.url, applyUrl: j.applyUrl, description: j.description,
+    source: j.source, postedAt: j.postedAt, firstSeenAt: null,
+  }));
 
-  if (jobs.length === 0) {
-    console.log(chalk.yellow('No matching jobs found.'));
-    process.exit(0);
-  }
+  // Archetype + broad-location already applied inside scanAll; apply the rest.
+  results = filterJobs(results, { ...o, archetype: undefined, newHours: undefined });
 
-  console.log(chalk.green(`✅ Found ${jobs.length} matching jobs!\n`));
+  console.log(chalk.gray(
+    `scanned · ${jobs.length} matched · ${newJobs.length} new · ${closed} closed · ${errors.length} errors`
+  ));
+  if (errors.length) errors.slice(0, 5).forEach(e => console.log(chalk.yellow(`  ⚠ ${e.company}: ${e.error}`)));
 
-  jobs.forEach((job, index) => {
-    console.log(chalk.cyan.bold(`${index + 1}. ${job.title}`));
-    console.log(`   Company: ${job.company}`);
-    console.log(`   URL: ${job.url}`);
-    if (job.description) {
-      console.log(`   Description: ${job.description.substring(0, 100)}...`);
-    }
-    console.log();
-  });
-
-  console.log(chalk.dim('💡 Tip: Copy any job URL and run: npm run evaluate-job -- <URL>'));
+  printJobs(results, o);
+  closeDb();
 }
 
-scanPortals().catch(err => {
-  console.error(chalk.red('Error:'), err.message);
+main().catch(err => {
+  console.error(chalk.red('Scan error:'), err.message);
   process.exit(1);
 });

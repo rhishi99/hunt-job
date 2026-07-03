@@ -15,6 +15,7 @@ import { runInterviewPrepFlow } from './flows/prepFlow.js';
 import { runResumeGenFlow } from './flows/resumeFlow.js';
 import { runApplicationTracker } from './flows/applyFlow.js';
 import { runFullWorkflow } from './flows/huntFlow.js';
+import { runBrowseFlow } from './flows/browseFlow.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const profileManager = new ProfileManager();
@@ -36,7 +37,8 @@ async function mainMenu(profile) {
         { name: '🚀  Full Apply Workflow  (eval → prep → resume)', value: 'workflow' },
         new inquirer.Separator(),
         { name: '📊  Evaluate a Job', value: 'evaluate' },
-        { name: '🏢  Scan Job Portals', value: 'scan' },
+        { name: '🏢  Scan Job Portals  (live)', value: 'scan' },
+        { name: '🔎  Browse Saved Jobs  (instant)', value: 'browse' },
         { name: '🎯  Interview Prep', value: 'prep' },
         { name: '📄  Generate Resume', value: 'resume' },
         new inquirer.Separator(),
@@ -53,6 +55,7 @@ async function mainMenu(profile) {
       case 'workflow':  await runFullWorkflow(profile); break;
       case 'evaluate':  await runEvaluateFlow(profile); break;
       case 'scan':      await runScanFlow(profile); break;
+      case 'browse':    await runBrowseFlow(profile); break;
       case 'prep':      await runInterviewPrepFlow(profile); break;
       case 'resume':    await runResumeGenFlow(profile); break;
       case 'tracker':   await runApplicationTracker(); break;

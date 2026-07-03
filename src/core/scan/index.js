@@ -81,7 +81,7 @@ function upsertStatement(db) {
  *   `db` override is for tests — defaults to the real singleton connection.
  * @returns {Promise<{jobs: Array, newJobs: Array, closed: number, errors: Array}>}
  */
-export async function scanAll(archetype, { companies, db: dbOverride } = {}) {
+export async function scanAll(archetype, { companies, db: dbOverride, includeAllLocations = false } = {}) {
   const db = dbOverride || getDb();
   const companyRows = companies?.length ? companies : loadEnabledCompanies(db);
   const existingIds = new Set(db.prepare('SELECT id FROM jobs').pluck().all());
@@ -123,7 +123,7 @@ export async function scanAll(archetype, { companies, db: dbOverride } = {}) {
     // must reflect "still open at the ATS", not "still matches this search".
     const matched = normalized
       .filter(j => jobMatchesArchetype(j.title, null, archetype))
-      .filter(j => isIndiaLocation(j.location));
+      .filter(j => includeAllLocations || isIndiaLocation(j.location));
 
     const now = Date.now();
     const seenIds = [];

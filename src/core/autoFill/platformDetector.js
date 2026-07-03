@@ -7,7 +7,7 @@
 const PLATFORM_PATTERNS = [
   { key: 'workday',          patterns: ['myworkdayjobs.com', 'workday.com/en-US', 'wd3.myworkdayjobs', 'wd1.myworkdayjobs', 'wd5.myworkdayjobs'] },
   { key: 'lever',            patterns: ['jobs.lever.co', 'lever.co/'] },
-  { key: 'greenhouse',       patterns: ['boards.greenhouse.io', 'greenhouse.io/'] },
+  { key: 'greenhouse',       patterns: ['boards.greenhouse.io', 'greenhouse.io/', 'gh_jid='] },
   { key: 'smartrecruiters',  patterns: ['jobs.smartrecruiters.com', 'smartrecruiters.com/'] },
   { key: 'icims',            patterns: ['icims.com/', 'careers.icims.com'] },
   { key: 'taleo',            patterns: ['taleo.net/', 'tbe.taleo.net', 'oracle.taleo.net'] },

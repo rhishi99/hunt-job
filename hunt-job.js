@@ -58,8 +58,20 @@ async function main() {
             case 'scan':
                 await runScript('src/cli/scanPortals.js', args.slice(1));
                 break;
+            case 'list':
+            case 'jobs':
+            case 'browse':
+                await runScript('src/cli/listJobs.js', args.slice(1));
+                break;
+            case 'audit-portals':
+            case 'audit':
+                await runScript('src/cli/auditPortals.js', args.slice(1));
+                break;
             case 'resume':
                 await runScript('src/cli/generateResume.js', args.slice(1));
+                break;
+            case 'apply':
+                await runScript('src/cli/applyJob.js', args.slice(1));
                 break;
             case 'prep':
                 await runScript('src/cli/prepareInterview.js', args.slice(1));
@@ -123,12 +135,15 @@ USAGE:
 COMMANDS:
   hunt --archetype <name>      Single-command full workflow
   evaluate <url>              Evaluate a job posting
-  scan --archetype <name>     Scan job portals for matches
+  scan --archetype <name>     LIVE scan of company ATS boards (populates the DB)
+  list [filters]              INSTANT browse of already-scanned jobs (no network)
   watch --archetype <name>    Periodic scan + desktop notification on new matches
                                  [--interval <minutes>] (default 30, min 10) [--once]
   detect <careers-url>        Detect a company's ATS platform from its careers URL
+  audit-portals               Re-verify/re-detect the whole company registry
   dashboard                   Start the local web dashboard (http://127.0.0.1:7777)
   resume <job-id>             Generate tailored resume
+  apply <job-url>             Open the AI auto-fill apply flow for a job URL
   prep <description|file>     Generate interview prep guide
   profile init                Initialize your profile
   profile edit                Edit your profile
@@ -137,13 +152,15 @@ COMMANDS:
   start, interactive          Start interactive menu
   help, --help, -h            Show this help
 
+FILTERS (scan + list):  -a/--archetype  -s/--since <days>  --new  --new-hours <h>
+  -n/--limit <n>  -c/--company <t>  -l/--location <t>  --remote  --all  -p/--platform  --json
+
 EXAMPLES:
-  node hunt-job.js hunt --archetype "Data Engineer"
-  node hunt-job.js hunt --archetype "Backend Engineer" --limit 20
-  node hunt-job.js evaluate "https://careers.google.com/..."
-  node hunt-job.js scan --archetype "Backend Engineer"
+  node hunt-job.js scan --archetype "Backend Engineer" --since 14 --limit 20
+  node hunt-job.js list --archetype "DevOps Engineer" --new          # instant, offline
+  node hunt-job.js list -a "Data Engineer" --remote --json
   node hunt-job.js watch --archetype "DevOps Engineer" --interval 30
-  node hunt-job.js prep job_description.txt
+  node hunt-job.js evaluate "https://careers.google.com/..."
             `);
                 break;
             default:

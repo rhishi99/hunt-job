@@ -1,4 +1,5 @@
 @echo off
+setlocal enabledelayedexpansion
 title Hunt-Job — AI Job Search Agent
 cd /d "%~dp0"
 
@@ -13,35 +14,26 @@ if exist ".env" (
 node --version >nul 2>&1
 if errorlevel 1 (
     echo.
-    echo  ERROR: Node.js not found.
-    echo  Download from: https://nodejs.org
+    echo  ERROR: Node.js not found. Download from: https://nodejs.org
     echo.
     pause
     exit /b 1
 )
 
 :: ── Direct command-line mode ─────────────────────────────────────────────────
-::  Usage:  hunt-job.bat <command> [args...]
-::  e.g.:   hunt-job.bat evaluate "https://careers.google.com/..."
-::          hunt-job.bat scan --archetype "Backend Engineer"
-::          hunt-job.bat resume job_1234567890
-::          hunt-job.bat prep "job_description.txt"
-::          hunt-job.bat setup
-::          hunt-job.bat profile init
-::          hunt-job.bat profile edit
-::          hunt-job.bat parse-resume "resume.pdf"
+::  Any args are forwarded verbatim to the Node CLI, so EVERY command + flag
+::  works from the .bat: scan/list/watch/dashboard/detect/audit-portals/hunt/...
+::    hunt-job.bat scan --archetype "Backend Engineer" --since 14 --limit 20
+::    hunt-job.bat list -a "DevOps Engineer" --new
+::    hunt-job.bat watch --archetype "SRE" --interval 30
+if not "%~1"=="" (
+    node "%~dp0hunt-job.js" %*
+    echo.
+    pause
+    exit /b %errorlevel%
+)
 
-if /i "%~1"=="evaluate"     goto CMD_EVALUATE
-if /i "%~1"=="scan"         goto CMD_SCAN
-if /i "%~1"=="resume"       goto CMD_RESUME
-if /i "%~1"=="prep"         goto CMD_PREP
-if /i "%~1"=="setup"        goto CMD_SETUP
-if /i "%~1"=="parse-resume" goto CMD_PARSE
-if /i "%~1"=="profile"      goto CMD_PROFILE
-if /i "%~1"=="start"        goto CMD_INTERACTIVE
-if /i "%~1"=="menu"         goto CMD_INTERACTIVE
-
-:: ── No args — show launcher menu ─────────────────────────────────────────────
+:: ── No args — launcher menu ───────────────────────────────────────────────────
 :MENU
 cls
 echo.
@@ -49,119 +41,115 @@ echo  ========================================
 echo    HUNT-JOB - AI Job Search Agent
 echo  ========================================
 echo.
-echo  -- Job Search --------------------------
+echo  -- Find Jobs ---------------------------
 echo   [1] Full Interactive Menu (recommended)
-echo   [2] Evaluate a Job
-echo   [3] Scan Job Portals
-echo   [4] Generate Resume
-echo   [5] Interview Prep
+echo   [2] Scan Job Portals (live, with filters)
+echo   [3] Browse Saved Jobs (instant, offline)
+echo   [4] Watch for New Roles (auto-notify)
 echo.
-echo  -- Profile ----------------------------
-echo   [6] Setup API Keys
-echo   [7] Initialize Profile
-echo   [8] Edit Profile
-echo   [9] Parse Resume PDF (build from PDF)
+echo  -- Act On A Job ------------------------
+echo   [5] Evaluate a Job
+echo   [6] Generate Resume
+echo   [7] Interview Prep
+echo   [Y] Apply to a Job (AI auto-fill in browser)
 echo.
-echo  -- Resume Builder ---------------------
-echo   [R] Open Resume Builder (6 templates, edit + export PDF)
+echo  -- Portals ^& Dashboard -----------------
+echo   [8] Web Dashboard (http://127.0.0.1:7777)
+echo   [9] Detect a Company's ATS Platform
+echo   [A] Audit / Re-verify Company Registry
+echo.
+echo  -- Profile ^& Setup ---------------------
+echo   [S] Setup API Keys        [I] Init Profile
+echo   [E] Edit Profile          [P] Parse Resume PDF
+echo   [R] Resume Builder (6 templates, browser)
 echo.
 echo   [0] Exit
 echo.
 set /p choice=  Enter your choice:
 
-if "%choice%"=="1" goto CMD_INTERACTIVE
-if "%choice%"=="2" goto ASK_EVALUATE
-if "%choice%"=="3" goto ASK_SCAN
-if "%choice%"=="4" goto ASK_RESUME
-if "%choice%"=="5" goto ASK_PREP
-if "%choice%"=="6" goto CMD_SETUP
-if "%choice%"=="7" goto CMD_PROFILE_INIT
-if "%choice%"=="8" goto CMD_PROFILE_EDIT
-if "%choice%"=="9" goto ASK_PARSE
-if /i "%choice%"=="R" goto CMD_RESUME_BUILDER
+if "%choice%"=="1" ( node hunt-job.js interactive & goto END )
+if "%choice%"=="2" goto ASK_SCAN
+if "%choice%"=="3" goto ASK_LIST
+if "%choice%"=="4" goto ASK_WATCH
+if "%choice%"=="5" goto ASK_EVALUATE
+if "%choice%"=="6" goto ASK_RESUME
+if "%choice%"=="7" goto ASK_PREP
+if /i "%choice%"=="Y" goto ASK_APPLY
+if "%choice%"=="8" ( node hunt-job.js dashboard & goto END )
+if "%choice%"=="9" goto ASK_DETECT
+if /i "%choice%"=="A" ( node hunt-job.js audit-portals & goto END )
+if /i "%choice%"=="S" ( node hunt-job.js setup & goto END )
+if /i "%choice%"=="I" ( node hunt-job.js profile init & goto END )
+if /i "%choice%"=="E" ( node hunt-job.js profile edit & goto END )
+if /i "%choice%"=="P" goto ASK_PARSE
+if /i "%choice%"=="R" ( start "" "%~dp0resume-builder\index.html" & goto END )
 if "%choice%"=="0" exit /b 0
 goto MENU
 
-:: ── Interactive prompts for menu-driven mode ──────────────────────────────────
-:ASK_EVALUATE
-echo.
-set /p job_input=  Paste job URL or description (or press Enter for interactive):
-node src/cli/evaluateJob.js "%job_input%"
-goto END
-
+:: ── Guided prompts ────────────────────────────────────────────────────────────
 :ASK_SCAN
 echo.
-set /p archetype=  Target archetype (e.g. Backend Engineer, Data Engineer):
-node src/cli/scanPortals.js --archetype "%archetype%"
+set /p archetype=  Target role (e.g. Backend Engineer):
+set /p sincedays=  Only postings newer than N days (blank = all):
+set "sinceflag="
+if not "%sincedays%"=="" set "sinceflag=--since %sincedays%"
+node hunt-job.js scan --archetype "%archetype%" %sinceflag% --limit 40
+goto END
+
+:ASK_LIST
+echo.
+set /p archetype=  Role to filter saved jobs by (blank = all):
+set "aflag="
+if not "%archetype%"=="" set "aflag=--archetype "%archetype%""
+node hunt-job.js list %aflag% --limit 40
+goto END
+
+:ASK_WATCH
+echo.
+set /p archetype=  Role to watch:
+set /p mins=  Check every how many minutes (blank = 30):
+set "iflag="
+if not "%mins%"=="" set "iflag=--interval %mins%"
+node hunt-job.js watch --archetype "%archetype%" %iflag%
+goto END
+
+:ASK_EVALUATE
+echo.
+set /p job_input=  Paste job URL or description (blank = interactive):
+node hunt-job.js evaluate "%job_input%"
 goto END
 
 :ASK_RESUME
 echo.
 set /p job_id=  Job ID from evaluation (e.g. job_1234567890):
-node src/cli/generateResume.js "%job_id%"
+node hunt-job.js resume "%job_id%"
 goto END
 
 :ASK_PREP
 echo.
 set /p prep_input=  Job description text or path to .txt file:
-node src/cli/prepareInterview.js "%prep_input%"
+node hunt-job.js prep "%prep_input%"
+goto END
+
+:ASK_APPLY
+echo.
+set /p apply_url=  Job URL to apply to (auto-fill opens in browser):
+node hunt-job.js apply "%apply_url%"
+goto END
+
+:ASK_DETECT
+echo.
+set /p careers_url=  Company careers URL:
+node hunt-job.js detect "%careers_url%"
 goto END
 
 :ASK_PARSE
 echo.
 set /p pdf_path=  Path to resume PDF:
-node src/cli/parseResume.js "%pdf_path%"
+node hunt-job.js parse-resume "%pdf_path%"
 goto END
 
-:: ── Direct CLI commands ───────────────────────────────────────────────────────
-:CMD_INTERACTIVE
-node src/cli/interactive.js
-goto END
-
-:CMD_EVALUATE
-node src/cli/evaluateJob.js %~2 %~3 %~4
-goto END
-
-:CMD_SCAN
-node src/cli/scanPortals.js %~2 %~3 %~4 %~5
-goto END
-
-:CMD_RESUME
-node src/cli/generateResume.js %~2
-goto END
-
-:CMD_PREP
-node src/cli/prepareInterview.js %~2 %~3
-goto END
-
-:CMD_SETUP
-node src/cli/setupApiKey.js
-goto END
-
-:CMD_PARSE
-node src/cli/parseResume.js %~2
-goto END
-
-:CMD_PROFILE
-if /i "%~2"=="init" goto CMD_PROFILE_INIT
-if /i "%~2"=="edit" goto CMD_PROFILE_EDIT
-goto CMD_PROFILE_EDIT
-
-:CMD_PROFILE_INIT
-node src/cli/profileInit.js
-goto END
-
-:CMD_PROFILE_EDIT
-node src/cli/profileEdit.js
-goto END
-
-:CMD_RESUME_BUILDER
-echo.
-echo  Opening Resume Builder in your browser...
-start "" "%~dp0resume-builder\index.html"
-goto END
-
-:: ── Done ─────────────────────────────────────────────────────────────────────
 :END
 echo.
 pause
+goto MENU
