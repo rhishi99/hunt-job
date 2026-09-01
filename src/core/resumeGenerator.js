@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { getActiveClient } from './aiClient.js';
 import { createLogger } from './logger.js';
+import { fromProfile, mergeTailored, esc } from './resumeData.js';
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
@@ -34,14 +35,23 @@ class ResumeGenerator {
 
   async generate(jobPosting, userProfile) {
     log.op('resume_start', { input: jobPosting.slice(0, 100) });
+    const base = fromProfile(userProfile);
     const keywords = await this.extractKeywords(jobPosting);
-    const resumeData = await this.generateResumeData(jobPosting, userProfile, keywords);
-    const htmlContent = this.renderHtml(resumeData, userProfile);
+    const tailored = await this.generateTailored(jobPosting, base, keywords);
+    const resume = mergeTailored(base, tailored);
+    const htmlContent = this.renderHtml(resume);
     const destDir = this.makeJobDir(jobPosting);
+
+    // canonical JSON beside the PDF — reopens in the interactive builder
+    try {
+      fs.writeFileSync(path.join(destDir, 'resume.json'), JSON.stringify(resume, null, 2));
+    } catch (e) {
+      log.op('resume_json_write_failed', { error: e.message });
+    }
     const pdfPath = await this.convertToPDF(htmlContent, destDir);
 
     log.op('resume_done', { path: pdfPath, keywords: keywords.length });
-    return { path: pdfPath, keywords, content: htmlContent };
+    return { path: pdfPath, keywords, content: htmlContent, data: resume };
   }
 
   async extractKeywords(jobPosting) {
@@ -78,49 +88,44 @@ Return ONLY a JSON array of strings with no markdown, no explanation. Example: [
     return null;
   }
 
-  async generateResumeData(jobPosting, userProfile, keywords) {
-    const expList = (userProfile.experience || []).map(e =>
-      `${e.title} at ${e.company} (${e.startDate}–${e.endDate}): ${e.description}`
+  async generateTailored(jobPosting, base, keywords) {
+    const expList = (base.experience || []).map((e, i) =>
+      `[${i}] ${e.title} — ${e.company} (${e.period})\n` +
+      (e.bullets || []).map(b => `    - ${b}`).join('\n')
     ).join('\n');
 
-    const prompt = `Analyze this job posting and create tailored resume content for the candidate.
+    const prompt = `Tailor this candidate's existing resume content to the job posting below.
+You are editing, not writing from scratch.
 
 JOB POSTING:
 ${jobPosting}
 
-CANDIDATE:
-Name: ${userProfile.name}
-Current Role: ${userProfile.currentRole}
-Years of Experience: ${userProfile.yearsOfExperience}
-Summary: ${userProfile.summary || ''}
-Tech Stack: ${(userProfile.techStack || []).join(', ')}
-Skills: ${(userProfile.skills || []).join(', ')}
-Certifications: ${(userProfile.certifications || []).join(', ')}
+CANDIDATE (real resume — this is the source of truth):
+Name: ${base.name}
+Title: ${base.title}
+Summary: ${base.summary || ''}
+Skills: ${(base.skills || []).join(', ')}
 
-EXPERIENCE:
+EXPERIENCE (each job with its real bullets):
 ${expList}
 
-TOP KEYWORDS TO HIGHLIGHT: ${keywords.join(', ')}
+TOP JD KEYWORDS: ${keywords.join(', ')}
 
-Return ONLY a valid JSON object (no markdown, no code fences) with this structure:
+Return ONLY a valid JSON object (no markdown, no code fences):
 {
-  "summary": "2-3 sentence tailored professional summary for this specific job",
-  "skills": ["skill1", "skill2"],
+  "summary": "2-3 sentence summary, rewritten to foreground the JD-relevant parts of the candidate's real background",
+  "skills": ["ordered so JD-relevant skills come first — only skills already in the candidate's list"],
   "experience": [
-    {
-      "title": "job title",
-      "company": "company name",
-      "dates": "MM/YYYY – Present",
-      "bullets": ["quantified achievement or responsibility"]
-    }
+    { "company": "exact company name from above", "bullets": ["the job's real bullets, reworded tighter"] }
   ]
 }
 
-Rules:
-- skills: 12-16 items, prioritize JD keywords from the candidate's actual stack
-- experience: use candidate's actual roles; 4-5 bullets each; reorder to highlight most relevant first
-- bullets: start with strong action verbs; quantify impact where data exists
-- summary: mention key technologies from the JD that the candidate actually has`;
+Hard rules:
+- Do NOT invent bullets, numbers, metrics, employers, dates, job titles, or tools. Every bullet must map to one the candidate already has.
+- Keep each job's bullet COUNT the same as the source. Reword only.
+- If a bullet has no metric in the source, leave it without one. Never add a percentage or figure.
+- Write plainly, past tense, one idea per bullet. No "Spearheaded / Leveraged / Utilized / Orchestrated", no buzzword stacking.
+- "skills" must be a reordering/subset of the candidate's existing skills — add nothing new.`;
 
     const response = await getActiveClient('heavy').messages.create({
       max_tokens: 3000,
@@ -135,72 +140,75 @@ Rules:
       const end = text.lastIndexOf('}');
       if (start !== -1 && end !== -1) return JSON.parse(text.slice(start, end + 1));
     } catch (e) {
-      console.warn('Failed to parse resume data JSON:', e.message);
+      console.warn('Failed to parse tailored resume JSON — using untailored resume:', e.message);
     }
-
-    return this._buildFallbackData(userProfile, keywords);
+    return {};
   }
 
-  _buildFallbackData(userProfile, keywords) {
-    return {
-      summary: userProfile.summary || `${userProfile.currentRole} with ${userProfile.yearsOfExperience} years of experience.`,
-      skills: [...(userProfile.techStack || []), ...(userProfile.skills || [])].slice(0, 16),
-      experience: (userProfile.experience || []).map(e => ({
-        title: e.title,
-        company: e.company,
-        dates: `${e.startDate} – ${e.endDate}`,
-        bullets: e.description ? e.description.split(/[,;]/).map(s => s.trim()).filter(Boolean) : [],
-      })),
-    };
-  }
+  renderHtml(data) {
+    const contact = data.contact || {};
+    const contactHtml = [contact.email, contact.phone, contact.location, contact.linkedin, contact.github]
+      .filter(Boolean).map(c => `<span>${esc(c)}</span>`).join('');
 
-  renderHtml(data, profile) {
     const skillTags = (data.skills || [])
-      .map(s => `<span class="skill-tag">${s}</span>`).join('');
+      .map(s => `<span class="skill-tag">${esc(s)}</span>`).join('');
 
     const experienceHtml = (data.experience || []).map(job => `
       <div class="job">
         <div class="job-header">
           <div class="job-left">
-            <span class="job-title">${job.title}</span>
+            <span class="job-title">${esc(job.title)}</span>
             <span class="job-sep"> · </span>
-            <span class="job-company">${job.company}</span>
+            <span class="job-company">${esc(job.company)}${job.location ? ', ' + esc(job.location) : ''}</span>
           </div>
-          <div class="job-dates">${job.dates}</div>
+          <div class="job-dates">${esc(job.period || job.dates || '')}</div>
         </div>
+        ${job.desc ? `<div class="job-desc">${esc(job.desc)}</div>` : ''}
         <ul class="job-bullets">
-          ${(job.bullets || []).map(b => `<li>${b}</li>`).join('')}
+          ${(job.bullets || []).map(b => `<li>${esc(b)}</li>`).join('')}
         </ul>
       </div>`).join('');
 
-    const educationHtml = (profile.education || []).map(edu => `
+    const educationHtml = (data.education || []).map(edu => `
       <div class="edu-item">
         <div class="edu-left">
-          <span class="edu-degree">${edu.degree}${edu.field ? ' in ' + edu.field : ''}</span>
-          <span class="edu-school"> · ${edu.school}</span>
+          <span class="edu-degree">${esc(edu.degree)}</span>
+          <span class="edu-school"> · ${esc(edu.institution || edu.school || '')}</span>
         </div>
-        <div class="edu-year">${edu.year || ''}</div>
+        <div class="edu-year">${esc(edu.period || edu.year || '')}</div>
       </div>`).join('');
 
-    const certHtml = (profile.certifications || []).length
+    const certList = (data.certificates || []).map(c =>
+      typeof c === 'string' ? c : [c.name, c.period].filter(Boolean).join(' — ')
+    ).filter(Boolean);
+    const certHtml = certList.length
       ? `<div class="section">
           <div class="section-title">Certifications</div>
-          <div class="cert-list">${(profile.certifications || []).map(c =>
-            `<span class="cert-tag">${c}</span>`).join('')}</div>
+          <div class="cert-list">${certList.map(c => `<span class="cert-tag">${esc(c)}</span>`).join('')}</div>
         </div>`
       : '';
 
-    const linkedinHtml = profile.linkedin
-      ? `<span>${profile.linkedin}</span>` : '';
-    const githubHtml = profile.github
-      ? `<span>${profile.github}</span>` : '';
+    const langHtml = (data.languages || []).length
+      ? `<div class="section">
+          <div class="section-title">Languages</div>
+          <div class="lang-list">${(data.languages || []).map(l =>
+            `<span class="lang-item">${esc(l.name)}${l.level ? ' — ' + esc(l.level) : ''}</span>`).join('')}</div>
+        </div>`
+      : '';
+
+    const interestHtml = (data.interests || []).length
+      ? `<div class="section">
+          <div class="section-title">Interests</div>
+          <div class="cert-list">${(data.interests || []).map(t => `<span class="cert-tag">${esc(t)}</span>`).join('')}</div>
+        </div>`
+      : '';
 
     return `<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${profile.name} — Resume</title>
+<title>${esc(data.name)} — Resume</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -213,14 +221,14 @@ Rules:
   .page {
     max-width: 780px;
     margin: 0 auto;
-    padding: 32px 36px;
+    padding: 24px 36px;
   }
 
   /* ── Header ─────────────────────────────────────────── */
   .header {
     border-bottom: 3px solid #16213e;
-    padding-bottom: 12px;
-    margin-bottom: 16px;
+    padding-bottom: 10px;
+    margin-bottom: 12px;
   }
   .name {
     font-size: 26pt;
@@ -247,7 +255,7 @@ Rules:
   .contact span + span::before { content: '|'; margin-right: 20px; color: #bbb; }
 
   /* ── Section ─────────────────────────────────────────── */
-  .section { margin-bottom: 14px; }
+  .section { margin-bottom: 10px; }
   .section-title {
     font-size: 8pt;
     font-weight: 700;
@@ -279,7 +287,7 @@ Rules:
   }
 
   /* ── Experience ──────────────────────────────────────── */
-  .job { margin-bottom: 11px; }
+  .job { margin-bottom: 8px; }
   .job-header {
     display: flex;
     justify-content: space-between;
@@ -297,13 +305,14 @@ Rules:
     flex-shrink: 0;
   }
   .job-bullets {
-    margin-top: 4px;
+    margin-top: 3px;
     padding-left: 16px;
   }
   .job-bullets li {
     font-size: 9pt;
     color: #2d3748;
-    margin-bottom: 3px;
+    margin-bottom: 2px;
+    line-height: 1.35;
   }
 
   /* ── Education ───────────────────────────────────────── */
@@ -329,27 +338,29 @@ Rules:
     font-size: 8.5pt;
     font-weight: 500;
   }
+  .job-desc { font-size: 8.5pt; color: #718096; font-style: italic; margin-top: 2px; }
+  .lang-list { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 9pt; color: #2d3748; }
+
+  @media print {
+    html, body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .job, .edu-item, .job-bullets li { break-inside: avoid; }
+    .section-title { break-after: avoid; }
+  }
 </style>
 </head>
 <body>
 <div class="page">
 
   <div class="header">
-    <div class="name">${profile.name}</div>
-    <div class="role-line">${profile.currentRole} &nbsp;·&nbsp; ${profile.yearsOfExperience}+ Years Experience</div>
-    <div class="contact">
-      <span>${profile.email}</span>
-      <span>${profile.phone}</span>
-      <span>${profile.location || ''}</span>
-      ${linkedinHtml}
-      ${githubHtml}
-    </div>
+    <div class="name">${esc(data.name)}</div>
+    ${data.title ? `<div class="role-line">${esc(data.title)}</div>` : ''}
+    <div class="contact">${contactHtml}</div>
   </div>
 
-  <div class="section">
+  ${data.summary ? `<div class="section">
     <div class="section-title">Professional Summary</div>
-    <div class="summary">${data.summary}</div>
-  </div>
+    <div class="summary">${esc(data.summary)}</div>
+  </div>` : ''}
 
   <div class="section">
     <div class="section-title">Technical Skills</div>
@@ -368,6 +379,9 @@ Rules:
     ${educationHtml}
   </div>
 
+  ${langHtml}
+  ${interestHtml}
+
 </div>
 </body>
 </html>`;
@@ -378,7 +392,12 @@ Rules:
     const page = await browser.newPage();
     await page.setContent(htmlContent, { waitUntil: 'networkidle' });
     const pdfPath = path.join(destDir, `resume_${Date.now()}.pdf`);
-    await page.pdf({ path: pdfPath, format: 'A4', margin: { top: '0', bottom: '0', left: '0', right: '0' } });
+    await page.pdf({
+      path: pdfPath,
+      format: 'A4',
+      printBackground: true,
+      margin: { top: '9mm', bottom: '9mm', left: '0', right: '0' },
+    });
     await browser.close();
     return pdfPath;
   }

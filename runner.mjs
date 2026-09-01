@@ -426,64 +426,45 @@ test('_extractBalancedArray handles nested brackets', () => {
   expect(result).toBeDefined();
 });
 
-test('renderHtml generates valid HTML', () => {
+test('renderHtml generates valid HTML from a canonical resume object', () => {
   const rg = new ResumeGenerator();
-  const profile = {
-    name: 'John Doe',
-    email: 'john@test.com',
-    phone: '123',
-    location: 'Bangalore',
-    currentRole: 'Engineer',
-    yearsOfExperience: 5,
-    education: [],
-    certifications: []
-  };
   const data = {
+    name: 'John Doe',
+    title: 'Engineer',
     summary: 'Test summary',
+    contact: { email: 'john@test.com', phone: '123', location: 'Bangalore' },
     skills: ['Python', 'JavaScript'],
-    experience: []
+    experience: [], education: [], certificates: [], languages: [], interests: [],
   };
-  const html = rg.renderHtml(data, profile);
+  const html = rg.renderHtml(data);
   expect(html).toContain('<!DOCTYPE html>');
   expect(html).toContain('John Doe');
   expect(html).toContain('Test summary');
   expect(html).toContain('Python');
 });
 
-test('renderHtml handles missing profile fields', () => {
+test('renderHtml handles a near-empty resume object', () => {
   const rg = new ResumeGenerator();
-  const profile = {
-    name: '',
-    email: '',
-    phone: '',
-    location: '',
-    currentRole: '',
-    yearsOfExperience: 0,
-    education: [],
-    certifications: []
-  };
-  const data = { summary: '', skills: [], experience: [] };
-  const html = rg.renderHtml(data, profile);
+  const html = rg.renderHtml({ name: '' });
   expect(html).toContain('<!DOCTYPE html>');
 });
 
-test('_buildFallbackData creates default structure', () => {
-  const rg = new ResumeGenerator();
-  const profile = {
+test('fromProfile maps a profile onto the canonical resume shape', async () => {
+  const { fromProfile } = await import('./src/core/resumeData.js');
+  const r = fromProfile({
     currentRole: 'Engineer',
-    yearsOfExperience: 3,
     techStack: ['Python'],
     skills: ['SQL'],
     experience: [
-      { title: 'Dev', company: 'Acme', startDate: '2020', endDate: '2023', description: 'Built things' }
-    ]
-  };
-  const result = rg._buildFallbackData(profile, ['Python']);
-  expect(result.summary).toContain('Engineer');
-  expect(result.skills).toContain('Python');
-  expect(result.skills).toContain('SQL');
-  expect(result.experience.length).toBe(1);
-  expect(result.experience[0].title).toBe('Dev');
+      { title: 'Dev', company: 'Acme', startDate: '2020', endDate: '2023', description: 'Built things.' }
+    ],
+  });
+  expect(r.title).toBe('Engineer');
+  expect(r.skills).toContain('Python');
+  expect(r.skills).toContain('SQL');
+  expect(r.experience.length).toBe(1);
+  expect(r.experience[0].title).toBe('Dev');
+  expect(r.experience[0].bullets).toContain('Built things.');
 });
 
 console.log('\n=== interviewPrep Tests ===\n');

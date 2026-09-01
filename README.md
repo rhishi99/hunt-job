@@ -178,7 +178,7 @@ Want alerts instead of re-running scans by hand? `node hunt-job.js watch --arche
 - Reorders your experience bullets by relevance to the role
 - Outputs clean, ATS-compatible PDF via Playwright
 
-**Standalone extra tool:** Open `resume-builder/index.html` directly in a browser (6 editable templates, live preview, export to PDF). Also launchable via `hunt-job.bat` → [R].
+**Standalone extra tool:** Open `resume-builder/index.html` directly in a browser — 6 editable templates, inline editing with undo/redo, add/remove any section, fit-to-width preview, print-clean PDF export, and Import/Export JSON (round-trips with the `resume.json` the CLI generator writes). Also launchable via `hunt-job.bat` → [R].
 
 ### 4. Interview Prep
 

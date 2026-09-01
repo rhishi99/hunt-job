@@ -141,7 +141,8 @@ hunt-job/
 │   │   ├── aiClient.js                # Multi-provider AI client (Claude/Gemini/Groq/OpenRouter/NVIDIA)
 │   │   ├── logger.js                  # JSONL logger (data/logs/<date>.jsonl)
 │   │   ├── jobEvaluator.js            # 10-dimension scoring — fetches the JD before the LLM call
-│   │   ├── resumeGenerator.js         # PDF generation (Playwright + EJS)
+│   │   ├── resumeData.js             # Canonical resume shape — defaultResumeData(), fromProfile(), mergeTailored(); shared by resumeGenerator + resume-builder/index.html
+│   │   ├── resumeGenerator.js         # Tailored PDF generation (Playwright) — consumes resumeData shape, writes resume.json beside the PDF
 │   │   ├── resumeParser.js            # Parses an existing resume PDF into profile data
 │   │   ├── interviewPrep.js           # Prep guide generation + YouTube resources
 │   │   ├── profileManager.js          # Profile CRUD
