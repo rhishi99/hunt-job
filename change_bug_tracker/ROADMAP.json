@@ -1,0 +1,59 @@
+{
+  "version": "1.0.0",
+  "project": "hunt-job",
+  "last_updated": "2026-09-01",
+  "phases": [
+    {
+      "id": "phase-1-core-engine",
+      "name": "Phase 1: ATS Scanner & SQLite DB Foundation",
+      "status": "COMPLETED",
+      "items": [
+        { "id": "ats-providers", "title": "Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable API adapters", "done": true },
+        { "id": "jsonld-fallback", "title": "Schema.org JSON-LD parser fallback for generic ATSes", "done": true },
+        { "id": "db-layer", "title": "SQLite migration layer and jobs deduplication index", "done": true },
+        { "id": "audit-tooling", "title": "Portal health audit CLI with auto-backoff and fail count disabling", "done": true }
+      ]
+    },
+    {
+      "id": "phase-2-evaluation-resume",
+      "name": "Phase 2: AI Scoring & ATS Resume Synthesis",
+      "status": "COMPLETED",
+      "items": [
+        { "id": "eval-10-dim", "title": "10-dimension rubric evaluation engine", "done": true },
+        { "id": "resume-gen", "title": "Headless Chromium + EJS tailored ATS resume PDF generator", "done": true },
+        { "id": "prep-gen", "title": "Personalized 4-week interview prep guides with curated YouTube resources", "done": true }
+      ]
+    },
+    {
+      "id": "phase-3-autofill-apply",
+      "name": "Phase 3: Human-in-the-Loop AutoFill Engine",
+      "status": "COMPLETED",
+      "items": [
+        { "id": "autofill-adapters", "title": "Platform-specific DOM form fillers for Lever, Greenhouse, SmartRecruiters", "done": true },
+        { "id": "generic-ai-filler", "title": "AI vision and field heuristic fallback filler", "done": true },
+        { "id": "app-tracking", "title": "Application lifecycle tracking in SQLite", "done": true }
+      ]
+    },
+    {
+      "id": "phase-4-dashboard-harness",
+      "name": "Phase 4: Web Dashboard & E2E Test Harness",
+      "status": "COMPLETED",
+      "items": [
+        { "id": "dashboard-ui", "title": "Single-file modern dashboard UI with live Kanban pipeline", "done": true },
+        { "id": "service-manager", "title": "PowerShell service manager (hunt-job.ps1) and CLI workflow shims", "done": true },
+        { "id": "e2e-playwright", "title": "Standalone Playwright browser smoke test harness (huntjob_e2e_test_standalone.mjs)", "done": true },
+        { "id": "specs-skills", "title": "PRODUCT.md, DESIGN.md, BROWSER_HARNESS.md and .agents/skills setup", "done": true }
+      ]
+    },
+    {
+      "id": "phase-5-expansion",
+      "name": "Phase 5: Future Expansions",
+      "status": "PLANNED",
+      "items": [
+        { "id": "multi-profile", "title": "Multiple candidate profile switching support", "done": false },
+        { "id": "salary-insights", "title": "Aggregated Indian compensation insights per level and archetype", "done": false },
+        { "id": "email-digest", "title": "Optional daily high-scoring job email summary", "done": false }
+      ]
+    }
+  ]
+}

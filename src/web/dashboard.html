@@ -504,8 +504,12 @@
           <option value="3">≥ 3.0</option>
         </select>
         <select id="jobs-fresh" aria-label="Freshness filter">
-          <option value="all">All time</option>
-          <option value="fresh">Fresh (&lt;48h)</option>
+          <option value="0">All time</option>
+          <option value="2">Last 2 days</option>
+          <option value="7">Last week</option>
+          <option value="14">Last 2 weeks</option>
+          <option value="21">Last 3 weeks</option>
+          <option value="28">Last 4 weeks</option>
         </select>
         <button onclick="renderJobs()" class="btn" style="padding:8px 14px" aria-label="Apply filters">Filter</button>
       </div>
@@ -1007,20 +1011,25 @@ async function handleDrop(appId, newStatus) {
 // ===== Jobs table (visual) =====
 function renderJobs() {
   const tbody = document.querySelector('#jobs-table tbody');
+  if (!tbody) return;
   tbody.innerHTML = '';
 
   const q = (document.getElementById('jobs-search')?.value || '').toLowerCase();
   const minS = parseFloat(document.getElementById('jobs-score')?.value || '0');
-  const freshOnly = (document.getElementById('jobs-fresh')?.value || 'all') === 'fresh';
+  const freshDays = parseFloat(document.getElementById('jobs-fresh')?.value || '0');
 
   const now = Date.now();
+  const fragment = document.createDocumentFragment();
+  const maxRender = 150;
+  let count = 0;
 
-  state.jobs.forEach(job => {
-    if (q && !(`${job.company} ${job.title}`.toLowerCase().includes(q))) return;
-    if (job.score && job.score < minS) return;
+  for (let i = 0; i < state.jobs.length; i++) {
+    const job = state.jobs[i];
+    if (q && !(`${job.company} ${job.title}`.toLowerCase().includes(q))) continue;
+    if (job.score && job.score < minS) continue;
 
+    if (freshDays > 0 && !(job.postedAt && (now - new Date(job.postedAt).getTime()) < freshDays * 24 * 3600 * 1000)) continue;
     const isFresh = job.postedAt && ((now - new Date(job.postedAt).getTime()) / 3600000 < 48);
-    if (freshOnly && !isFresh) return;
 
     const score = job.score ? `<span class="pill ${job.score>=4?'g':job.score>=3?'a':'r'}">${job.score.toFixed(1)}</span>` : '<span class="text-muted">—</span>';
     const posted = job.postedAt ? `<span title="${fullDate(job.postedAt)}">${timeAgo(job.postedAt)}</span>` : '—';
@@ -1038,8 +1047,13 @@ function renderJobs() {
     `;
     tr.onclick = () => openModal(job);
     tr.style.cursor = 'pointer';
-    tbody.appendChild(tr);
-  });
+    fragment.appendChild(tr);
+
+    count++;
+    if (count >= maxRender) break;
+  }
+
+  tbody.appendChild(fragment);
 }
 
 // ===== Evaluations =====

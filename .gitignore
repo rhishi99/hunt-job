@@ -26,6 +26,18 @@ temp/
 *.log
 *.jsonl
 
+# Logs & test results
+.logs/
+TEST_RESULTS.json
+.recovery/
+.tmp/
+.temp/
+
+# Local-only agent tooling — vendored third-party skills + personal launchers
+.agents/
+skills-lock.json
+claude-yolo.ps1
+
 # OS and editor artifacts
 .DS_Store
 .idea/

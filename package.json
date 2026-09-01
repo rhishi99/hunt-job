@@ -14,6 +14,7 @@
     "dashboard": "node src/web/server.js",
     "test": "vitest run && node runner.mjs",
     "test:vitest": "vitest run",
+    "test:e2e": "node huntjob_e2e_test_standalone.mjs",
     "evaluate-job": "node src/cli/evaluateJob.js",
     "scan-portals": "node src/cli/scanPortals.js",
     "audit-portals": "node src/cli/auditPortals.js",
