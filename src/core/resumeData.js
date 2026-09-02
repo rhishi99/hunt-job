@@ -32,11 +32,12 @@ export function esc(s) {
 
 const SKILL_GROUPS = {
   'Cloud & AWS': ['AWS', 'EC2', 'S3', 'RDS', 'DynamoDB', 'ElastiCache', 'IAM', 'VPC', 'CloudWatch'],
-  'CI/CD': ['Jenkins', 'Bamboo', 'GitHub Enterprise', 'Stash', 'AWX'],
-  'IaC & Config': ['Terraform', 'CloudFormation', 'Ansible', 'PowerShell'],
+  'CI/CD': ['Jenkins', 'Bamboo', 'GitHub Enterprise', 'Stash', 'AWX', 'Harness'],
+  'IaC & Config': ['Terraform', 'Ansible', 'PowerShell'],
   'Containers': ['Docker', 'Kubernetes'],
   'Observability': ['New Relic'],
-  'Code Quality & Security': ['SonarQube', 'Coverity', 'Black Duck'],
+  'Code Quality & Security': ['SonarQube'],
+  'AI & Automation': ['Claude Code', 'AI Automation'],
   'Delivery': ['JIRA', 'Confluence', 'Scaled Agile (SAFe)', 'Problem Solving', 'Cross-Team Collaboration'],
 };
 
@@ -44,10 +45,10 @@ const SKILL_GROUPS = {
 export function defaultResumeData() {
   return {
     name: 'Rhishikesh Patil',
-    title: 'Senior Software Engineer, DevOps',
+    title: 'Staff Software Engineer, DevOps',
     summary:
       'DevOps engineer experienced in AWS infrastructure, CI/CD, containerization, IaC, ' +
-      'monitoring, automation, and leading large-scale platform migrations and team enablement. ' +
+      'monitoring, automation, AI-assisted tooling, and leading large-scale platform migrations and team enablement. ' +
       'Certified Scrum Master (SAFe) with a background in Agile delivery. Strong problem solving, ' +
       'communication, and cross-team collaboration skills.',
     photo: null,
@@ -60,7 +61,7 @@ export function defaultResumeData() {
     },
     experience: [
       {
-        title: 'Senior Software Engineer',
+        title: 'Staff Software Engineer',
         company: 'CDK Global India Pvt. Ltd.',
         location: 'Pune',
         period: '12/2016 – Present',
@@ -69,12 +70,13 @@ export function defaultResumeData() {
           'Managed AWS cloud infrastructure across EC2, S3, RDS, IAM, VPC, ElastiCache, DynamoDB, and CloudWatch.',
           'Built and maintained CI/CD pipelines on Stash, Bamboo, and GitHub Enterprise.',
           'Ran observability and monitoring with New Relic for performance, reliability, and proactive incident detection.',
-          'Provisioned and managed cloud resources as code with Terraform and CloudFormation.',
+          'Provisioned and managed cloud resources as code with Terraform.',
           'Built, deployed, and debugged containerized applications on Docker and Kubernetes.',
           'Automated server provisioning and configuration with Ansible and PowerShell.',
+          'Modernized delivery with Harness CI/CD and AI automation — used Claude Code to accelerate pipeline scripting, incident triage, and infrastructure tooling.',
           'Mentored a team of 70+ engineers on branching strategy for parallel development across CI/CD tooling.',
           'Led cross-functional migrations: Puppet to Ansible, Bamboo to GitHub, Windows Server 2008 R2 to 2016, and Ansible Tower to AWX.',
-          'Enforced code quality and security gates in CI/CD pipelines with SonarQube, Coverity, and Black Duck.',
+          'Enforced code quality and security gates in CI/CD pipelines with SonarQube.',
           'Owned production releases and change management.',
         ],
       },

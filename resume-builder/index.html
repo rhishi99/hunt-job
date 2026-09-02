@@ -415,6 +415,15 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   .rc-exp-block, .rm-exp-block, .re-exp-block, .rb-exp-card, .rs-exp-block, .ra-exp-block { margin-bottom: 9px !important; }
   .rc-bullet-row, .rm-bullet-row, .re-bullet-row, .rs-bullet-row, .rb-bullet-row, .ra-bullet-row { margin-bottom: 2px !important; }
   .rs-sidebar, .rs-main { padding-top: 22px !important; padding-bottom: 10px !important; }
+
+  /* ATS is single-column with the longest bullet list — squeeze its vertical
+     rhythm harder so it lands on one page instead of spilling ~45px onto a second */
+  .resume-ats { padding: 16px 44px 0 !important; zoom: 0.96 !important; }
+  .ra-summary { margin-bottom: 9px !important; line-height: 1.45 !important; }
+  .ra-section-title { margin-top: 6px !important; margin-bottom: 6px !important; }
+  .ra-exp-block { margin-bottom: 7px !important; }
+  .ra-exp-period { margin-bottom: 2px !important; }
+  .ra-bullet-row, .ra-bullet-text { line-height: 1.4 !important; }
 }
 </style>
 </head>
@@ -482,17 +491,18 @@ function icon(name) { return '<span class="ci" aria-hidden="true">' + (ICONS[nam
 function defaultResumeData() {
   const groups = {
     'Cloud & AWS': ['AWS', 'EC2', 'S3', 'RDS', 'DynamoDB', 'ElastiCache', 'IAM', 'VPC', 'CloudWatch'],
-    'CI/CD': ['Jenkins', 'Bamboo', 'GitHub Enterprise', 'Stash', 'AWX'],
-    'IaC & Config': ['Terraform', 'CloudFormation', 'Ansible', 'PowerShell'],
+    'CI/CD': ['Jenkins', 'Bamboo', 'GitHub Enterprise', 'Stash', 'AWX', 'Harness'],
+    'IaC & Config': ['Terraform', 'Ansible', 'PowerShell'],
     'Containers': ['Docker', 'Kubernetes'],
     'Observability': ['New Relic'],
-    'Code Quality & Security': ['SonarQube', 'Coverity', 'Black Duck'],
+    'Code Quality & Security': ['SonarQube'],
+    'AI & Automation': ['Claude Code', 'AI Automation'],
     'Delivery': ['JIRA', 'Confluence', 'Scaled Agile (SAFe)', 'Problem Solving', 'Cross-Team Collaboration'],
   };
   return {
     name: 'Rhishikesh Patil',
-    title: 'Senior Software Engineer, DevOps',
-    summary: 'DevOps engineer experienced in AWS infrastructure, CI/CD, containerization, IaC, monitoring, automation, and leading large-scale platform migrations and team enablement. Certified Scrum Master (SAFe) with a background in Agile delivery. Strong problem solving, communication, and cross-team collaboration skills.',
+    title: 'Staff Software Engineer, DevOps',
+    summary: 'DevOps engineer experienced in AWS infrastructure, CI/CD, containerization, IaC, monitoring, automation, AI-assisted tooling, and leading large-scale platform migrations and team enablement. Certified Scrum Master (SAFe) with a background in Agile delivery. Strong problem solving, communication, and cross-team collaboration skills.',
     photo: null,
     contact: {
       email: 'rhishi99@gmail.com',
@@ -503,7 +513,7 @@ function defaultResumeData() {
     },
     experience: [
       {
-        title: 'Senior Software Engineer',
+        title: 'Staff Software Engineer',
         company: 'CDK Global India Pvt. Ltd.',
         location: 'Pune',
         period: '12/2016 – Present',
@@ -512,12 +522,13 @@ function defaultResumeData() {
           'Managed AWS cloud infrastructure across EC2, S3, RDS, IAM, VPC, ElastiCache, DynamoDB, and CloudWatch.',
           'Built and maintained CI/CD pipelines on Stash, Bamboo, and GitHub Enterprise.',
           'Ran observability and monitoring with New Relic for performance, reliability, and proactive incident detection.',
-          'Provisioned and managed cloud resources as code with Terraform and CloudFormation.',
+          'Provisioned and managed cloud resources as code with Terraform.',
           'Built, deployed, and debugged containerized applications on Docker and Kubernetes.',
           'Automated server provisioning and configuration with Ansible and PowerShell.',
+          'Modernized delivery with Harness CI/CD and AI automation — used Claude Code to accelerate pipeline scripting, incident triage, and infrastructure tooling.',
           'Mentored a team of 70+ engineers on branching strategy for parallel development across CI/CD tooling.',
           'Led cross-functional migrations: Puppet to Ansible, Bamboo to GitHub, Windows Server 2008 R2 to 2016, and Ansible Tower to AWX.',
-          'Enforced code quality and security gates in CI/CD pipelines with SonarQube, Coverity, and Black Duck.',
+          'Enforced code quality and security gates in CI/CD pipelines with SonarQube.',
           'Owned production releases and change management.',
         ],
       },
