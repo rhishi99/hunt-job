@@ -17,6 +17,7 @@ export function parse(data, companyRef) {
     applyUrl: j.applyUrl || j.jobUrl,
     description: cleanHtml(j.descriptionHtml || j.descriptionPlain || ''),
     postedAt: j.publishedAt ? new Date(j.publishedAt).getTime() : null,
+    employmentType: j.employmentType, // FullTime | PartTime | Intern | Contract | Temporary
   }));
 }
 

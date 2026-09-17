@@ -22,6 +22,7 @@ export function parsePage(content, companyRef) {
     description: [j.department?.label, j.function?.label, j.typeOfEmployment?.label, j.experienceLevel?.label]
       .filter(Boolean).join(' · ') || j.name,
     postedAt: j.releasedDate ? new Date(j.releasedDate).getTime() : null,
+    employmentType: j.typeOfEmployment?.label, // "Full-time" | "Part-time" | "Contract"
   }));
 }
 

@@ -16,6 +16,7 @@ export function parse(jobs, companyRef) {
     applyUrl: j.applyUrl,
     description: cleanHtml(j.description),
     postedAt: j.createdAt || null, // already unix ms
+    employmentType: j.categories?.commitment, // "Full-time" | "Part-time" | "Contract"
   }));
 }
 

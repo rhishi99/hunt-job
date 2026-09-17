@@ -15,11 +15,26 @@ import * as smartrecruiters from './providers/smartrecruiters.js';
 import * as recruitee from './providers/recruitee.js';
 import * as workable from './providers/workable.js';
 import * as jsonld from './providers/jsonld.js';
+import * as remotive from './providers/remotive.js';
+import * as himalayas from './providers/himalayas.js';
 
 const log = createLogger('scan.index');
 
-const PROVIDERS = { greenhouse, lever, ashby, smartrecruiters, recruitee, workable, jsonld };
+const PROVIDERS = {
+  greenhouse, lever, ashby, smartrecruiters, recruitee, workable, jsonld,
+  // Aggregators: one row covers many employers (see providers/remotive.js).
+  remotive, himalayas,
+};
 const CONCURRENCY = 5;
+
+// Minimum gap between live fetches, per ATS platform. Only the aggregators need
+// one: their terms ask for a handful of calls per DAY, while httpClient's limiter
+// only spaces requests per second. Everything absent here is unthrottled beyond
+// that, which is correct for a company board fetched once per scan.
+const MIN_SCAN_INTERVAL_MS = {
+  remotive: 6 * 60 * 60 * 1000,
+  himalayas: 6 * 60 * 60 * 1000,
+};
 const FAIL_THRESHOLD = 5; // auto-disable a company after this many consecutive failures
 
 async function mapLimit(items, limit, fn) {
@@ -53,10 +68,12 @@ function upsertStatement(db) {
   return db.prepare(`
     INSERT INTO jobs (
       id, company_id, ats_platform, title, location, url, apply_url, description,
-      content_hash, status, posted_at, first_seen_at, last_seen_at
+      content_hash, status, posted_at, first_seen_at, last_seen_at,
+      employment_type, employer
     ) VALUES (
       @id, @company_id, @ats_platform, @title, @location, @url, @apply_url, @description,
-      @content_hash, 'active', @posted_at, @now, @now
+      @content_hash, 'active', @posted_at, @now, @now,
+      @employment_type, @employer
     )
     ON CONFLICT(id) DO UPDATE SET
       title        = CASE WHEN excluded.content_hash != jobs.content_hash THEN excluded.title ELSE jobs.title END,
@@ -67,7 +84,12 @@ function upsertStatement(db) {
       posted_at    = CASE WHEN excluded.content_hash != jobs.content_hash THEN excluded.posted_at ELSE jobs.posted_at END,
       content_hash = excluded.content_hash,
       status       = 'active',
-      last_seen_at = excluded.last_seen_at
+      last_seen_at = excluded.last_seen_at,
+      -- Unconditional, unlike the fields above: these are derived, and gating them
+      -- on a content change would leave every pre-v4 row NULL forever (their
+      -- content_hash never changes, so the CASE arms would never fire).
+      employment_type = excluded.employment_type,
+      employer        = excluded.employer
   `);
 }
 
@@ -83,6 +105,11 @@ function upsertStatement(db) {
  */
 export async function scanAll(archetype, { companies, db: dbOverride, includeAllLocations = false } = {}) {
   const db = dbOverride || getDb();
+  // Accepts one archetype or several. Several matters for `gigs`, which hunts
+  // every archetype in the profile: calling scanAll once per archetype would
+  // re-fetch every company's board once per archetype.
+  const archetypes = Array.isArray(archetype) ? archetype : [archetype];
+  const matchesAnyArchetype = title => archetypes.some(a => jobMatchesArchetype(title, null, a));
   const companyRows = companies?.length ? companies : loadEnabledCompanies(db);
   const existingIds = new Set(db.prepare('SELECT id FROM jobs').pluck().all());
 
@@ -108,6 +135,30 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
       return;
     }
 
+    // Reuse the existing `last_ok_at` column as the clock, so a 30-minute
+    // `watch` loop doesn't make 48 calls/day against a source whose terms ask
+    // for a handful. No new column, no new limiter.
+    const minInterval = MIN_SCAN_INTERVAL_MS[company.ats_platform];
+    if (minInterval && company.last_ok_at && Date.now() - company.last_ok_at < minInterval) {
+      log.info('provider_skipped_rate_limit', {
+        company: company.name,
+        platform: company.ats_platform,
+        nextAllowedInMin: Math.ceil((minInterval - (Date.now() - company.last_ok_at)) / 60000),
+      });
+      // Return cached rows so `list`-style callers still see this source's jobs.
+      for (const row of db.prepare(
+        `SELECT title, location, url, apply_url AS applyUrl, description,
+                posted_at AS postedAt, ats_platform AS source,
+                employment_type AS employmentType, employer,
+                COALESCE(employer, ?) AS company, id
+         FROM jobs WHERE company_id = ? AND status = 'active'`
+      ).all(company.name, companyId)) {
+        if (matchesAnyArchetype(row.title) &&
+            (includeAllLocations || isIndiaLocation(row.location))) allJobs.push(row);
+      }
+      return;
+    }
+
     let normalized;
     try {
       normalized = await provider.fetchJobs(company);
@@ -122,7 +173,7 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
     // the jobs table is a shared cache across archetypes, and soft-close
     // must reflect "still open at the ATS", not "still matches this search".
     const matched = normalized
-      .filter(j => jobMatchesArchetype(j.title, null, archetype))
+      .filter(j => matchesAnyArchetype(j.title))
       .filter(j => includeAllLocations || isIndiaLocation(j.location));
 
     const now = Date.now();
@@ -140,6 +191,8 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
           description: job.description,
           content_hash: contentHash(job),
           posted_at: job.postedAt,
+          employment_type: job.employmentType ?? null,
+          employer: job.employer ?? null,
           now,
         };
         upsert.run(row);
@@ -165,7 +218,7 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
   });
 
   allJobs.sort((a, b) => (b.postedAt || 0) - (a.postedAt || 0));
-  log.op('scan_all_done', { archetype, total: allJobs.length, new: newJobs.length, closed, errors: errors.length });
+  log.op('scan_all_done', { archetype: archetypes.join(', '), total: allJobs.length, new: newJobs.length, closed, errors: errors.length });
 
   return { jobs: allJobs, newJobs, closed, errors };
 }

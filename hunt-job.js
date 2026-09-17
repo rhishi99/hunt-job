@@ -63,6 +63,11 @@ async function main() {
             case 'browse':
                 await runScript('src/cli/listJobs.js', args.slice(1));
                 break;
+            case 'gigs':
+            case 'part-time':
+            case 'parttime':
+                await runScript('src/cli/gigs.js', args.slice(1));
+                break;
             case 'audit-portals':
             case 'audit':
                 await runScript('src/cli/auditPortals.js', args.slice(1));
@@ -137,6 +142,8 @@ COMMANDS:
   evaluate <url>              Evaluate a job posting
   scan --archetype <name>     LIVE scan of company ATS boards (populates the DB)
   list [filters]              INSTANT browse of already-scanned jobs (no network)
+  gigs [filters]              Part-time / contract hunt across ALL profile archetypes
+                                 [--offline] [--india] [--commitment <csv>]
   watch --archetype <name>    Periodic scan + desktop notification on new matches
                                  [--interval <minutes>] (default 30, min 10) [--once]
   detect <careers-url>        Detect a company's ATS platform from its careers URL
@@ -152,12 +159,15 @@ COMMANDS:
   start, interactive          Start interactive menu
   help, --help, -h            Show this help
 
-FILTERS (scan + list):  -a/--archetype  -s/--since <days>  --new  --new-hours <h>
+FILTERS (scan + list + gigs):  -a/--archetype  -s/--since <days>  --new  --new-hours <h>
   -n/--limit <n>  -c/--company <t>  -l/--location <t>  --remote  --all  -p/--platform  --json
+  --commitment <csv>  full-time|part-time|contract|internship|temporary   --part-time
 
 EXAMPLES:
   node hunt-job.js scan --archetype "Backend Engineer" --since 14 --limit 20
   node hunt-job.js list --archetype "DevOps Engineer" --new          # instant, offline
+  node hunt-job.js gigs                                              # part-time/contract hunt
+  node hunt-job.js gigs --offline --commitment contract               # instant, contract only
   node hunt-job.js list -a "Data Engineer" --remote --json
   node hunt-job.js watch --archetype "DevOps Engineer" --interval 30
   node hunt-job.js evaluate "https://careers.google.com/..."

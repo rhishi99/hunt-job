@@ -37,10 +37,39 @@ function loadEnvProfile() {
   return null;
 }
 
+// Scaffold values `initializeProfile()`/manual edits leave behind — present but meaningless.
+const PLACEHOLDER_NAMES = new Set(['', 'updated name', 'your name', 'name', 'n/a']);
+
+/**
+ * Checks whether a profile carries enough signal for the evaluator and resume
+ * generator to do real work. These are exactly the fields
+ * `jobEvaluator.buildEvaluationPrompt()` interpolates into the LLM call — an
+ * empty one silently scores every job against nothing.
+ *
+ * @returns {{ok: boolean, missing: string[]}}
+ */
+export function isProfileComplete(profile) {
+  const missing = [];
+  if (!profile) return { ok: false, missing: ['profile (no config/profile.yml)'] };
+
+  if (PLACEHOLDER_NAMES.has(String(profile.name || '').trim().toLowerCase())) missing.push('name');
+  if (!profile.currentRole) missing.push('currentRole');
+  if (!(profile.yearsOfExperience > 0)) missing.push('yearsOfExperience');
+  if (!profile.archetypes?.length) missing.push('archetypes');
+  if (!profile.techStack?.length) missing.push('techStack');
+  if (!(profile.salary?.min > 0) && !(profile.salary?.max > 0)) missing.push('salary');
+  if (!profile.experience?.length) missing.push('experience');
+
+  return { ok: missing.length === 0, missing };
+}
+
 class ProfileManager {
   constructor() {
-    this.profileDir = path.join(__dirname, '../../config');
-    this.modesDir = path.join(__dirname, '../../modes');
+    // Overridable so tests don't write to the real profile. runner.mjs calls
+    // initializeProfile(), which writes the EMPTY scaffold — pointed at the
+    // real config/ that silently wiped the user's profile on every `npm test`.
+    this.profileDir = process.env.HUNT_JOB_CONFIG_DIR || path.join(__dirname, '../../config');
+    this.modesDir = process.env.HUNT_JOB_MODES_DIR || path.join(__dirname, '../../modes');
     this.profilePath = path.join(this.profileDir, 'profile.yml');
     this.profileMdPath = path.join(this.modesDir, '_profile.md');
 
@@ -59,6 +88,7 @@ class ProfileManager {
     // First check env-based profile
     const envProfile = loadEnvProfile();
     if (envProfile) {
+      this.warnIfIncomplete(envProfile);
       return envProfile;
     }
     
@@ -67,11 +97,26 @@ class ProfileManager {
         return null;
       }
       const content = fs.readFileSync(this.profilePath, 'utf-8');
-      return yaml.parse(content);
+      const profile = yaml.parse(content);
+      this.warnIfIncomplete(profile);
+      return profile;
     } catch (error) {
       console.error('Error loading profile:', error);
       return null;
     }
+  }
+
+  /** Prints an incomplete-profile warning once per process (stderr, so --json stays clean). */
+  warnIfIncomplete(profile) {
+    if (this._warned) return;
+    const { ok, missing } = isProfileComplete(profile);
+    if (ok) return;
+    this._warned = true;
+    console.error(
+      `\n⚠  Profile incomplete — missing: ${missing.join(', ')}.\n` +
+      `   Job scores and tailored resumes will be low-quality until this is filled.\n` +
+      `   Fix: npm run profile:seed   (or npm run profile:init to enter it by hand)\n`
+    );
   }
 
   async saveProfile(profile) {

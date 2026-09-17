@@ -79,6 +79,9 @@ export function parse(html, companyRef) {
         applyUrl: url,
         description: cleanHtml(jp.description || ''),
         postedAt: jp.datePosted ? new Date(jp.datePosted).getTime() : null,
+        // schema.org enum: FULL_TIME | PART_TIME | CONTRACTOR | TEMPORARY | INTERN | ...
+        // Optional in the spec and often omitted, so the title heuristic backs it up.
+        employmentType: Array.isArray(jp.employmentType) ? jp.employmentType[0] : jp.employmentType,
       });
     });
 }

@@ -22,11 +22,22 @@ const HOUR = 3600000;
  * letting the DB's full corpus be queried when the user opts out.
  */
 export function filterJobs(jobs, opts = {}) {
-  const { archetype, sinceDays, newHours, location, remote, allLocations, company, platform, limit } = opts;
+  const {
+    archetype, sinceDays, newHours, location, remote, allLocations, company, platform, limit,
+    employmentType,
+  } = opts;
   const now = Date.now();
+  // Accepts a single type or a list ('part-time' vs ['part-time','contract']).
+  const wantedTypes = employmentType
+    ? (Array.isArray(employmentType) ? employmentType : [employmentType]).map(t => String(t).toLowerCase())
+    : null;
 
   let out = jobs.filter(j => {
     if (archetype && !jobMatchesArchetype(j.title || '', null, archetype)) return false;
+
+    // Unknown commitment is excluded, not assumed full-time — a null here means
+    // the provider told us nothing, so it can't be claimed as a match.
+    if (wantedTypes && !wantedTypes.includes(j.employmentType)) return false;
 
     const loc = (j.location || '').toLowerCase();
     if (location) {
@@ -54,7 +65,10 @@ export function queryJobs(opts = {}, db = getDb()) {
   const rows = db.prepare(`
     SELECT j.id, j.title, j.location, j.url, j.apply_url AS applyUrl, j.description,
            j.posted_at AS postedAt, j.first_seen_at AS firstSeenAt, j.ats_platform AS source,
-           COALESCE(c.name, j.company_id) AS company
+           j.employment_type AS employmentType,
+           -- employer wins for aggregator sources, where company_id is the SOURCE
+           -- (e.g. 'remotive') rather than the hiring company.
+           COALESCE(j.employer, c.name, j.company_id) AS company
     FROM jobs j
     LEFT JOIN companies c ON c.id = j.company_id
     WHERE j.status = ?
@@ -66,19 +80,28 @@ export function queryJobs(opts = {}, db = getDb()) {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const now = Date.now();
   const sample = [
-    { title: 'Senior DevOps Engineer', location: 'Bangalore', company: 'Acme', source: 'lever', postedAt: now - 1 * DAY, firstSeenAt: now - 2 * HOUR },
-    { title: 'Frontend Developer', location: 'London, UK', company: 'Beta', source: 'greenhouse', postedAt: now - 40 * DAY, firstSeenAt: now - 40 * DAY },
-    { title: 'Data Engineer', location: 'Remote', company: 'Acme', source: 'lever', postedAt: now - 5 * DAY, firstSeenAt: now - 5 * DAY },
+    { title: 'Senior DevOps Engineer', location: 'Bangalore', company: 'Acme', source: 'lever', postedAt: now - 1 * DAY, firstSeenAt: now - 2 * HOUR, employmentType: 'full-time' },
+    { title: 'Frontend Developer', location: 'London, UK', company: 'Beta', source: 'greenhouse', postedAt: now - 40 * DAY, firstSeenAt: now - 40 * DAY, employmentType: 'part-time' },
+    { title: 'Data Engineer', location: 'Remote', company: 'Acme', source: 'lever', postedAt: now - 5 * DAY, firstSeenAt: now - 5 * DAY, employmentType: 'contract' },
+    { title: 'Platform Engineer', location: 'Pune', company: 'Gamma', source: 'ashby', postedAt: now - 2 * DAY, firstSeenAt: now - 2 * DAY, employmentType: null },
   ];
   const assert = (c, m) => { if (!c) throw new Error('FAIL: ' + m); };
 
   assert(filterJobs(sample, { archetype: 'DevOps Engineer' }).length === 1, 'archetype match');
-  assert(filterJobs(sample, {}).length === 2, 'default India-only drops UK'); // Bangalore + Remote
-  assert(filterJobs(sample, { allLocations: true }).length === 3, 'allLocations keeps UK');
+  assert(filterJobs(sample, {}).length === 3, 'default India-only drops UK'); // Bangalore + Remote + Pune
+  assert(filterJobs(sample, { allLocations: true }).length === 4, 'allLocations keeps UK');
   assert(filterJobs(sample, { remote: true }).length === 1, 'remote-only keeps Remote');
-  assert(filterJobs(sample, { sinceDays: 7 }).length === 2, 'sinceDays 7 drops 40d-old');
+  assert(filterJobs(sample, { sinceDays: 7 }).length === 3, 'sinceDays 7 drops 40d-old');
   assert(filterJobs(sample, { newHours: 48 }).length === 1, 'newHours 48 keeps 2h-old');
   assert(filterJobs(sample, { company: 'acme' }).length === 2, 'company substring');
   assert(filterJobs(sample, { limit: 1 })[0].title === 'Senior DevOps Engineer', 'limit + newest-first sort');
+
+  // employment-type filter
+  assert(filterJobs(sample, { employmentType: 'contract', allLocations: true }).length === 1, 'single commitment');
+  assert(filterJobs(sample, { employmentType: ['part-time', 'contract'], allLocations: true }).length === 2, 'commitment list');
+  assert(filterJobs(sample, { employmentType: 'part-time' }).length === 0, 'commitment still respects India filter');
+  assert(filterJobs(sample, { employmentType: ['part-time'], allLocations: true })[0].company === 'Beta', 'right row returned');
+  // A null employmentType must never satisfy a filter — unknown != full-time.
+  assert(filterJobs(sample, { employmentType: 'full-time', allLocations: true }).length === 1, 'null commitment excluded');
   console.log('query.js self-check: OK');
 }

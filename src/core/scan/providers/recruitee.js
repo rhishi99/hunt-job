@@ -25,6 +25,7 @@ export function parse(data, companyRef) {
     applyUrl: j.careers_apply_url || j.careers_url,
     description: cleanHtml(j.description || ''),
     postedAt: parseRecruiteeDate(j.published_at) ?? parseRecruiteeDate(j.created_at),
+    employmentType: j.employment_type_code, // "fulltime_permanent" | "parttime_permanent" | "contractor"
   }));
 }
 

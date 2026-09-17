@@ -28,6 +28,7 @@ export function parse(data, companyRef) {
     applyUrl: j.application_url || j.url || j.shortlink,
     description: cleanHtml(j.description || j.full_description || '') || j.title,
     postedAt: j.published_on ? new Date(j.published_on).getTime() : (j.created_at ? new Date(j.created_at).getTime() : null),
+    employmentType: j.employment_type, // unverified like the rest of this file — falls back to the title heuristic
   }));
 }
 

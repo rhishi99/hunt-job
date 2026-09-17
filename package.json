@@ -25,6 +25,9 @@
     "prepare-interview": "node src/cli/prepareInterview.js",
     "setup": "node src/cli/setupApiKey.js",
     "profile:init": "node src/cli/profileInit.js",
+    "profile:seed": "node scripts/seed-profile.js",
+    "backfill:commitment": "node scripts/backfill-employment-type.js",
+    "seed:aggregators": "node scripts/seed-aggregators.js",
     "profile:edit": "node src/cli/profileEdit.js",
     "parse-resume": "node src/cli/parseResume.js"
   },

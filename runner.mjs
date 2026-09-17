@@ -82,6 +82,16 @@ console.log('\n=== ProfileManager Tests ===\n');
 
 ensureDirs();
 
+// These tests call saveProfile()/initializeProfile(), which WRITE. Point them at
+// TEMP_TEST_DIR (which ensureDirs() already creates config/ and modes/ under —
+// that was always the intent, it just was never wired up). Without this they
+// wrote to the real config/profile.yml and modes/_profile.md, so every
+// `npm test` silently replaced the user's profile with the empty scaffold.
+// Must be set BEFORE importing profileManager.js — the paths are resolved in
+// its constructor.
+process.env.HUNT_JOB_CONFIG_DIR = path.join(TEMP_TEST_DIR, 'config');
+process.env.HUNT_JOB_MODES_DIR = path.join(TEMP_TEST_DIR, 'modes');
+
 const { default: ProfileManager } = await import('./src/core/profileManager.js');
 
 const pm = new ProfileManager();

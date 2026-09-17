@@ -99,6 +99,19 @@ const MIGRATIONS = [
   db => {
     db.exec(`ALTER TABLE applications ADD COLUMN updated_at TEXT;`);
   },
+  // v4 — part-time / contract sourcing.
+  //   employment_type: normalized commitment ('full-time'|'part-time'|'contract'|
+  //     'internship'|'temporary'|null) — most ATS APIs expose this, we just never stored it.
+  //   employer: the hiring company for AGGREGATOR sources (Remotive, Himalayas), where
+  //     company_id is the source, not the employer. NULL for per-company ATS boards,
+  //     which resolve the name via the companies table join.
+  db => {
+    db.exec(`
+      ALTER TABLE jobs ADD COLUMN employment_type TEXT;
+      ALTER TABLE jobs ADD COLUMN employer TEXT;
+      CREATE INDEX idx_jobs_employment_type ON jobs(employment_type);
+    `);
+  },
 ];
 
 let _db = null;

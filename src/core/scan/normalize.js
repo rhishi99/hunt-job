@@ -97,6 +97,63 @@ export function jobMatchesArchetype(jobTitle, teamName, archetype) {
   });
 }
 
+// ── employment type / commitment ─────────────────────────────────────────────
+// Providers each spell this differently (Ashby "PartTime", Lever "Part-time",
+// schema.org "PART_TIME", Recruitee "parttime_permanent", Remotive "part_time").
+// Everything collapses to this small vocabulary before it reaches the DB.
+export const EMPLOYMENT_TYPES = ['full-time', 'part-time', 'contract', 'internship', 'temporary'];
+
+// Order matters: 'part-time' must be tested before 'time', 'contract' before 'temp'.
+const EMPLOYMENT_TYPE_PATTERNS = [
+  ['part-time',  /\bpart[\s._-]?time\b|\bparttime\b/],
+  ['internship', /\bintern(ship)?\b|\btrainee\b|\bapprentice(ship)?\b/],
+  ['contract',   /\bcontract(or|ors|ing)?\b|\bfreelance\b|\bb2b\b|\bc2c\b|\bstatement of work\b/],
+  ['temporary',  /\btemp(orary)?\b|\bseasonal\b|\bfixed[\s._-]?term\b|\binterim\b/],
+  ['full-time',  /\bfull[\s._-]?time\b|\bfulltime\b|\bpermanent\b/],
+];
+
+// Deliberately NOT matched, after each produced false positives on live data:
+//   \bpt\b / \bft\b  — hit internal product codes ("Maintenance Manager_HzP/TEF3_PT")
+//   \bconsultant\b   — a job title at consultancies ("SAP Controlling Consultant"),
+//                      not a statement about commitment
+//   \bsow\b          — collides with ordinary words once underscores become spaces
+// Under-matching is the right failure mode here: a missed gig costs one listing,
+// a false positive costs a wasted application.
+
+/**
+ * Collapses any provider's employment-type string onto EMPLOYMENT_TYPES.
+ * Returns null when the input carries no usable signal — callers should then
+ * fall back to guessEmploymentType() rather than assuming full-time, because
+ * "unknown" and "full-time" are different things when filtering for gigs.
+ */
+export function normalizeEmploymentType(raw) {
+  if (!raw) return null;
+  // Underscores are word characters, so Recruitee's "parttime_permanent" would
+  // defeat the \bparttime\b boundary — split them into spaces first.
+  const s = String(raw).toLowerCase().replace(/_/g, ' ');
+  for (const [type, re] of EMPLOYMENT_TYPE_PATTERNS) if (re.test(s)) return type;
+  return null;
+}
+
+/**
+ * Last-resort inference from free text, for providers with no structured field
+ * (Greenhouse, RemoteOK, WeWorkRemotely) or postings that simply omit it.
+ *
+ * Only the TITLE is trusted for a positive match. Descriptions mention
+ * "contract" and "part-time" constantly in boilerplate ("contract of
+ * employment", "part-time employees are eligible for..."), which produced
+ * false positives, so the description is consulted only via a tightly-anchored
+ * "Employment type: X" / "Job type: X" label.
+ */
+export function guessEmploymentType(title, description) {
+  const fromTitle = normalizeEmploymentType(title);
+  if (fromTitle) return fromTitle;
+
+  const labelled = String(description || '')
+    .match(/\b(?:employment|job|contract|position)\s*type\s*[:\-–]\s*([a-z\s._-]{2,20})/i);
+  return labelled ? normalizeEmploymentType(labelled[1]) : null;
+}
+
 export function daysAgoLabel(ms) {
   if (!ms) return null;
   const diff = Date.now() - ms;
@@ -113,7 +170,10 @@ export function makeJobId(platform, companyToken, externalId) {
 /** Builds a NormalizedJob from provider-supplied fields. */
 export function normalizeJob({
   platform, companyToken, externalId, company, title, location, url, applyUrl, description, postedAt,
+  employmentType, employer,
 }) {
+  // Prefer the provider's structured field; fall back to inference only when absent.
+  const commitment = normalizeEmploymentType(employmentType) ?? guessEmploymentType(title, description);
   return {
     id: makeJobId(platform, companyToken, externalId),
     company,
@@ -124,7 +184,9 @@ export function normalizeJob({
     description: description || '',
     postedAt: Number.isFinite(postedAt) ? postedAt : null,
     source: platform,
+    employmentType: commitment,
+    employer: employer || null,
   };
 }
 
-export const NORMALIZED_JOB_KEYS = ['id', 'company', 'title', 'location', 'url', 'applyUrl', 'description', 'postedAt', 'source'];
+export const NORMALIZED_JOB_KEYS = ['id', 'company', 'title', 'location', 'url', 'applyUrl', 'description', 'postedAt', 'source', 'employmentType', 'employer'];

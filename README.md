@@ -133,6 +133,8 @@ Both commands accept the same filters:
 -l, --location <text>      filter by location text
     --remote               remote roles only
     --all, --all-locations drop the India-only location filter
+    --commitment <csv>     full-time | part-time | contract | internship | temporary
+    --part-time            shorthand for --commitment part-time,contract
 -p, --platform <ats>       filter by ATS platform (greenhouse, lever, ...)
     --json                 machine-readable JSON output
 ```
@@ -169,6 +171,36 @@ Scans **40+ live-verified companies across Greenhouse/Lever/Ashby/SmartRecruiter
 Every scan **upserts into SQLite** with content-hash change detection and soft-closes postings the ATS stops reporting — "new since last scan" is a real query. **Results are sorted by posting date (newest first)** — jobs posted in the last 48 hours get a 🔥 badge for early-applier advantage.
 
 Run `node hunt-job.js audit-portals` to re-verify/re-detect ATS platform + slug for every company in the registry, or `node hunt-job.js detect <careers-url>` for a single one. Companies auto-disable after 5 consecutive scan failures and re-enable once `audit-portals` finds them healthy again.
+
+> **Note on what's stored vs. what's shown.** The India filter gates the jobs a scan *returns*; the `jobs` table itself deliberately stores every posting each ATS reports. That table is a cache shared across archetypes, and soft-close has to mean "still open at the ATS", not "still matches this search" — filtering at ingest would flip postings between closed and active on every scan.
+
+### 2b. Gig Hunt — part-time & contract
+
+```bash
+node hunt-job.js gigs                              # live scan, every archetype in your profile
+node hunt-job.js gigs --offline                    # instant, from the DB
+node hunt-job.js gigs --commitment contract -n 20
+node hunt-job.js gigs --india                      # restrict to India locations
+```
+
+Differs from `scan` deliberately: it hunts **all** your profile archetypes in one pass, defaults to **remote-worldwide** (gig boards are global, so the India filter would drop nearly everything), and keeps only non-full-time roles.
+
+Commitment comes from the ATS where it's published (Ashby, Lever, SmartRecruiters, Recruitee, JSON-LD), and from a **title-only** heuristic where it isn't (Greenhouse, Workable). A posting whose commitment is unknown never matches a `--commitment` filter — silence isn't treated as full-time.
+
+Two extra no-auth sources feed this: **Remotive** and **Himalayas**. Register them once with `npm run seed:aggregators`. Both are rate-limited to one fetch per 6h in `scan/index.js`, per their terms; a `watch` loop serves them from cache in between. Remotive's terms require linking back to the remotive.com URL and crediting them as the source — the stored `url` does exactly that.
+
+```bash
+npm run seed:aggregators      # register Remotive + Himalayas (once)
+npm run backfill:commitment   # tag already-scanned jobs from their titles (--dry-run to preview)
+```
+
+Unattended, on Windows:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\install-gig-schedule.ps1
+```
+
+Registers a Scheduled Task running the hunt every 6h and logging to `data/logs/gig-scan.log`. It only *finds* work — it never applies. Add `-Remove` to unregister.
 
 Want alerts instead of re-running scans by hand? `node hunt-job.js watch --archetype "..."` polls on an interval and pops a desktop notification when new matches appear.
 

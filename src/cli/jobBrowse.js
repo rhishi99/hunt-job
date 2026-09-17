@@ -17,7 +17,9 @@ FILTERS (shared by scan + list):
   -l, --location <text>    Location contains <text>  (overrides India default)
       --remote             Remote / anywhere / worldwide only
       --all, --all-locations   Do not restrict to India
-  -p, --platform <ats>     greenhouse | lever | ashby | ...
+  -p, --platform <ats>     greenhouse | lever | ashby | remotive | himalayas | ...
+      --commitment <csv>   full-time | part-time | contract | internship | temporary
+      --part-time          Shorthand for --commitment part-time,contract
       --companies <csv>    (scan only) restrict the live scan to these companies
       --json               Machine-readable JSON output
   -h, --help               Show this help
@@ -39,6 +41,14 @@ export function parseFilterArgs(argv) {
       case '--remote': o.remote = true; break;
       case '--all': case '--all-locations': o.allLocations = true; break;
       case '--platform': case '-p': o.platform = next(); break;
+      case '--commitment':
+        o.employmentType = next().split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+        break;
+      // Gig shorthand: part-time and contract are the same intent in practice —
+      // a side engagement alongside a full-time job.
+      case '--part-time': case '--parttime':
+        o.employmentType = ['part-time', 'contract'];
+        break;
       case '--companies': o.companies = next(); break;
       case '--json': o.json = true; break;
       case '--help': case '-h': o.help = true; break;
@@ -70,8 +80,13 @@ export function printJobs(jobs, o = {}) {
     const age = daysAgoLabel(j.postedAt);
     const badge = isNew(j) ? chalk.bgRed.white.bold(' NEW ') + ' ' : '';
     console.log(chalk.cyan.bold(`${String(i + 1).padStart(3)}. `) + badge + chalk.white.bold(j.title));
-    console.log(chalk.gray(`     ${j.company}`) + chalk.gray(`  ·  ${j.location || 'India'}`) +
-      (age ? chalk.gray(`  ·  ${age}`) : '') + (j.source ? chalk.gray(`  ·  ${j.source}`) : ''));
+    // Highlight non-full-time commitments — that's the whole point of looking.
+    const gig = j.employmentType && j.employmentType !== 'full-time'
+      ? '  ·  ' + chalk.magenta.bold(j.employmentType) : '';
+    // Was `|| 'India'`, which is a false claim now that worldwide-remote
+    // aggregators (Remotive/Himalayas) feed the same list.
+    console.log(chalk.gray(`     ${j.company}`) + chalk.gray(`  ·  ${j.location || 'location not stated'}`) +
+      (age ? chalk.gray(`  ·  ${age}`) : '') + (j.source ? chalk.gray(`  ·  ${j.source}`) : '') + gig);
     if (j.url) console.log(chalk.blue.underline(`     ${j.url}`));
   });
   console.log(chalk.dim('\n💡 Evaluate one:  node hunt-job.js evaluate "<url>"\n'));

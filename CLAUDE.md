@@ -44,7 +44,7 @@ Every scan upserts into the `jobs` table (dedup + content-hash change detection)
 - `node hunt-job.js scan --archetype "Backend Engineer"`
 - `node hunt-job.js detect https://careers.company.com`
 
-**Filter flags** (shared by `scan` and `list`): `-a/--archetype <name>`, `-s/--since <days>`, `--new`, `--new-hours <h>`, `-n/--limit <n>`, `-c/--company <text>`, `-l/--location <text>`, `--remote`, `--all`/`--all-locations`, `-p/--platform <ats>`, `--json`.
+**Filter flags** (shared by `scan`, `list` and `gigs`): `-a/--archetype <name>`, `-s/--since <days>`, `--new`, `--new-hours <h>`, `-n/--limit <n>`, `-c/--company <text>`, `-l/--location <text>`, `--remote`, `--all`/`--all-locations`, `-p/--platform <ats>`, `--commitment <csv>`, `--part-time`, `--json`.
 
 ### 2b. **Browse Saved Jobs** (`hunt-job list`, aliases `jobs` / `browse`)
 INSTANT offline browse of the SQLite `jobs` table — no network. Same filter flags as `scan`. Use it to re-query what the last scan already saved.
@@ -52,6 +52,27 @@ INSTANT offline browse of the SQLite `jobs` table — no network. Same filter fl
 **Usage:**
 - `node hunt-job.js list --archetype "Backend Engineer" --new`
 - `node hunt-job.js list -a "Data Engineer" --remote --json`
+
+### 2c. **Gig Hunt** (`hunt-job gigs`, aliases `part-time` / `parttime`)
+Part-time / contract hunting, which differs from `scan` in three ways that matter:
+
+1. **All archetypes at once.** `scan` takes one archetype; someone after a side engagement will take any of theirs. `gigs` reads `archetypes` from the profile and fans out across every one in a *single* pass (`scanAll` accepts an array, so each company board is fetched once, not once per archetype).
+2. **Remote-worldwide by default.** Gig sources are global remote boards, so the usual India filter would drop nearly everything. Pass `--india` to restore it.
+3. **Non-full-time only.** Defaults to `part-time,contract`; override with `--commitment <csv>`.
+
+Employment type comes from the ATS wherever it's published — Ashby `employmentType`, Lever `categories.commitment`, SmartRecruiters `typeOfEmployment.label`, Recruitee `employment_type_code`, JSON-LD `employmentType` — and falls back to a **title-only** heuristic (`guessEmploymentType`) for Greenhouse/Workable, which publish nothing usable. Descriptions are consulted only through an anchored `Employment type: X` label, because prose like *"part-time employees are eligible…"* produced false positives.
+
+An unknown commitment is **never** treated as full-time: `null` fails every `--commitment` filter, so silence from a provider can't masquerade as a match.
+
+**Two aggregator sources** feed this beyond the ATS boards — **Remotive** (`job_type`) and **Himalayas** (`employmentType`). Both are no-auth public JSON. Unlike a company board, one response carries many employers, so `company_id` holds the *source* and the hiring company goes in `jobs.employer` (query.js COALESCEs it ahead of the companies-table name). That keeps soft-close correct at source granularity. Their courtesy rate limits are enforced by `MIN_SCAN_INTERVAL_MS` in `scan/index.js` against the existing `last_ok_at` column — a 30-minute `watch` loop serves them from cache instead of making 48 calls/day.
+
+**Usage:**
+- `node hunt-job.js gigs` — live scan + list
+- `node hunt-job.js gigs --offline` — instant, DB only
+- `node hunt-job.js gigs --commitment contract --limit 20`
+- `npm run seed:aggregators` — register Remotive + Himalayas (once)
+- `npm run backfill:commitment` — tag already-scanned jobs from their stored titles (`--reset` re-derives all, `--dry-run` to preview)
+- `scripts/install-gig-schedule.ps1` — Windows Scheduled Task running the hunt every 6h
 
 ### 3. **Resume Generation Mode** (`/generate-resume`)
 Creates ATS-optimized PDFs tailored to specific job listings.
@@ -162,10 +183,13 @@ hunt-job/
 │   │       └── providers/             # one fetchJobs(companyRef) per ATS platform
 │   │           ├── greenhouse.js, lever.js, ashby.js, smartrecruiters.js,
 │   │           │   recruitee.js, workable.js
-│   │           └── jsonld.js          # schema.org JobPosting fallback provider
+│   │           ├── jsonld.js          # schema.org JobPosting fallback provider
+│   │           └── remotive.js, himalayas.js   # AGGREGATORS — many employers per
+│   │                                  #   response; company_id = source, employer = hirer
 │   ├── cli/
 │   │   ├── interactive.js             # Interactive menu shell
 │   │   ├── listJobs.js                # `hunt-job list` / `jobs` / `browse` — instant offline browse
+│   │   ├── gigs.js                    # `hunt-job gigs` — part-time/contract, all archetypes at once
 │   │   ├── jobBrowse.js               # shared job-list rendering helper (used by list + flows)
 │   │   ├── applyJob.js                # `hunt-job apply <url>` — AI auto-fill apply flow
 │   │   ├── watch.js                   # `hunt-job watch`
@@ -194,6 +218,10 @@ hunt-job/
 ├── scripts/
 │   ├── e2e-test.js                    # Smoke test
 │   ├── seed-ats-companies.js          # Seed the companies table with live-verified ATS boards (npm run seed:ats)
+│   ├── seed-profile.js                # Bootstrap config/profile.yml from resumeData.js (npm run profile:seed)
+│   ├── seed-aggregators.js            # Register Remotive + Himalayas (npm run seed:aggregators)
+│   ├── backfill-employment-type.js    # Tag pre-v4 jobs from stored titles (npm run backfill:commitment)
+│   ├── install-gig-schedule.ps1       # Windows Scheduled Task for a recurring gig hunt
 │   └── migrate-to-sqlite.js           # One-time JSON → SQLite migration (already run; kept for reference)
 └── test/                              # vitest unit tests, fixtures, and the runner.mjs pure-function suite
 ```
@@ -244,6 +272,7 @@ node hunt-job.js dashboard        # http://127.0.0.1:7777
 ## 🔑 Key Files
 
 ### Profile Configuration
+- **Bootstrap:** `npm run profile:seed` derives it from `src/core/resumeData.js#defaultResumeData()`, the canonical résumé — `npm run profile:init` writes an *empty* scaffold, which silently cripples scoring. `loadProfile()` warns (stderr) whenever the seven evaluator-consumed fields aren't filled; `isProfileComplete()` is the check.
 - **Location:** `config/profile.yml` and `modes/_profile.md`
 - **Contains:**
   - Work experience and accomplishments
