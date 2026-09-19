@@ -22,7 +22,10 @@ export const STATES = Object.freeze([
 ]);
 
 const PRE_APPLIED_STATES = ['discovered', 'queued', 'evaluated', 'skip', 'maybe', 'shortlisted', 'prepared'];
-const RE_EVALUATE_STATES = ['evaluated', 'maybe', 'shortlisted', 'prepared']; // JD content_hash changed
+// Exported: run.js (brief 5) reuses this exact list to decide whether a
+// changed JD (content_hash) should send an already-scored job back to
+// 'queued' for re-evaluation, without duplicating the state list.
+export const RE_EVALUATE_STATES = ['evaluated', 'maybe', 'shortlisted', 'prepared']; // JD content_hash changed
 const POST_APPLIED_STATES = ['applied', 'acknowledged', 'screening', 'interview'];
 const REOPEN_STATES = ['rejected', 'expired', 'withdrawn']; // re-apply after >= 90 days, same jobs.id
 

@@ -12,6 +12,8 @@
  */
 import chalk from 'chalk';
 import { spawn } from 'child_process';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { scanAll } from '../core/scan/index.js';
 import { closeDb } from '../core/db.js';
 import { createLogger } from '../core/logger.js';
@@ -40,7 +42,9 @@ function bellAndLog(title, body) {
 // ponytail: WinRT toast via a spawned PowerShell one-liner — no node-notifier
 // dependency for a feature this small. Any failure (non-Windows, PowerShell
 // missing, WinRT unavailable) falls back to bell + console log.
-function notify(title, body) {
+// Exported so run.js (brief 5) can reuse the same toast for the morning
+// digest instead of re-implementing it.
+export function notify(title, body) {
   if (process.platform !== 'win32') {
     bellAndLog(title, body);
     return;
@@ -151,4 +155,8 @@ async function main() {
   }
 }
 
-main();
+// Guarded so `notify` can be imported by run.js (brief 5, morning digest
+// toast) and by tests without running the real watch CLI as a side effect.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main();
+}

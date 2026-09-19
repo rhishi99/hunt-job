@@ -1,110 +1,59 @@
 #!/usr/bin/env node
 /**
- * Hunt-Job Single-Command Workflow
- * Usage: node hunt-job.js hunt --archetype "Data Engineer" [--limit 5]
+ * hunt.js — `hunt-job hunt`: thin single-archetype alias for `run` (B-19).
+ *
+ * This used to be its own scan-then-stop workflow: its "evaluate" step was a
+ * no-op (`evaluateJobs()` printed a banner and did nothing) and its
+ * completion banner pointed at `data/evaluated-jobs.json`, a file nothing
+ * ever wrote — despite AGENTS.md advertising `hunt` as "scan + evaluate"
+ * (backlog B-19). It was also unreachable as documented: invoked through the
+ * dispatcher (`hunt-job.js` spawns this with the leading "hunt" word already
+ * stripped from argv), so its own `if (args[0] === 'hunt')` check was always
+ * false and it silently fell through to a usage message instead of scanning.
+ *
+ * docs/fable51-answers.md §1.6 calls for deleting the broken workflow rather
+ * than patching it, once `run` exists to actually do the work: `hunt
+ * --archetype X` is now exactly `run --once --archetype X` — a real
+ * scan -> prefilter -> evaluate -> digest pass.
+ *
+ * `--limit` is accepted for backward compatibility (existing callers pass
+ * it) but no longer does anything: `run` is bounded by the daily LLM budget
+ * (settings.json `budget.daily`), not by a scan-result count.
  */
-
 import { spawn } from 'child_process';
-import { existsSync, mkdirSync } from 'fs';
-import { resolve, dirname } from 'path';
+import path from 'path';
 import { fileURLToPath } from 'url';
-import fs from 'fs';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const dataDir = resolve(__dirname, '../data');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-async function runScript(scriptPath, scriptArgs = []) {
+export function parseArgs(argv) {
+  const args = { archetype: 'Software Engineer' };
+  for (let i = 0; i < argv.length; i++) {
+    if (argv[i] === '--archetype' && argv[i + 1]) args.archetype = argv[++i];
+    else if (argv[i] === '--limit' && argv[i + 1]) i++; // accepted, ignored — see file header
+  }
+  return args;
+}
+
+function runScript(scriptPath, scriptArgs) {
   return new Promise((resolve, reject) => {
-    const child = spawn('node', [scriptPath, ...scriptArgs], {
-      stdio: 'inherit',
-      shell: true,
-    });
-    child.on('close', (code) => {
-      if (code !== 0) reject(new Error(`Script exited with code ${code}`));
-      resolve();
-    });
+    const child = spawn(process.execPath, [scriptPath, ...scriptArgs], { stdio: 'inherit' });
+    child.on('close', code => (code !== 0 ? reject(new Error(`Script exited with code ${code}`)) : resolve()));
     child.on('error', reject);
   });
 }
 
-async function scanPortals(archetype, limit = 20) {
-  console.log(`\n🔍 Scanning for "${archetype}" roles...\n`);
-  await runScript('src/cli/scanPortals.js', ['--archetype', archetype, '--limit', limit.toString()]);
-}
-
-async function evaluateJobs() {
-  console.log(`\n📊 Evaluating scanned jobs...\n`);
-  // Jobs are already evaluated during scan - this step processes results
-}
-
-async function generateResume(jobId) {
-  console.log(`\n📝 Generating resume for ${jobId}...\n`);
-  await runScript('src/cli/generateResume.js', [jobId]);
-}
-
 async function main() {
-  const args = process.argv.slice(2);
-  
-  if (args[0] === 'hunt') {
-    let archetype = 'Software Engineer';
-    let limit = 10;
-    
-    for (let i = 1; i < args.length; i++) {
-      if (args[i] === '--archetype' && args[i + 1]) {
-        archetype = args[i + 1];
-        i++;
-      } else if (args[i] === '--limit' && args[i + 1]) {
-        limit = parseInt(args[i + 1]);
-        i++;
-      }
-    }
-    
-    console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║           🎯 HUNT-JOB Single-Command Workflow            ║
-╠═══════════════════════════════════════════════════════════╣
-║  Archetype: ${archetype}
-║  Limit: ${limit}
-╚═══════════════════════════════════════════════════════════╝
-    `);
-    
-    if (!fs.existsSync(dataDir)) {
-      mkdirSync(dataDir, { recursive: true });
-    }
-    
-    await scanPortals(archetype, limit);
-    
-    console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                    ✅ Scan Complete                    ║
-╠═══════════════════════════════════════════════════════════╣
-║  Jobs saved to: data/evaluated-jobs.json              ║
-║                                                             ║
-║  Next steps:                                              ║
-║    • Review scores: node hunt-job.js evaluate <url>       ║
-║    • Generate resume: node hunt-job.js resume <job-id>     ║
-║    • Prep for interview: node hunt-job.js prep <desc>    ║
-╚═══════════════════════════════════════════════════════════╝
-    `);
-  } else {
-    console.log(`
-Hunt-Job — Single-Command Workflow
-
-Usage:
-  node hunt-job.js hunt --archetype "Data Engineer" [--limit 10]
-
-Options:
-  --archetype   Target job role (default: "Software Engineer")
-  --limit      Number of jobs to scan (default: 10)
-
-Examples:
-  node hunt-job.js hunt --archetype "Backend Engineer"
-  node hunt-job.js hunt --archetype "ML Engineer" --limit 20
-    `);
-  }
+  const args = parseArgs(process.argv.slice(2));
+  console.log(`\nHunt-Job — single-archetype run: "${args.archetype}"\n`);
+  await runScript(path.join(__dirname, 'run.js'), ['--once', '--archetype', args.archetype]);
+  console.log('\nDone — see data/digest/<date>.md for scored results and next steps.\n');
 }
 
-main().catch(err => {
-  console.error('Error:', err.message);
-  process.exit(1);
-});
+// Guarded so `parseArgs` can be imported by tests without spawning run.js.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch(err => {
+    console.error('Error:', err.message);
+    process.exit(1);
+  });
+}

@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node hunt-job.js",
+    "run": "node hunt-job.js run",
     "hunt": "node hunt-job.js hunt",
     "watch": "node hunt-job.js watch",
     "dashboard": "node src/web/server.js",

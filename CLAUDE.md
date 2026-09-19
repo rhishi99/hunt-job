@@ -145,6 +145,17 @@ Runs `scanAll()` on a timer and surfaces new matches as they appear — a cron-s
 
 Each cycle logs a summary line, prints a highlighted list of new matches, and fires a Windows toast notification (falls back to terminal bell + log on non-Windows, or if the toast fails). Stop with Ctrl+C.
 
+### 8. **Autonomous Loop** (`hunt-job run`) — the single entry point
+One bounded pass of the whole funnel, backed by a durable SQLite task queue (`src/core/pipeline/`) instead of a long-running daemon — safe to run from a Windows Scheduled Task, a sleeping laptop, or by hand: `releaseStale` → `scanAll(profile.archetypes)` → S1 rules + S2 lexical prefilter → sync survivors into the pipeline state machine and enqueue `evaluate` tasks → drain the queue with the real evaluator → build + print + write the morning digest (`data/digest/<date>.md` / `.json`) → toast.
+
+**Usage:**
+- `node hunt-job.js run --once` — one pass, exit (what a scheduled task runs)
+- `node hunt-job.js run` — loop every `--interval` minutes (default 180 = 3h)
+- `node hunt-job.js run --once --dry-run` — scan + prefilter only; nothing enqueued, no pipeline writes, no LLM calls (safe verification path)
+- `node hunt-job.js run --once --archetype "DevOps Engineer" --max-tasks 20`
+
+`hunt`, `watch` and `gigs` are one-line aliases kept for users who rely on their exact flags (`docs/fable51-answers.md` §1.6): `hunt --archetype X` is `run --once --archetype X`; `watch`/`gigs` keep their own scan-only / all-archetype behavior. `scripts/install-schedule.ps1` registers a `HuntJob-Run` Scheduled Task every 3h (checked in, not auto-installed — see BACKLOG.md B-27).
+
 ## 📁 Directory Structure
 
 ```
@@ -174,7 +185,7 @@ hunt-job/
 │   │   │   ├── index.js
 │   │   │   ├── platformDetector.js    # shared by scan/detect.js AND auto-fill
 │   │   │   └── profileMapper.js
-│   │   └── scan/                      # Scanner v2 provider architecture
+│   │   ├── scan/                      # Scanner v2 provider architecture
 │   │       ├── index.js               # orchestrator: scanAll() — fan-out, normalize, upsert, soft-close
 │   │       ├── query.js               # offline query of the jobs table (powers `list`/browse + filters)
 │   │       ├── detect.js              # ATS auto-detection (URL regex + DOM fingerprint fallback)
@@ -186,15 +197,25 @@ hunt-job/
 │   │           ├── jsonld.js          # schema.org JobPosting fallback provider
 │   │           └── remotive.js, himalayas.js   # AGGREGATORS — many employers per
 │   │                                  #   response; company_id = source, employer = hirer
+│   │   └── pipeline/                  # Durable queue + state machine backing `hunt-job run`
+│   │       ├── states.js              # state list + transition() — the only writer of pipeline/pipeline_events
+│   │       ├── identity.js            # canonicalUrl(), ensureJobRow() — one job id across re-posts
+│   │       ├── prefilter.js           # S1 dealbreaker rules + S2 lexical evidence score (pure, DB shell separate)
+│   │       ├── queue.js               # enqueue/claim/complete/fail/releaseStale over the `tasks` table
+│   │       ├── budget.js              # remaining()/record() over the `llm_calls` ledger
+│   │       ├── runner.js              # drain() — claim → handler → complete/fail, one bounded pass
+│   │       └── digest.js              # buildDigest() — morning digest markdown + JSON
 │   ├── cli/
 │   │   ├── interactive.js             # Interactive menu shell
+│   │   ├── run.js                     # `hunt-job run` — THE single entry point (scan→prefilter→evaluate→digest)
 │   │   ├── listJobs.js                # `hunt-job list` / `jobs` / `browse` — instant offline browse
 │   │   ├── gigs.js                    # `hunt-job gigs` — part-time/contract, all archetypes at once
 │   │   ├── jobBrowse.js               # shared job-list rendering helper (used by list + flows)
 │   │   ├── applyJob.js                # `hunt-job apply <url>` — AI auto-fill apply flow
-│   │   ├── watch.js                   # `hunt-job watch`
+│   │   ├── watch.js                   # `hunt-job watch` — thin alias, own scan-only loop; exports `notify()`
 │   │   ├── auditPortals.js            # `hunt-job audit-portals`
-│   │   ├── hunt.js, evaluateJob.js, scanPortals.js, generateResume.js,
+│   │   ├── hunt.js                    # `hunt-job hunt` — thin alias: `run --once` for one archetype
+│   │   ├── evaluateJob.js, scanPortals.js, generateResume.js,
 │   │   │   prepareInterview.js, parseResume.js, profileInit.js,
 │   │   │   profileEdit.js, setupApiKey.js
 │   │   ├── ui.js                      # Shared terminal widgets (banner, scoreBar, section, colors)

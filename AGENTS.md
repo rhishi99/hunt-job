@@ -15,7 +15,12 @@ supported via `src/core/aiClient.js`). Everything runs and stores locally.
 
 Run via `node hunt-job.js <command>` (or the matching `npm run` script):
 
-- `hunt` — one-shot full workflow (scan + evaluate top matches)
+- `run` — the autonomous loop: scan -> prefilter -> evaluate -> morning digest,
+  all through a durable task queue (`--once`, `--dry-run`, `--max-tasks <n>`,
+  `--archetype <name>`, `--interval <minutes>`; loops on the interval without
+  `--once`)
+- `hunt` — thin alias: `run --once` for a single archetype (fixed B-19 — this
+  used to call a no-op evaluate step and print a dead file path)
 - `scan` — LIVE scan of company ATS boards; populates the DB
 - `list` (aliases `jobs`, `browse`) — INSTANT offline browse of already-scanned jobs (no network)
 - `apply <url>` — AI auto-fill apply flow (opens a browser; you review & submit)

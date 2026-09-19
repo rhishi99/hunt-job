@@ -81,8 +81,11 @@ Launches terminal UI:
 ### Individual Commands
 
 ```bash
-# Single-command full workflow (scans + evaluates top matches)
-npm run hunt -- --archetype "Cloud Engineer" --limit 10
+# The autonomous loop: scan -> prefilter -> evaluate -> morning digest
+npm run run -- --once --archetype "Cloud Engineer"
+
+# `hunt` is a thin alias for the above, one archetype, --once
+npm run hunt -- --archetype "Cloud Engineer"
 
 # Evaluate any job posting
 npm run evaluate-job -- "https://company.com/jobs/123"
@@ -300,7 +303,9 @@ node hunt-job.js          # same
 ```bash
 npm start                                # menu (recommended for most)
 
-node hunt-job.js hunt --archetype "Backend Engineer" --limit 8
+node hunt-job.js run --once --archetype "Backend Engineer"  # scan+prefilter+evaluate+digest, once
+node hunt-job.js run                                         # same, looping every 3h (the autonomous loop)
+node hunt-job.js hunt --archetype "Backend Engineer"         # alias: run --once for one archetype
 node hunt-job.js scan --archetype "DevOps Engineer"          # live scan
 node hunt-job.js list --archetype "DevOps Engineer" --new    # instant offline browse
 node hunt-job.js apply "https://boards.greenhouse.io/acme/jobs/123"  # AI auto-fill

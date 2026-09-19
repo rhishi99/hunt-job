@@ -106,6 +106,14 @@ async function main() {
             case 'interactive':
                 await runScript('src/cli/interactive.js');
                 break;
+            case 'run':
+                await runScript('src/cli/run.js', args.slice(1));
+                break;
+            // `hunt`, `watch`, `gigs` are one-line aliases (docs/fable51-answers.md
+            // §1.6) kept for one release for users who already rely on their
+            // exact flags: `hunt` now thin-wraps `run` (fixes B-19 — it used to
+            // call a no-op evaluateJobs()); `watch`/`gigs` keep their own
+            // scan-only / all-archetype behavior unchanged.
             case 'hunt':
                 await runScript('src/cli/hunt.js', args.slice(1));
                 break;
@@ -141,7 +149,9 @@ USAGE:
   node hunt-job.js [COMMAND] [OPTIONS]
 
 COMMANDS:
-  hunt --archetype <name>      Single-command full workflow
+  run [--once] [--interval m] Scan -> prefilter -> evaluate -> morning digest (the autonomous loop)
+                                 [--dry-run] [--max-tasks n] [--archetype <name>]
+  hunt --archetype <name>      Alias: run for a single archetype (thin wrapper around `run`)
   evaluate <url>              Evaluate a job posting [--fresh to bypass reuse]
   eval-models                 Cross-provider extraction agreement report (makes real LLM calls)
   scan --archetype <name>     LIVE scan of company ATS boards (populates the DB)
