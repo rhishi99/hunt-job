@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hunt-Job Quickstart</title>
+<style>
+  :root { --bg:#fafaf7; --fg:#1d1d1b; --muted:#66655f; --card:#fff; --line:#e3e1d8; --accent:#2b6cb0; --code:#f0eee6; --warn:#fff4d6; --ok:#e3f4e4; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#161614; --fg:#ecebe4; --muted:#a09f96; --card:#1f1f1c; --line:#33332e; --accent:#6aa9ec; --code:#2a2a26; --warn:#3a3218; --ok:#1d3320; }
+  }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font:16px/1.55 system-ui, sans-serif; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 28px; margin: 0 0 4px; }
+  h2 { font-size: 20px; margin: 0 0 8px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  .step { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:16px; margin:14px 0; }
+  .num { display:inline-block; background:var(--accent); color:#fff; width:26px; height:26px; line-height:26px; text-align:center; border-radius:50%; font-weight:600; margin-right:8px; font-size:14px; }
+  .cmd { display:flex; gap:8px; align-items:stretch; margin:8px 0; }
+  .cmd code { flex:1; background:var(--code); padding:9px 12px; border-radius:8px; font:14px ui-monospace, Consolas, monospace; overflow-x:auto; white-space:pre; }
+  .cmd button { border:1px solid var(--line); background:var(--card); color:var(--fg); border-radius:8px; padding:0 12px; cursor:pointer; font-size:13px; }
+  .cmd button:hover { border-color:var(--accent); }
+  .see { background:var(--ok); border-radius:8px; padding:8px 12px; margin:8px 0 0; font-size:14px; }
+  .warn { background:var(--warn); border-radius:8px; padding:10px 12px; margin:14px 0; font-size:14px; }
+  ul { margin: 6px 0 0; padding-left: 20px; }
+  a { color: var(--accent); }
+  table { border-collapse: collapse; width:100%; font-size:14px; }
+  td, th { text-align:left; padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Hunt-Job in 10 minutes</h1>
+  <p class="sub">Every step: what to type, where to type it, what you should see. Start at step 1; steps 1–4 cost nothing and call no AI.</p>
+
+  <div class="warn"><b>Where to type:</b> open <b>PowerShell</b> (Start menu → type "PowerShell"). Every command below runs from the project folder, so do step 1 first and keep that window open.</div>
+
+  <div class="step">
+    <h2><span class="num">1</span>Go to the project folder</h2>
+    <div class="cmd"><code>cd E:\vibe-code-projects\hunt-job</code><button>Copy</button></div>
+    <div class="see">You should see the prompt end with <code>hunt-job&gt;</code>.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">2</span>Check it runs (help + tests)</h2>
+    <div class="cmd"><code>node hunt-job.js help</code><button>Copy</button></div>
+    <div class="cmd"><code>npm test</code><button>Copy</button></div>
+    <div class="see">Help lists commands (<code>run</code>, <code>list</code>, <code>dashboard</code>, <code>calibrate</code>…). Tests end with a pass count and no red "failed".</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">3</span>Look at jobs already saved (instant, offline)</h2>
+    <div class="cmd"><code>node hunt-job.js list --new --limit 10</code><button>Copy</button></div>
+    <div class="cmd"><code>node hunt-job.js gigs --offline</code><button>Copy</button></div>
+    <div class="see">A table of jobs from the local database. <code>gigs</code> shows part-time / contract only.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">4</span>Open the dashboard (the pretty part)</h2>
+    <div class="cmd"><code>node hunt-job.js dashboard</code><button>Copy</button></div>
+    <p>Leave that window running, then open <a href="http://127.0.0.1:7777">http://127.0.0.1:7777</a> in your browser.</p>
+    <ul>
+      <li><b>Pipeline</b> – kanban board; drag or move a job between stages.</li>
+      <li><b>Today</b> – what needs you right now.</li>
+      <li><b>Prep</b> – interview topics and checklist.</li>
+      <li><b>Inbox</b> – emails matched to applications, waiting for your OK.</li>
+    </ul>
+    <div class="see">Stop it any time with <b>Ctrl+C</b> in that window.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">5</span>Do one full pass, safely (no AI, no saving)</h2>
+    <p>Open a <b>second</b> PowerShell window, do step 1 again, then:</p>
+    <div class="cmd"><code>node hunt-job.js run --once --dry-run</code><button>Copy</button></div>
+    <div class="see">Scans company boards, filters, prints how many jobs survive. Nothing is queued and no AI is called.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">6</span>Do it for real (uses AI quota)</h2>
+    <div class="cmd"><code>node hunt-job.js run --once --max-tasks 5</code><button>Copy</button></div>
+    <div class="warn">This calls the AI provider set in <code>.env</code>. Your notes say <code>AI_PROVIDER=gemini</code> there overrides the free order, so check <code>.env</code> first if you want to stay on free providers. <code>--max-tasks 5</code> keeps it small.</div>
+    <div class="see">Scores 5 jobs, then writes the morning digest to <code>data\digest\&lt;today&gt;.md</code> and shows a Windows toast. Open that file to read it.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">7</span>Try one job by hand</h2>
+    <div class="cmd"><code>node hunt-job.js evaluate "PASTE-A-JOB-URL"</code><button>Copy</button></div>
+    <div class="cmd"><code>node hunt-job.js resume JOB-ID</code><button>Copy</button></div>
+    <div class="cmd"><code>node hunt-job.js prep JOB-ID</code><button>Copy</button></div>
+    <div class="see">Score with reasons; then a tailored one-page resume PDF (with a <code>tailor-report.md</code> listing anything it could not verify); then a prep guide. Find job ids in the dashboard or <code>list --json</code>.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">8</span>Teach it what you like (feeds the score)</h2>
+    <div class="cmd"><code>node hunt-job.js label JOB-ID good</code><button>Copy</button></div>
+    <div class="cmd"><code>node hunt-job.js calibrate</code><button>Copy</button></div>
+    <div class="see">With under 15 good and 15 bad examples it says "Not enough consistent signal". That is expected at first. Later, <code>calibrate --accept</code> adopts the new weights.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">9</span>Optional: Gmail outcomes</h2>
+    <div class="cmd"><code>node hunt-job.js inbox --since 14d --dry-run</code><button>Copy</button></div>
+    <div class="see">Read-only look at recent emails. Needs Gmail IMAP credentials set up first (see <code>README.md</code>). Skip if not set.</div>
+  </div>
+
+  <div class="step">
+    <h2><span class="num">10</span>Run it by itself every 3 hours (optional)</h2>
+    <div class="cmd"><code>powershell -File scripts\install-schedule.ps1</code><button>Copy</button></div>
+    <div class="see">Creates a Windows Scheduled Task <code>HuntJob-Run</code>. Remove it in Task Scheduler if you change your mind.</div>
+  </div>
+
+  <table>
+    <tr><th>Stuck?</th><th>Try</th></tr>
+    <tr><td>"command not found" / module errors</td><td><code>npm install</code></td></tr>
+    <tr><td>Resume PDF fails</td><td><code>npx playwright install</code></td></tr>
+    <tr><td>Scores look empty or odd</td><td><code>npm run profile:seed</code> (fills your profile from the canonical résumé; it may overwrite <code>config\profile.yml</code>)</td></tr>
+    <tr><td>Port 7777 busy</td><td>Close the other dashboard window first</td></tr>
+  </table>
+</main>
+<script>
+  document.querySelectorAll('.cmd button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var text = b.previousElementSibling.textContent;
+      try { navigator.clipboard.writeText(text); b.textContent = 'Copied'; }
+      catch (e) { b.textContent = 'Select & copy'; }
+      setTimeout(function () { b.textContent = 'Copy'; }, 1200);
+    });
+  });
+</script>
+</body>
+</html>

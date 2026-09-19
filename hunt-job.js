@@ -118,6 +118,12 @@ async function main() {
             case 'run':
                 await runScript('src/cli/run.js', args.slice(1));
                 break;
+            case 'calibrate':
+                await runScript('src/cli/calibrate.js', args.slice(1));
+                break;
+            case 'label':
+                await runScript('src/cli/label.js', args.slice(1));
+                break;
             case 'inbox':
                 await runScript('src/cli/inbox.js', args.slice(1));
                 break;
@@ -175,6 +181,8 @@ COMMANDS:
   detect <careers-url>        Detect a company's ATS platform from its careers URL
   inbox                       Read Gmail (read-only IMAP) for application outcomes
                                  [--since 14d] [--dry-run] [--purge <days>]
+  label <jobId> good|bad|clear  Mark a job good/bad (feeds calibrate)
+  calibrate [--accept]        Score-weight report from outcomes/labels; --accept adopts the proposal
   audit-portals               Re-verify/re-detect the whole company registry
   dashboard                   Start the local web dashboard (http://127.0.0.1:7777)
   resume <job-id>             Generate tailored resume
