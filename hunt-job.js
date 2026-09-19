@@ -82,7 +82,16 @@ async function main() {
                 await runScript('src/cli/applyJob.js', args.slice(1));
                 break;
             case 'prep':
-                await runScript('src/cli/prepareInterview.js', args.slice(1));
+                // `prep <jobId>` / `prep --plan` = T5 checklist; anything else
+                // (URL, file path, free-text JD) = per-job interview guide.
+                if (args[1]?.startsWith('--') || (args[1] && /^[\w.-]+:[^\s]*$/.test(args[1]) && !/^https?:/i.test(args[1]))) {
+                    await runScript('src/cli/prepChecklist.js', args.slice(1));
+                } else {
+                    await runScript('src/cli/prepareInterview.js', args.slice(1));
+                }
+                break;
+            case 'quiz':
+                await runScript('src/cli/quiz.js', args.slice(1));
                 break;
             case 'setup':
                 await runScript('src/cli/setupApiKey.js');

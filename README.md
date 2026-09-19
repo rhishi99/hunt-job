@@ -316,6 +316,9 @@ npm run dashboard                        # open http://127.0.0.1:7777
 node hunt-job.js evaluate "https://..."
 node hunt-job.js resume <job-id-from-eval>
 node hunt-job.js prep "job-description.txt"
+node hunt-job.js prep <job-id>           # gap-topic checklist (add --tick <topic> to advance status)
+node hunt-job.js prep --plan             # write data/prep/plan.md, top 10 topics by weight
+node hunt-job.js quiz <topic>            # 5 LLM questions, self-graded 0-2, stored as a session
 
 npm run audit-portals                    # re-verify every company's ATS mapping in the registry (or node src/cli/auditPortals.js)
 node hunt-job.js detect https://careers.acme.com
