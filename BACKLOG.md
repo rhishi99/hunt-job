@@ -34,4 +34,7 @@ Answered-but-not-built items. Each was verified in code by the reviewing session
 | B-24 | Provider health is sticky for the process; Gemini 429 sleeps 30–90 s before failover | `aiClient.js:230-243` boolean health; `aiClient.js:69-75` sleep. Fix: timed cooldown; fail over first, sleep last. | B#Q4, B#Q11 | done |
 | B-25 | `evaluate <url>` re-fetches the page even when `jobs.description` is stored | `jobEvaluator.js:128-164` never reads DB. Fix: DB lookup by `url`/`apply_url` first. | B#Q6 | done |
 | B-26 | Dimension keys differ per model → broken bars/comparisons | `jobEvaluator.js:197-213`; canonical keys from `settings.json` `evaluation.dimensions`. | B#Q9 | done |
-| B-27 | Scanner has not run since 2026-09-03 | measured `max(companies.last_ok_at)`; no hunt/gig scheduled task installed. Owner call: run `scripts/install-gig-schedule.ps1` or not. | pass 3 | open |
+| B-27 | Scanner has not run since 2026-09-03 | measured `max(companies.last_ok_at)`; no hunt/gig scheduled task installed. Owner call: run `scripts/install-gig-schedule.ps1` or not. | pass 3 | done (installed 2026-09-19, HuntJob-Run every 3h, AI_PROVIDER=groq) |
+| B-28 | Résumé folder named `Unknown-Company_...`: generator regex-parses company from JD text instead of using the job row | `resumeGenerator.js:22-23`; pass company/title from `resolveJobInput` | e2e 2026-09-19 | open |
+| B-29 | `run` retries a failing provider for the full 30-min task limit (all-cooling-down 60s waits) | `aiClient.js` cooldown loop; cap total wait per run, fail the task instead | e2e 2026-09-19 | open |
+| B-30 | Country dropdown, cover letter, custom questions not auto-filled on Greenhouse | shown by B-16 audit; needs adapter work + profile answers (notice period, CTC) | e2e 2026-09-19 | open |

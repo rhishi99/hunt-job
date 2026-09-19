@@ -9,6 +9,7 @@ import { getDb } from '../core/db.js';
 import ProfileManager from '../core/profileManager.js';
 import { transition, ACTORS, STATES } from '../core/pipeline/states.js';
 import { buildDigest } from '../core/pipeline/digest.js';
+import { listReview, resolveEvent } from '../core/inbox/index.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = path.join(__dirname, 'dashboard.html');
@@ -224,6 +225,15 @@ export function createServer({ db, loadProfile, digestDir } = {}) {
       if (req.method === 'GET' && url.pathname === '/api/pipeline') return send(res, 200, getPipeline(db, query));
       if (req.method === 'GET' && url.pathname === '/api/digest/latest') return send(res, 200, await getDigest(db, loadProfile, digestDir));
       if (req.method === 'GET' && url.pathname === '/api/prep') return send(res, 200, getPrep(db));
+      if (req.method === 'GET' && url.pathname === '/api/inbox') return send(res, 200, listReview(db));
+      const inboxMatch = req.method === 'PATCH' && url.pathname.match(/^\/api\/inbox\/(\d+)$/);
+      if (inboxMatch) {
+        let body;
+        try { body = await readJsonBody(req); } catch (e) { return send(res, 400, { error: e.message }); }
+        const result = resolveEvent(db, Number(inboxMatch[1]), body || {});
+        if (result.error) return send(res, result.error, { error: result.message });
+        return send(res, 200, result);
+      }
       const pipeMatch = req.method === 'PATCH' && url.pathname.match(/^\/api\/pipeline\/([^/]+)$/);
       if (pipeMatch) {
         let body;

@@ -118,6 +118,9 @@ async function main() {
             case 'run':
                 await runScript('src/cli/run.js', args.slice(1));
                 break;
+            case 'inbox':
+                await runScript('src/cli/inbox.js', args.slice(1));
+                break;
             // `hunt`, `watch`, `gigs` are one-line aliases (docs/fable51-answers.md
             // §1.6) kept for one release for users who already rely on their
             // exact flags: `hunt` now thin-wraps `run` (fixes B-19 — it used to
@@ -160,7 +163,7 @@ USAGE:
 COMMANDS:
   run [--once] [--interval m] Scan -> prefilter -> evaluate -> morning digest (the autonomous loop)
                                  [--dry-run] [--max-tasks n] [--archetype <name>]
-  hunt --archetype <name>      Alias: run for a single archetype (thin wrapper around `run`)
+  hunt --archetype <name>      Alias: run for a single archetype (thin wrapper around run)
   evaluate <url>              Evaluate a job posting [--fresh to bypass reuse]
   eval-models                 Cross-provider extraction agreement report (makes real LLM calls)
   scan --archetype <name>     LIVE scan of company ATS boards (populates the DB)
@@ -170,6 +173,8 @@ COMMANDS:
   watch --archetype <name>    Periodic scan + desktop notification on new matches
                                  [--interval <minutes>] (default 30, min 10) [--once]
   detect <careers-url>        Detect a company's ATS platform from its careers URL
+  inbox                       Read Gmail (read-only IMAP) for application outcomes
+                                 [--since 14d] [--dry-run] [--purge <days>]
   audit-portals               Re-verify/re-detect the whole company registry
   dashboard                   Start the local web dashboard (http://127.0.0.1:7777)
   resume <job-id>             Generate tailored resume

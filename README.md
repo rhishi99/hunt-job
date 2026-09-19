@@ -192,6 +192,8 @@ Commitment comes from the ATS where it's published (Ashby, Lever, SmartRecruiter
 
 Two extra no-auth sources feed this: **Remotive** and **Himalayas**. Register them once with `npm run seed:aggregators`. Both are rate-limited to one fetch per 6h in `scan/index.js`, per their terms; a `watch` loop serves them from cache in between. Remotive's terms require linking back to the remotive.com URL and crediting them as the source — the stored `url` does exactly that.
 
+**LinkedIn Search** (`linkedin-search`, also registered by `seed:aggregators`) discovers LinkedIn job LINKS without ever fetching linkedin.com: it runs `site:linkedin.com/jobs/view "<archetype>" India|remote` web queries per profile archetype (max 12/scan, 6h interval) and stores only URL + title + snippet + guessed company/location as stub rows (commitment unknown). Backend: Google Programmable Search if `GOOGLE_CSE_KEY` + `GOOGLE_CSE_CX` are set (free 100 q/day; the key MUST be from a GCP project with NO billing account linked), else the DuckDuckGo HTML endpoint. Feeds are always partial, so nothing is soft-closed by absence.
+
 ```bash
 npm run seed:aggregators      # register Remotive + Himalayas (once)
 npm run backfill:commitment   # tag already-scanned jobs from their titles (--dry-run to preview)

@@ -4,3 +4,6 @@ process.env.GROQ_API_KEY = 'test-groq-key-for-testing';
 process.env.OPENROUTER_API_KEY = 'test-openrouter-key-for-testing';
 process.env.NVIDIA_API_KEY = 'test-nvidia-key-for-testing';
 process.env.AI_PROVIDER = '';
+// Tests must never reach a real mailbox, whatever the dev machine has set.
+delete process.env.HUNTJOB_MAIL_APP_PASSWORD;
+delete process.env.HUNTJOB_MAIL_USER;

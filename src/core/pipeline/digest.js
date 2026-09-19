@@ -88,6 +88,24 @@ function health(db) {
   return { failing, disabled, blockedTasks };
 }
 
+// §5.3: auto-applied outcomes (last 7 days) + the needs_review queue.
+function inboxSection(db, now) {
+  const autoApplied = db
+    .prepare(
+      `SELECT e.id, e.outcome, e.from_domain AS fromDomain, e.matched_job_id AS jobId, j.title,
+              COALESCE(j.employer, c.name, j.company_id) AS company
+       FROM inbox_events e
+       LEFT JOIN jobs j ON j.id = e.matched_job_id
+       LEFT JOIN companies c ON c.id = j.company_id
+       WHERE e.applied = 1 AND e.at >= ? ORDER BY e.at DESC`
+    )
+    .all(now - 7 * 24 * 3600 * 1000);
+  const needsReview = db
+    .prepare(`SELECT id, outcome, from_domain AS fromDomain, subject FROM inbox_events WHERE needs_review = 1 ORDER BY received_at DESC LIMIT 50`)
+    .all();
+  return { autoApplied, needsReview };
+}
+
 /** §8 assumption 2: the profile's salary range is unverified — flag it until confirmed. */
 function salaryAssumptionFlag(profile) {
   const salary = profile?.salary;
@@ -155,8 +173,17 @@ export async function buildDigest(db, date, opts = {}) {
   );
   lines.push('');
 
+  const inbox = inboxSection(db, now);
   lines.push('## Inbox');
-  lines.push('_Not available yet — auto-apply-outcome capture lands with T7._');
+  if (!inbox.autoApplied.length && !inbox.needsReview.length) lines.push('_Nothing new (or inbox capture not configured — `hunt-job inbox`)._');
+  if (inbox.autoApplied.length) {
+    lines.push(`Auto-applied last 7 days (reversible from the dashboard pipeline board):`);
+    for (const e of inbox.autoApplied) lines.push(`- ${e.outcome} — **${e.title || e.jobId}** @ ${e.company || 'unknown'} (${e.fromDomain})`);
+  }
+  if (inbox.needsReview.length) {
+    lines.push(`Needs review (${inbox.needsReview.length}):`);
+    for (const e of inbox.needsReview) lines.push(`- #${e.id} ${e.outcome || 'unclassified'} — ${e.fromDomain}: "${e.subject}"`);
+  }
 
   const markdown = lines.join('\n');
   const json = {
@@ -167,6 +194,7 @@ export async function buildDigest(db, date, opts = {}) {
     evaluatedMaybe: maybe,
     waiting,
     health: h,
+    inbox,
   };
 
   return { markdown, json };

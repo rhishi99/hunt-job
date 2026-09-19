@@ -423,6 +423,7 @@
       </a>
       <a class="nav-item" role="tab" aria-selected="false" data-view="today" onclick="switchView('today', this)" tabindex="0">Today</a>
       <a class="nav-item" role="tab" aria-selected="false" data-view="prep" onclick="switchView('prep', this)" tabindex="0">Prep</a>
+      <a class="nav-item" role="tab" aria-selected="false" data-view="inbox" onclick="switchView('inbox', this)" tabindex="0">Inbox</a>
       <a class="nav-item" role="tab" aria-selected="false" data-view="jobs" onclick="switchView('jobs', this)" tabindex="0">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
         Jobs
@@ -505,6 +506,12 @@
     <section id="view-prep" class="view" role="tabpanel">
       <div class="section-title">Prep</div>
       <div id="prep-body" aria-live="polite"></div>
+    </section>
+
+    <!-- Inbox review -->
+    <section id="view-inbox" class="view" role="tabpanel">
+      <div class="section-title">Inbox review</div>
+      <div id="inbox-body" aria-live="polite"></div>
     </section>
 
     <!-- Jobs -->
@@ -1007,6 +1014,28 @@ function renderPrep() {
 }
 
 
+// ===== Inbox review =====
+function renderInbox() {
+  const el = document.getElementById('inbox-body');
+  const inbox = state.inbox;
+  if (!inbox || !inbox.events || !inbox.events.length) { el.innerHTML = '<div class="empty">Nothing to review.</div>'; return; }
+  const opts = inbox.candidates.map(c => `<option value="${esc(c.jobId)}">${esc(c.company)} - ${esc(c.title)} (${esc(c.state)})</option>`).join('');
+  el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>From</th><th>Subject</th><th>Outcome</th><th>Assign to</th><th></th></tr></thead><tbody>${
+    inbox.events.map(e => `<tr><td>${esc(e.fromDomain)}</td><td>${esc(e.subject)}<br><small>${esc(e.snippet || '')}</small></td><td>${esc(e.outcome || '')}</td>` +
+      `<td><select id="inbox-job-${e.id}"><option value="">(choose)</option>${opts}</select></td>` +
+      `<td><button onclick="resolveInbox(${e.id}, 'assign')">Assign</button> <button onclick="resolveInbox(${e.id}, 'ignore')">Ignore</button></td></tr>`).join('')
+  }</tbody></table></div>`;
+}
+
+async function resolveInbox(id, action) {
+  const jobId = action === 'assign' ? document.getElementById(`inbox-job-${id}`).value : undefined;
+  if (action === 'assign' && !jobId) return;
+  const r = await fetch(`/api/inbox/${id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action, jobId }) });
+  if (!r.ok) { const j = await r.json().catch(() => ({})); alert(j.error || 'failed'); return; }
+  state.inbox = await fetchApi('/api/inbox', { events: [], candidates: [] });
+  renderInbox();
+}
+
 // ===== Jobs table (visual) =====
 function renderJobs() {
   const tbody = document.querySelector('#jobs-table tbody');
@@ -1174,6 +1203,7 @@ async function init(silent = false) {
   state.pipeline = await fetchApi('/api/pipeline', { lanes: [], items: [] });
   state.digest = await fetchApi('/api/digest/latest', { error: 'unavailable' });
   state.prep = await fetchApi('/api/prep', { available: false, topics: [] });
+  state.inbox = await fetchApi('/api/inbox', { events: [], candidates: [] });
   state.profile = await fetchApi('/api/profile', MOCK.profile);
 
   const didChange = true; // always pulse lightly on refresh
@@ -1181,6 +1211,7 @@ async function init(silent = false) {
   renderPipeline();
   renderToday();
   renderPrep();
+  renderInbox();
   renderJobs();
   renderEvaluations();
   renderProfile();

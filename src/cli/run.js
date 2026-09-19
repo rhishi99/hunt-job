@@ -37,6 +37,8 @@ import { record as recordBudget } from '../core/pipeline/budget.js';
 import { buildDigest } from '../core/pipeline/digest.js';
 import { setRecordHook, getMinimumApplyScore } from '../core/aiClient.js';
 import { sha256 } from '../core/pipeline/identity.js';
+import { processInbox } from '../core/inbox/index.js';
+import { createImapSource, readCredentials } from '../core/inbox/imapSource.js';
 import JobEvaluator from '../core/jobEvaluator.js';
 import { createLogger } from '../core/logger.js';
 import { notify } from './watch.js';
@@ -223,6 +225,7 @@ export async function runOnce({
   maxTasks = Infinity,
   scan = defaultScanAll,
   handlers = {},
+  inboxSource,
   now = Date.now(),
 } = {}) {
   const resolvedProfile = profile ?? (await new ProfileManager().loadProfile());
@@ -242,10 +245,25 @@ export async function runOnce({
     drainSummary = await drain({ db, handlers: { evaluate: evaluateHandler, ...handlers }, maxTasks, now });
   }
 
+  // Optional inbox step (brief 11): skipped silently when mail creds are unset;
+  // a mailbox failure is logged and never fails the run.
+  let inboxResult = null;
+  if (!dryRun) {
+    const creds = inboxSource === undefined ? readCredentials() : null;
+    const source = inboxSource === undefined ? (creds ? createImapSource(creds) : null) : inboxSource;
+    if (source) {
+      try {
+        inboxResult = await processInbox({ db, source, now });
+      } catch (err) {
+        log.error('inbox_step_failed', { error: err.message });
+      }
+    }
+  }
+
   const dateStr = new Date(now).toISOString().slice(0, 10);
   const digest = await buildDigest(db, dateStr, { profile: resolvedProfile });
 
-  return { scanResult, prefilterResult, syncResult, drainSummary, digest, dateStr };
+  return { scanResult, prefilterResult, syncResult, drainSummary, inboxResult, digest, dateStr };
 }
 
 function writeDigestFiles(dateStr, digest) {
@@ -285,6 +303,10 @@ async function runAndReport(opts) {
         `${syncResult.enqueued} enqueued · ${syncResult.requeuedForRescan} requeued`
     )
   );
+  if (result.inboxResult) {
+    const i = result.inboxResult;
+    console.log(chalk.gray(`inbox: ${i.seen} fetched · ${i.applied.length} applied · ${i.review.length} need review`));
+  }
   if (opts?.dryRun) {
     console.log(chalk.yellow('--dry-run: no tasks enqueued, no pipeline writes, no LLM calls made.'));
   } else {
