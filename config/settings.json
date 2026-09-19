@@ -1,12 +1,33 @@
 {
   "providers": {
-    "priorityOrder": ["anthropic", "openrouter", "groq", "nvidia", "gemini"],
+    "priorityOrder": [
+      "anthropic",
+      "openrouter",
+      "groq",
+      "nvidia",
+      "gemini"
+    ],
     "models": {
-      "anthropic":  { "heavy": "claude-sonnet-4-6",             "light": "claude-haiku-4-5-20251001" },
-      "openrouter": { "heavy": "google/gemini-2.5-pro-preview", "light": "anthropic/claude-3.5-haiku" },
-      "groq":       { "heavy": "llama-3.3-70b-versatile",       "light": "llama-3.1-8b-instant" },
-      "nvidia":     { "heavy": "meta/llama-3.3-70b-instruct",   "light": "meta/llama-3.1-8b-instruct" },
-      "gemini":     { "heavy": "gemini-flash-latest",            "light": "gemini-flash-lite-latest" }
+      "anthropic": {
+        "heavy": "claude-sonnet-4-6",
+        "light": "claude-haiku-4-5-20251001"
+      },
+      "openrouter": {
+        "heavy": "google/gemini-2.5-pro-preview",
+        "light": "anthropic/claude-3.5-haiku"
+      },
+      "groq": {
+        "heavy": "qwen/qwen3.8-27b",
+        "light": "qwen/qwen3.8-27b"
+      },
+      "nvidia": {
+        "heavy": "openai/gpt-oss-20b",
+        "light": "openai/gpt-oss-20b"
+      },
+      "gemini": {
+        "heavy": "gemini-flash-latest",
+        "light": "gemini-flash-lite-latest"
+      }
     }
   },
   "claude": {
@@ -28,11 +49,16 @@
     "keywordLimit": 20
   },
   "budget": {
-    "daily": { "evaluate": 150, "tailor": 25, "prep": 25, "inbox": 30 },
+    "daily": {
+      "evaluate": 150,
+      "tailor": 25,
+      "prep": 25,
+      "inbox": 30
+    },
     "reserve": 0.2
   },
   "evaluation": {
-    "minimumApplyScore": 4.0,
+    "minimumApplyScore": 4,
     "dimensions": [
       "skill_fit",
       "seniority_fit",

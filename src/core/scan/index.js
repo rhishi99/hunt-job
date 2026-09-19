@@ -20,6 +20,7 @@ import * as workable from './providers/workable.js';
 import * as jsonld from './providers/jsonld.js';
 import * as remotive from './providers/remotive.js';
 import * as himalayas from './providers/himalayas.js';
+import * as websearch from './providers/websearch.js';
 import * as workday from './providers/workday.js';
 import * as oraclehcm from './providers/oraclehcm.js';
 import * as successfactors from './providers/successfactors.js';
@@ -31,6 +32,8 @@ const PROVIDERS = {
   greenhouse, lever, ashby, smartrecruiters, recruitee, workable, jsonld,
   // Aggregators: one row covers many employers (see providers/remotive.js).
   remotive, himalayas,
+  // LinkedIn link discovery via web search (never fetches linkedin.com).
+  'linkedin-search': websearch,
   // scan_config-driven (no slug): see scanConfig.js. All return `partial` feeds.
   workday, oraclehcm, successfactors, amazon,
 };
@@ -43,6 +46,7 @@ const CONCURRENCY = 5;
 const MIN_SCAN_INTERVAL_MS = {
   remotive: 6 * 60 * 60 * 1000,
   himalayas: 6 * 60 * 60 * 1000,
+  'linkedin-search': 6 * 60 * 60 * 1000,
 };
 // B-06: a partial aggregator feed (page cap hit) can't prove absence, so it skips the
 // NOT-IN sweep and only closes rows not seen for this many days.

@@ -26,6 +26,13 @@ const SOURCES = [
     location: 'Worldwide Remote',
     career_url: 'https://himalayas.app/jobs',
   },
+  {
+    name: 'LinkedIn Search',
+    slug: 'linkedin-search',
+    ats_platform: 'linkedin-search',
+    location: 'India + Remote',
+    career_url: 'https://www.linkedin.com/jobs/',
+  },
 ];
 
 const db = getDb();
