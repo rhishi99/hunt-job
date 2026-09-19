@@ -7,9 +7,12 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { getDb } from '../core/db.js';
 import ProfileManager from '../core/profileManager.js';
+import { transition, ACTORS, STATES } from '../core/pipeline/states.js';
+import { buildDigest } from '../core/pipeline/digest.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const HTML_PATH = path.join(__dirname, 'dashboard.html');
+const DIGEST_DIR = path.join(__dirname, '../../data/digest');
 const FRESH_MS = 48 * 60 * 60 * 1000;
 const APP_STATUSES = new Set(['scanned', 'evaluated', 'applied', 'interview', 'offer', 'rejected']);
 
@@ -116,6 +119,74 @@ function patchApplication(db, id, status) {
   return { id, status, updatedAt };
 }
 
+// Kanban lanes (docs/fable51-answers.md 2.6). Every state in states.js belongs to exactly one lane.
+const LANES = [
+  { key: 'discovered', label: 'Discovered', states: ['discovered', 'queued'] },
+  { key: 'evaluated', label: 'Evaluated', states: ['evaluated', 'maybe', 'skip'] },
+  { key: 'shortlisted', label: 'Shortlisted', states: ['shortlisted', 'prepared'] },
+  { key: 'applied', label: 'Applied', states: ['applying', 'applied', 'acknowledged', 'screening'] },
+  { key: 'interview', label: 'Interview', states: ['interview'] },
+  { key: 'offer', label: 'Offer', states: ['offer'] },
+  { key: 'closed', label: 'Closed', states: ['rejected', 'expired', 'withdrawn', 'archived'] }
+];
+
+function getPipeline(db, query) {
+  let states = query.states ? String(query.states).split(',').filter(s => STATES.includes(s)) : null;
+  if (!states) states = STATES.filter(s => s !== 'filtered_out');
+  const marks = states.map(() => '?').join(',');
+  const items = db.prepare(`
+    SELECT p.job_id AS jobId, p.state, p.state_changed_at AS stateChangedAt, p.score, p.user_label AS userLabel,
+           j.title, j.location, j.url, COALESCE(j.employer, c.name, j.company_id) AS company
+    FROM pipeline p
+    JOIN jobs j ON j.id = p.job_id
+    LEFT JOIN companies c ON c.id = j.company_id
+    WHERE p.state IN (${marks})
+    ORDER BY p.state_changed_at DESC
+    LIMIT 500
+  `).all(...states);
+  return { lanes: LANES, items };
+}
+
+function patchPipeline(db, jobId, body) {
+  const to = body && body.state;
+  if (typeof to !== 'string' || !STATES.includes(to)) return { error: 400, message: `state must be one of: ${STATES.join(', ')}` };
+  if (!db.prepare('SELECT 1 FROM jobs WHERE id = ?').get(jobId)) return { error: 404, message: 'job not found' };
+  try {
+    const row = transition(db, jobId, to, { actor: ACTORS.DASHBOARD, reason: body.reason || null });
+    return { jobId, state: row.state, stateChangedAt: row.state_changed_at };
+  } catch (e) {
+    return { error: /^illegal transition/.test(e.message) ? 409 : 400, message: e.message };
+  }
+}
+
+async function getDigest(db, loadProfile, digestDir) {
+  let files = [];
+  try { files = fs.readdirSync(digestDir).filter(f => /^\d{4}-\d{2}-\d{2}\.json$/.test(f)).sort(); } catch { /* no dir yet */ }
+  if (files.length) {
+    try {
+      const json = JSON.parse(fs.readFileSync(path.join(digestDir, files[files.length - 1]), 'utf-8'));
+      return { source: 'file', ...json };
+    } catch { /* corrupt file: fall through to live build */ }
+  }
+  let profile = null;
+  try { profile = await loadProfile(); } catch { /* digest tolerates a missing profile */ }
+  const { json } = await buildDigest(db, new Date().toISOString().slice(0, 10), { profile: profile || {} });
+  return { source: 'live', ...json };
+}
+
+function getPrep(db) {
+  const has = n => !!db.prepare(`SELECT 1 FROM sqlite_master WHERE type='table' AND name=?`).get(n);
+  if (!has('prep_topics')) return { available: false, topics: [] };
+  const topics = db.prepare(`
+    SELECT t.topic_key AS topicKey, t.label, t.category, t.weight,
+           COALESCE(g.status, 'todo') AS status, g.self_rating AS selfRating, g.last_practiced_at AS lastPracticedAt
+    FROM prep_topics t
+    LEFT JOIN prep_progress g ON g.topic_key = t.topic_key
+    ORDER BY t.weight DESC, t.label
+  `).all();
+  return { available: true, topics };
+}
+
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -129,8 +200,9 @@ function readJsonBody(req) {
 }
 
 /** Builds the request handler. `db`/`loadProfile` are injectable for tests. */
-export function createServer({ db, loadProfile } = {}) {
+export function createServer({ db, loadProfile, digestDir } = {}) {
   db = db || getDb();
+  digestDir = digestDir || DIGEST_DIR;
   loadProfile = loadProfile || (() => new ProfileManager().loadProfile());
 
   return http.createServer(async (req, res) => {
@@ -148,6 +220,17 @@ export function createServer({ db, loadProfile } = {}) {
       if (req.method === 'GET' && url.pathname === '/api/profile') {
         const profile = await loadProfile();
         return profile ? send(res, 200, profile) : send(res, 404, { error: 'profile not found' });
+      }
+      if (req.method === 'GET' && url.pathname === '/api/pipeline') return send(res, 200, getPipeline(db, query));
+      if (req.method === 'GET' && url.pathname === '/api/digest/latest') return send(res, 200, await getDigest(db, loadProfile, digestDir));
+      if (req.method === 'GET' && url.pathname === '/api/prep') return send(res, 200, getPrep(db));
+      const pipeMatch = req.method === 'PATCH' && url.pathname.match(/^\/api\/pipeline\/([^/]+)$/);
+      if (pipeMatch) {
+        let body;
+        try { body = await readJsonBody(req); } catch (e) { return send(res, 400, { error: e.message }); }
+        const result = patchPipeline(db, decodeURIComponent(pipeMatch[1]), body);
+        if (result.error) return send(res, result.error, { error: result.message });
+        return send(res, 200, result);
       }
       const patchMatch = req.method === 'PATCH' && url.pathname.match(/^\/api\/applications\/([^/]+)$/);
       if (patchMatch) {

@@ -421,6 +421,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
         Pipeline
       </a>
+      <a class="nav-item" role="tab" aria-selected="false" data-view="today" onclick="switchView('today', this)" tabindex="0">Today</a>
+      <a class="nav-item" role="tab" aria-selected="false" data-view="prep" onclick="switchView('prep', this)" tabindex="0">Prep</a>
       <a class="nav-item" role="tab" aria-selected="false" data-view="jobs" onclick="switchView('jobs', this)" tabindex="0">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
         Jobs
@@ -489,8 +491,20 @@
 
     <!-- Pipeline -->
     <section id="view-pipeline" class="view active" role="tabpanel" aria-labelledby="pipeline-title">
-      <div class="section-title" id="pipeline-title">Application Pipeline <span style="font-size:11px;opacity:.6;margin-left:6px;">Drag cards to change status</span></div>
+      <div class="section-title" id="pipeline-title">Application Pipeline <span style="font-size:11px;opacity:.6;margin-left:6px;">Drag cards to change state (illegal moves are rejected)</span></div>
       <div class="board" id="kanban-board" aria-live="polite"></div>
+    </section>
+
+    <!-- Today -->
+    <section id="view-today" class="view" role="tabpanel">
+      <div class="section-title">Today</div>
+      <div id="today-body" aria-live="polite"></div>
+    </section>
+
+    <!-- Prep -->
+    <section id="view-prep" class="view" role="tabpanel">
+      <div class="section-title">Prep</div>
+      <div id="prep-body" aria-live="polite"></div>
     </section>
 
     <!-- Jobs -->
@@ -583,7 +597,7 @@ const MOCK = {
   }
 };
 
-let state = { stats: null, jobs: [], evaluations: [], applications: [], profile: null };
+let state = { pipeline: { lanes: [], items: [] }, digest: null, prep: null, stats: null, jobs: [], evaluations: [], applications: [], profile: null };
 let currentFilter = { view: 'pipeline' };
 let lastUpdated = null;
 
@@ -842,102 +856,57 @@ function copyTerminalCmd(cmd) {
   });
 }
 
-// ===== Kanban Pipeline (visual + micro-anim + confetti) =====
+// ===== Kanban Pipeline (reads the `pipeline` table; moves go through transition() server-side) =====
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
 function renderPipeline() {
   const board = document.getElementById('kanban-board');
   board.innerHTML = '';
-  const cols = ['scanned', 'evaluated', 'applied', 'interview', 'offer', 'rejected'];
+  const { lanes, items } = state.pipeline;
 
-  cols.forEach((col, colIdx) => {
+  lanes.forEach(lane => {
     const colEl = document.createElement('div');
     colEl.className = 'column';
-    colEl.dataset.col = col;
+    colEl.dataset.col = lane.key;
+    const cards = items.filter(i => lane.states.includes(i.state));
+    colEl.innerHTML = `<div class="column-header"><span>${esc(lane.label)}</span><span class="column-count">${cards.length}</span></div>`;
 
-    const apps = state.applications.filter(a => a.status === col);
-    const label = col[0].toUpperCase() + col.slice(1);
-    colEl.innerHTML = `
-      <div class="column-header">
-        <span>${label}</span>
-        <span class="column-count" aria-label="${apps.length} items">${apps.length}</span>
-      </div>
-    `;
-
-    const cardsWrap = document.createElement('div');
-    cardsWrap.className = 'column-cards';
-    cardsWrap.setAttribute('aria-label', `${col} column — drop zone`);
-
-    cardsWrap.addEventListener('dragover', e => { e.preventDefault(); cardsWrap.classList.add('drag-over'); });
-    cardsWrap.addEventListener('dragleave', () => cardsWrap.classList.remove('drag-over'));
-    cardsWrap.addEventListener('drop', e => {
-      e.preventDefault(); cardsWrap.classList.remove('drag-over');
-      const id = e.dataTransfer.getData('text/plain');
-      handleDrop(id, col);
+    const wrap = document.createElement('div');
+    wrap.className = 'column-cards';
+    wrap.setAttribute('aria-label', `${lane.label} column`);
+    wrap.addEventListener('dragover', e => { e.preventDefault(); wrap.classList.add('drag-over'); });
+    wrap.addEventListener('dragleave', () => wrap.classList.remove('drag-over'));
+    wrap.addEventListener('drop', e => {
+      e.preventDefault(); wrap.classList.remove('drag-over');
+      handleDrop(e.dataTransfer.getData('text/plain'), lane);
     });
 
-    if (apps.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'empty';
-      empty.style.padding = '18px 10px';
-      empty.style.fontSize = '12px';
-      empty.innerHTML = col === 'offer' ? 'No offers yet — drag a strong match here!' : 'Drop cards here';
-      cardsWrap.appendChild(empty);
-    }
+    if (!cards.length) wrap.innerHTML = '<div class="empty" style="padding:18px 10px;font-size:12px">Empty</div>';
 
-    apps.forEach((app, idx) => {
+    cards.forEach(item => {
       const card = document.createElement('div');
       card.className = 'kanban-card';
       card.draggable = true;
-      card.setAttribute('role', 'button');
-      card.setAttribute('tabindex', '0');
-      card.setAttribute('aria-label', `${app.company} — ${app.title}`);
-
-      const ev = state.evaluations.find(e => e.jobId === app.jobId);
-      const scoreHtml = ev ? `<span class="pill ${ev.overallScore >= 4 ? 'g' : ev.overallScore >= 3 ? 'a' : 'r'}">${(ev.overallScore||0).toFixed(1)}</span>` : '';
-      const fresh = state.jobs.find(j => j.id === app.jobId && j.postedAt && (Date.now() - new Date(j.postedAt).getTime() < 48*3600*1000)) ? `<span class="pill fresh">fresh</span>` : '';
-
-      const jobRef = state.jobs.find(jj => jj.id === app.jobId);
-      const posted = jobRef && jobRef.postedAt ? `<span class="time" title="${fullDate(jobRef.postedAt)}">${timeAgo(jobRef.postedAt)}</span>` : '';
-      const loc = jobRef && jobRef.location ? `<span class="loc" style="margin-left:auto">${jobRef.location}</span>` : '';
-
-      const initials = (app.company || '??').slice(0,2).toUpperCase();
-      const avatarStyle = getAvatarStyle(app.company || 'xx');
-
-      card.dataset.status = app.status;
+      card.tabIndex = 0;
+      card.dataset.status = item.state;
+      const score = item.score != null ? `<span class="pill ${item.score >= 4 ? 'g' : item.score >= 3 ? 'a' : 'r'}">${Number(item.score).toFixed(1)}</span>` : '';
       card.innerHTML = `
-        <div class="company-row">
-          <div class="avatar" style="${avatarStyle}">${initials}</div>
-          <div style="font-size:12.5px;color:var(--muted);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis">${app.company}</div>
-        </div>
-        <h4 style="line-height:1.25">${app.title}</h4>
-        <div class="meta">
-          ${scoreHtml} ${fresh} ${posted}
-          ${loc}
-        </div>
-      `;
-
-      const open = () => {
-        const job = jobRef || { id: app.jobId, company: app.company, title: app.title, status: app.status };
-        openModal(job);
-      };
-      card.addEventListener('click', open);
-      card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
-
-      card.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', app.id);
-        setTimeout(() => card.classList.add('dragging'), 0);
-      });
+        <div style="font-size:12.5px;color:var(--muted);font-weight:500">${esc(item.company)}</div>
+        <h4>${esc(item.title)}</h4>
+        <div class="meta">${score}<span class="pill outline">${esc(item.state)}</span><span class="loc" style="margin-left:auto">${esc(item.location || '')}</span></div>`;
+      card.addEventListener('click', () => openModal({ id: item.jobId, company: item.company, title: item.title, location: item.location, url: item.url, status: item.state, score: item.score }));
+      card.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', item.jobId); card.classList.add('dragging'); });
       card.addEventListener('dragend', () => card.classList.remove('dragging'));
-
-      // subtle stagger via style for dynamic renders
-      card.style.animationDelay = (idx * 38 + colIdx * 12) + 'ms';
-
-      cardsWrap.appendChild(card);
+      wrap.appendChild(card);
     });
 
-    colEl.appendChild(cardsWrap);
+    colEl.appendChild(wrap);
     board.appendChild(colEl);
   });
 }
+
 
 function launchConfetti() {
   const c = document.createElement('canvas');
@@ -979,34 +948,64 @@ function launchConfetti() {
   setTimeout(() => c.remove(), 3800);
 }
 
-async function handleDrop(appId, newStatus) {
-  const app = state.applications.find(a => a.id === appId);
-  if (!app || app.status === newStatus) return;
-  const prev = app.status;
-  app.status = newStatus;
-
-  renderPipeline();
-
-  // Delight: confetti on reaching offer
-  if (newStatus === 'offer' && prev !== 'offer') {
-    setTimeout(launchConfetti, 120);
-    showToast('🎉 Offer! Amazing work — congrats!', 'success');
-  } else {
-    showToast(`Moved to ${newStatus}`);
-  }
-
-  try {
-    await fetch(`/api/applications/${encodeURIComponent(appId)}`, {
+// Dropping on a lane tries the lane's states in order; the server accepts only legal transitions.
+async function handleDrop(jobId, lane) {
+  const item = state.pipeline.items.find(i => i.jobId === jobId);
+  if (!item || lane.states.includes(item.state)) return;
+  let lastErr = 'illegal transition';
+  for (const to of lane.states) {
+    const r = await fetch(`/api/pipeline/${encodeURIComponent(jobId)}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: newStatus })
-    });
-    // stats may have changed
-    state.stats = await fetchApi('/api/stats', state.stats || MOCK.stats);
-    renderStats(true);
-  } catch {
-    showToast('Updated locally (offline mode)');
+      body: JSON.stringify({ state: to })
+    }).catch(() => null);
+    if (!r) { showToast('Server unreachable', 'error'); return; }
+    if (r.ok) {
+      showToast(`Moved to ${to}`);
+      state.pipeline = await fetchApi('/api/pipeline', state.pipeline);
+      renderPipeline();
+      renderToday();
+      return;
+    }
+    lastErr = (await r.json().catch(() => ({}))).error || lastErr;
+    if (r.status !== 409) break;
   }
+  showToast(lastErr, 'error');
 }
+
+// ===== Today (latest digest) =====
+function renderToday() {
+  const el = document.getElementById('today-body');
+  const d = state.digest;
+  if (!d || d.error) { el.innerHTML = '<div class="empty">No digest yet. Run: <code>node hunt-job.js run --once</code></div>'; return; }
+  const row = r => `<tr><td>${esc(r.company)}</td><td>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">${esc(r.title)}</a>` : esc(r.title)}</td><td>${r.score ?? '—'}</td><td>${esc(r.topMismatch || r.state || '')}</td></tr>`;
+  const table = (rows, last) => rows.length
+    ? `<div class="table-wrap"><table><thead><tr><th>Company</th><th>Role</th><th>Score</th><th>${last}</th></tr></thead><tbody>${rows.map(row).join('')}</tbody></table></div>`
+    : '<div class="empty" style="padding:10px">None.</div>';
+  const w = d.waiting || {};
+  const h = d.health || { failing: [], disabled: [], blockedTasks: [] };
+  el.innerHTML = `
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">Digest ${esc(d.date)} (${esc(d.source)})</div>
+    ${d.salaryAssumptionFlag ? `<p style="color:var(--amber)">${esc(d.salaryAssumptionFlag)}</p>` : ''}
+    <h3>Ready to apply (${(d.readyToApply || []).length})</h3>${table(d.readyToApply || [], 'State')}
+    <h3>Evaluated, maybe (${(d.evaluatedMaybe || []).length})</h3>${table(d.evaluatedMaybe || [], 'Top mismatch')}
+    <h3>Waiting</h3><ul>${Object.keys(w).map(k => `<li>${esc(k)}: ${w[k].queued} queued</li>`).join('')}</ul>
+    <h3>Health</h3><ul>
+      <li>Failing companies: ${h.failing.length ? h.failing.map(c => `${esc(c.name)} (${c.failCount})`).join(', ') : 'none'}</li>
+      <li>Auto-disabled: ${h.disabled.length ? h.disabled.map(c => esc(c.name)).join(', ') : 'none'}</li>
+      <li>Blocked tasks: ${h.blockedTasks.length}</li></ul>`;
+}
+
+// ===== Prep =====
+function renderPrep() {
+  const el = document.getElementById('prep-body');
+  const p = state.prep;
+  if (!p || !p.available) { el.innerHTML = '<div class="empty">Prep tracking is not set up yet.</div>'; return; }
+  if (!p.topics.length) { el.innerHTML = '<div class="empty">No prep topics yet.</div>'; return; }
+  el.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Topic</th><th>Category</th><th>Weight</th><th>Status</th><th>Self-rating</th></tr></thead><tbody>${
+    p.topics.map(t => `<tr><td>${esc(t.label)}</td><td>${esc(t.category || '')}</td><td>${Number(t.weight).toFixed(1)}</td><td>${esc(t.status)}</td><td>${t.selfRating ?? '—'}</td></tr>`).join('')
+  }</tbody></table></div>`;
+}
+
 
 // ===== Jobs table (visual) =====
 function renderJobs() {
@@ -1172,11 +1171,16 @@ async function init(silent = false) {
   state.jobs = await fetchApi('/api/jobs', MOCK.jobs);
   state.evaluations = await fetchApi('/api/evaluations', MOCK.evaluations);
   state.applications = await fetchApi('/api/applications', MOCK.applications);
+  state.pipeline = await fetchApi('/api/pipeline', { lanes: [], items: [] });
+  state.digest = await fetchApi('/api/digest/latest', { error: 'unavailable' });
+  state.prep = await fetchApi('/api/prep', { available: false, topics: [] });
   state.profile = await fetchApi('/api/profile', MOCK.profile);
 
   const didChange = true; // always pulse lightly on refresh
   renderStats(!silent);
   renderPipeline();
+  renderToday();
+  renderPrep();
   renderJobs();
   renderEvaluations();
   renderProfile();
