@@ -120,7 +120,25 @@ npm run prepare-interview -- "job_description.txt"
 
 # Seed the companies registry with live-verified ATS boards
 npm run seed:ats
+
+# Teach the scorer: label jobs, then review a bounded weight proposal
+node hunt-job.js label <jobId> good        # or bad / clear
+node hunt-job.js calibrate                 # report only
+node hunt-job.js calibrate --accept        # adopt proposal (new score version, re-scores from stored data)
+
+# Read Gmail (read-only) for application outcomes; review them in the dashboard Inbox tab
+node hunt-job.js inbox --since 14d --dry-run
+
+# Interview prep checklist from a job's skill gaps, and a drill
+node hunt-job.js prep --plan
+node hunt-job.js quiz
 ```
+
+New to the app? Open **[docs/QUICKSTART.html](docs/QUICKSTART.html)** for a step-by-step walkthrough.
+
+**Auto-fill answers:** add an `applicationAnswers:` block (`country`, `noticePeriod`,
+`currentCtc`, `expectedCtc`, `workAuthorization`, `needsSponsorship`, `relocate`) to
+`config/profile.yml`. Auto-fill uses only what you write there and never guesses.
 
 ### Filter flags (shared by `scan` and `list`)
 

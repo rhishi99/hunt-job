@@ -134,6 +134,18 @@ describe('provider cooldown + failover (B-24)', () => {
 
     expect(result.content[0].text).toBe('recovered');
   });
+
+  test('B-29: does not sleep through a long cooldown — throws so the task fails fast', async () => {
+    const { getActiveClient } = await freshAiClient();
+    anthropicCreate.mockRejectedValue(new Error('DAILY_QUOTA_EXHAUSTED: quota'));
+    geminiGenerateContent.mockRejectedValue(new Error('DAILY_QUOTA_EXHAUSTED: quota'));
+    const client = getActiveClient('heavy');
+
+    await expect(client.messages.create({ messages: [{ role: 'user', content: 'hi' }] }))
+      .rejects.toThrow(/All providers failed/);
+    await expect(client.messages.create({ messages: [{ role: 'user', content: 'again' }] }))
+      .rejects.toThrow(/not waiting/);
+  });
 });
 
 describe('record hook (brief 3, §1.4)', () => {

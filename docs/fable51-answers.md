@@ -148,6 +148,9 @@ Dependencies are real, not preference. Each line is a separately assignable brie
 | 12 | Prep topics from extraction gaps; checklist; `quiz` | 6, 9 | T5 |
 | 13 | Calibration report + bounded weight proposal (`hunt-job calibrate`) | 6, 11 | T2 |
 
+**Status (2026-09-19): all 13 briefs are built and pushed.** Brief 13 is `hunt-job calibrate` + `hunt-job label`
+(`src/core/scoring/calibrate.js`).
+
 Briefs 1, 2 and 7 can start in parallel on day one. Brief 7 alone roughly triples scanned companies
 with no provider code.
 

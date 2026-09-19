@@ -83,6 +83,90 @@ const GH_EDUCATION = [
   { field: 'educationYear',   selectors: ['input[name*="end_date" i]', 'input[name*="graduation" i]', 'input[id*="end_date" i]'] },
 ];
 
+const CONTROL_SELECTOR =
+  'input:not([type=hidden]):not([type=file]):not([type=checkbox]):not([type=radio]):not([type=submit]), textarea, select';
+
+async function labelOf(el) {
+  return el.evaluate(node => {
+    const byFor = node.id && document.querySelector(`label[for="${CSS.escape(node.id)}"]`);
+    const wrap = node.closest('.field, .application--question, [class*="question" i], [class*="field" i]');
+    const inWrap = wrap && wrap.querySelector('label');
+    const txt = (byFor && byFor.textContent) || node.getAttribute('aria-label') ||
+      (inWrap && inWrap.textContent) || (node.closest('label') && node.closest('label').textContent) || '';
+    return String(txt).replace(/\s+/g, ' ').replace(/\*/g, '').trim().slice(0, 200);
+  });
+}
+
+async function fillOne(el, value) {
+  const tag = await el.evaluate(n => n.tagName.toLowerCase());
+  if (tag === 'select') {
+    try { await el.selectOption({ label: value }); return true; } catch {}
+    try { await el.selectOption({ value }); return true; } catch {}
+    // partial label match ("India" vs "India (+91)")
+    const options = await el.evaluate(n => [...n.options].map(o => ({ v: o.value, t: o.textContent.trim() })));
+    const hit = options.find(o => o.t.toLowerCase().includes(value.toLowerCase()));
+    if (hit) { await el.selectOption({ value: hit.v }); return true; }
+    return false;
+  }
+  await el.click();
+  await el.fill(value);
+  // React-select style comboboxes need the option confirmed
+  const role = await el.getAttribute('role');
+  if (role === 'combobox') {
+    try { await el.press('Enter'); } catch { /* option list may already be closed */ }
+  }
+  return true;
+}
+
+/**
+ * B-30: fills custom questions (country, notice period, CTC, work authorization…)
+ * from the user's own `applicationAnswers`. Empty controls only; a question with
+ * no known answer is left for the user and reported in `unanswered`.
+ * @returns {Promise<{filled: string[], unanswered: string[]}>}
+ */
+export async function fillCustomQuestions(context, answers) {
+  const { answerForQuestion } = await import('../profileMapper.js');
+  const filled = [];
+  const unanswered = [];
+  let controls = [];
+  try { controls = await context.$$(CONTROL_SELECTOR); } catch { return { filled, unanswered }; }
+
+  for (const el of controls) {
+    try {
+      if (!(await el.isVisible()) || !(await el.isEditable())) continue;
+      const current = await el.evaluate(n => (n.tagName === 'SELECT' ? n.selectedOptions[0]?.textContent?.trim() : n.value) || '');
+      if (current && !/^(select|please select|--)/i.test(current)) continue;
+      const label = await labelOf(el);
+      if (!label) continue;
+      const answer = answerForQuestion(label, answers);
+      if (!answer) {
+        const required = await el.evaluate(n => n.required || n.getAttribute('aria-required') === 'true');
+        if (required) unanswered.push(label);
+        continue;
+      }
+      if (await fillOne(el, answer)) filled.push(label);
+    } catch { /* leave this one for the user */ }
+  }
+  return { filled, unanswered };
+}
+
+const GH_COVER_MANUAL_BUTTONS = [
+  '[data-field*="cover" i] button:has-text("Enter manually")',
+  '#cover_letter button:has-text("Enter manually")',
+  'div:has(> label:has-text("Cover Letter")) button:has-text("Enter manually")',
+];
+
+/** New Greenhouse boards hide the cover-letter textarea behind "Enter manually". */
+async function revealCoverLetter(context) {
+  for (const sel of GH_COVER_MANUAL_BUTTONS) {
+    try {
+      const btn = await context.$(sel);
+      if (btn && (await btn.isVisible())) { await btn.click(); return true; }
+    } catch { /* try next */ }
+  }
+  return false;
+}
+
 export async function runGreenhouseAdapter(page, fieldValues) {
   const filled  = [];
   const skipped = [];
@@ -101,6 +185,7 @@ export async function runGreenhouseAdapter(page, fieldValues) {
     // Cover letter
     if (fieldValues.coverLetter) {
       let clFilled = false;
+      await revealCoverLetter(context);
       for (const sel of GH_COVER_LETTER) {
         try {
           const el = await context.$(sel);
@@ -124,6 +209,11 @@ export async function runGreenhouseAdapter(page, fieldValues) {
               || await trySelect(context, selectors, value);
       if (ok) filled.push(field);
     }
+
+    // Custom questions: country, notice period, CTC, work authorization (B-30)
+    const custom = await fillCustomQuestions(context, fieldValues.answers);
+    filled.push(...custom.filled.map(l => `question: ${l}`));
+    skipped.push(...custom.unanswered.map(l => `question (needs your answer): ${l}`));
   }
 
   await fillFields(page);

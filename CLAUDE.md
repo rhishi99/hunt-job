@@ -33,6 +33,7 @@ Analyzes job postings across 10 dimensions:
 Scans companies via direct ATS JSON APIs — no HTML scraping for the platforms below:
 
 - **Greenhouse, Lever, Ashby, SmartRecruiters, Recruitee, Workable** — official public JSON APIs (`src/core/scan/providers/`)
+- **Workday, Oracle HCM, SuccessFactors, Amazon** — provider modules added September 2026 (`providers/workday.js`, `oraclehcm.js`, `successfactors.js`, `amazon.js`); per-company settings live in `companies.scan_config` and `detect` reads them. A web-search **LinkedIn** provider (`providers/websearch.js`) supplements boards that have no API
 - **JSON-LD fallback** (`providers/jsonld.js`) — for companies without a direct API integration: fetches the career page and reads the schema.org `JobPosting` markup most ATSes (even Workday/iCIMS) inject for Google Jobs SEO
 
 The `companies` table in `data/hunt-job.db` (seeded from `config/company-portals.json`) is the registry — each row tracks `ats_platform`, `slug`, `last_ok_at`, `fail_count`, and self-disables after 5 consecutive failures. Re-verify/re-detect the whole registry with `hunt-job audit-portals`, or a single URL with `hunt-job detect <careers-url>`.
@@ -131,7 +132,7 @@ Generates comprehensive interview preparation guides based on job descriptions.
 Local-only web dashboard — stdlib `http` server (no Express, no cloud) on `http://127.0.0.1:7777`, serving a single-file HTML UI + a JSON API backed directly by SQLite.
 
 **Features:**
-- Pipeline board (Scanned → Evaluated → Applied → Interview → Offer)
+- Pipeline kanban (moves go through `transition()`), Today, Prep and Inbox-review tabs
 - Job list with score/freshness filters
 - Evaluation report view, application timeline, profile summary
 
@@ -156,6 +157,31 @@ One bounded pass of the whole funnel, backed by a durable SQLite task queue (`sr
 
 `hunt`, `watch` and `gigs` are one-line aliases kept for users who rely on their exact flags (`docs/fable51-answers.md` §1.6): `hunt --archetype X` is `run --once --archetype X`; `watch`/`gigs` keep their own scan-only / all-archetype behavior. `scripts/install-schedule.ps1` registers a `HuntJob-Run` Scheduled Task every 3h (checked in, not auto-installed — see BACKLOG.md B-27).
 
+### 9. **Grounded Scoring, Labels & Calibration** (`evaluate`, `label`, `calibrate`, `eval-models`)
+Scoring v2 (`src/core/scoring/`, design in `docs/fable51-answers.md` §3): the LLM only **extracts** facts from the JD (`extract.js`, JSON mode + one repair retry); `validate.js` checks each fact against the JD text and computes skill coverage; `score.js` applies vetoes and a **deterministic weighted formula** (weights in the `score_versions` table); `narrative.js` builds matches/mismatches without a second LLM call. A score on under 50% coverage can never be `Apply`. Evaluations are reused per (job, content hash, profile hash, score version) unless `--fresh`.
+
+`hunt-job label <jobId> good|bad|clear` sets `pipeline.user_label`. `hunt-job calibrate` compares each score component between positives (interview / offer / `good`) and negatives (rejected before interview / `bad`); with ≥15 per class and a ≥0.15 gap it proposes a ×1.25 weight nudge, bounded to 0.5×–2× of version 1. `--accept` writes the next `score_versions` row and re-scores every job from stored extractions (no LLM); `--version N` re-scores under an old version as a report.
+
+### 10. **Inbox Outcomes** (`hunt-job inbox`)
+Read-only Gmail (IMAP) capture: header rules classify emails (acknowledged / screening / interview / offer / rejected), match them to applications, and queue them in a review list shown in the dashboard Inbox tab. Confirming an item moves the job through `transition()`. `--since 14d`, `--dry-run`, `--purge <days>`.
+
+### 11. **Truthful Tailoring & Prep**
+`resume <jobId>` writes the PDF plus `tailor-report.md`; `tailorVerify.js` checks every reworded bullet against its source bullet and reverts ungrounded ones, and the PDF text is re-read to confirm it is ATS-extractable. Résumé and prep folders are named from the job row (`Company_Title_date`, B-28). `prep <jobId>` / `prep --plan` derive topics from extraction gaps into a checklist; `quiz` drills them.
+
+### 12. **Auto-fill Answers**
+Custom application questions (country, notice period, current/expected CTC, work authorization, sponsorship, relocation) are answered **only** from an `applicationAnswers:` block in `config/profile.yml`:
+```yaml
+applicationAnswers:
+  country: India
+  noticePeriod: 60 days
+  currentCtc: 35 LPA
+  expectedCtc: 50 LPA
+  workAuthorization: Authorized to work in India
+  needsSponsorship: "No"
+  relocate: "Yes"
+```
+Missing keys stay empty and required questions without an answer are listed for you to fill. The Greenhouse adapter also opens the cover-letter "Enter manually" box. Hunt-Job still never submits.
+
 ## 📁 Directory Structure
 
 ```
@@ -172,7 +198,11 @@ hunt-job/
 │   │   ├── db.js                      # SQLite singleton + migrations (data/hunt-job.db)
 │   │   ├── aiClient.js                # Multi-provider AI client (Claude/Gemini/Groq/OpenRouter/NVIDIA)
 │   │   ├── logger.js                  # JSONL logger (data/logs/<date>.jsonl)
-│   │   ├── jobEvaluator.js            # 10-dimension scoring — fetches the JD before the LLM call
+│   │   ├── jobEvaluator.js            # orchestrates extract → validate → score; reuses stored evaluations
+│   │   ├── scoring/                   # extract.js, validate.js, score.js, narrative.js, calibrate.js, evalModels.js
+│   │   ├── inbox/                     # classify.js, imapSource.js, index.js — Gmail outcome capture
+│   │   ├── jobDocs.js                 # résumé/prep document records, B-28 folder naming (makeJobSlug, lookupJobMeta)
+│   │   ├── tailorVerify.js            # per-bullet truthfulness check + tailor-report.md
 │   │   ├── resumeData.js             # Canonical resume shape — defaultResumeData(), fromProfile(), mergeTailored(); shared by resumeGenerator + resume-builder/index.html
 │   │   ├── resumeGenerator.js         # Tailored PDF generation (Playwright) — consumes resumeData shape, writes resume.json beside the PDF
 │   │   ├── resumeParser.js            # Parses an existing resume PDF into profile data
@@ -214,6 +244,7 @@ hunt-job/
 │   │   ├── watch.js                   # `hunt-job watch` — thin alias, own scan-only loop; exports `notify()`
 │   │   ├── auditPortals.js            # `hunt-job audit-portals`
 │   │   ├── hunt.js                    # `hunt-job hunt` — thin alias: `run --once` for one archetype
+│   │   ├── calibrate.js, label.js, inbox.js, quiz.js, prepChecklist.js, evalModels.js
 │   │   ├── evaluateJob.js, scanPortals.js, generateResume.js,
 │   │   │   prepareInterview.js, parseResume.js, profileInit.js,
 │   │   │   profileEdit.js, setupApiKey.js

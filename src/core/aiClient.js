@@ -236,6 +236,16 @@ function isProviderHealthy(name) {
   return !h || Date.now() >= h.until;
 }
 
+// B-29 wait caps (see the all-cooling-down branch in getActiveClient).
+const MAX_COOLDOWN_WAIT_MS = 60_000;
+const MAX_TOTAL_COOLDOWN_WAIT_MS = 5 * 60_000;
+let _totalCooldownWaitMs = 0;
+
+/** Test hook: reset the per-process cooldown wait budget. */
+export function _resetCooldownWaitBudget() {
+  _totalCooldownWaitMs = 0;
+}
+
 function markProviderUnhealthy(name, cooldownMs) {
   const until = Date.now() + cooldownMs;
   const existing = _providerHealth[name];
@@ -322,7 +332,16 @@ export function getActiveClient(taskType = 'heavy') {
         if (!candidates.length) {
           const earliestUntil = Math.min(...available.map(p => _providerHealth[p]?.until ?? Date.now()));
           const waitMs = Math.max(0, earliestUntil - Date.now());
+          // B-29: cap the wait — per attempt and cumulatively per process — so a
+          // spent quota fails the task (the queue retries later) instead of
+          // pinning a scheduled run for the whole task limit.
+          if (waitMs > MAX_COOLDOWN_WAIT_MS || _totalCooldownWaitMs + waitMs > MAX_TOTAL_COOLDOWN_WAIT_MS) {
+            throw new Error(
+              `All providers cooling down (earliest clears in ${Math.round(waitMs / 1000)}s) — not waiting; try again later`
+            );
+          }
           if (waitMs > 0) {
+            _totalCooldownWaitMs += waitMs;
             console.warn(`  [AI] All providers cooling down — waiting ${Math.round(waitMs / 1000)}s`);
             await new Promise(r => setTimeout(r, waitMs));
           }

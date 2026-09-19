@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { getActiveClient, generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
 import { fromProfile, mergeTailored, esc } from './resumeData.js';
-import { assertJobText, recordDocument, verifyResumeText } from './jobDocs.js';
+import { assertJobText, recordDocument, verifyResumeText, lookupJobMeta, makeJobSlug } from './jobDocs.js';
 import { getDb } from './db.js';
 import { verifyTailored, renderTailorReport } from './tailorVerify.js';
 import { sha256 } from './pipeline/identity.js';
@@ -16,22 +16,13 @@ const log = createLogger('resumeGenerator');
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '../../data');
 
-function makeJobSlug(jobDescription) {
-  const titleMatch = jobDescription.match(/^Position:\s*(.+)/m);
-  const companyMatch = jobDescription.match(/^Company:\s*(.+)/m);
-  const title = titleMatch ? titleMatch[1].trim() : 'Unknown-Role';
-  const company = companyMatch ? companyMatch[1].trim() : 'Unknown-Company';
-  const date = new Date().toISOString().split('T')[0];
-  return `${company}_${title}_${date}`.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80);
-}
-
 class ResumeGenerator {
   constructor() {
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   }
 
-  makeJobDir(jobPosting) {
-    const slug = makeJobSlug(jobPosting);
+  makeJobDir(jobPosting, meta = null) {
+    const slug = makeJobSlug(jobPosting, meta);
     const dir = path.join(dataDir, slug);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     return dir;
@@ -52,7 +43,7 @@ class ResumeGenerator {
     const { tailored: verified, report: tailorReport } = verifyTailored(base, tailored, { keywords });
     const resume = mergeTailored(base, verified);
     const htmlContent = this.renderHtml(resume);
-    const destDir = this.makeJobDir(jobPosting);
+    const destDir = this.makeJobDir(jobPosting, lookupJobMeta(opts.db || getDb(), opts.jobId));
 
     // canonical JSON beside the PDF — reopens in the interactive builder
     try {

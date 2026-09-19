@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
-import { assertJobText, recordDocument } from './jobDocs.js';
+import { assertJobText, recordDocument, lookupJobMeta, makeJobSlug } from './jobDocs.js';
 import { getDb } from './db.js';
 import { sha256 } from './pipeline/identity.js';
 import fetch from 'node-fetch';
@@ -13,15 +13,6 @@ const log = createLogger('interviewPrep');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '../../data');
-
-function makeJobSlug(jobDescription) {
-  const titleMatch = jobDescription.match(/^Position:\s*(.+)/m);
-  const companyMatch = jobDescription.match(/^Company:\s*(.+)/m);
-  const title = titleMatch ? titleMatch[1].trim() : 'Unknown-Role';
-  const company = companyMatch ? companyMatch[1].trim() : 'Unknown-Company';
-  const date = new Date().toISOString().split('T')[0];
-  return `${company}_${title}_${date}`.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80);
-}
 
 function toStr(val) {
   if (typeof val === 'string') return val;
@@ -92,8 +83,8 @@ class InterviewPrep {
     };
   };
   
-  makeJobDir(jobDescription) {
-    const slug = makeJobSlug(jobDescription);
+  makeJobDir(jobDescription, meta = null) {
+    const slug = makeJobSlug(jobDescription, meta);
     const dir = path.join(dataDir, slug);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
     return dir;
@@ -112,7 +103,7 @@ class InterviewPrep {
     log.op('prep_done', { focusAreas: (prepPlan.focusAreas || []).length });
 
     const enhancedPlan = await this.enrichWithYouTubeLinks(prepPlan);
-    const filePath = await this.savePrepPlan(jobDescription, enhancedPlan);
+    const filePath = await this.savePrepPlan(jobDescription, enhancedPlan, lookupJobMeta(opts.db || getDb(), opts.jobId));
     try {
       recordDocument(opts.db || getDb(), {
         jobId: opts.jobId || null, type: 'interview_prep', filePath,
@@ -245,8 +236,8 @@ Format as valid JSON only.`;
     };
   }
 
-  async savePrepPlan(jobDescription, prepPlan) {
-    const dir = this.makeJobDir(jobDescription);
+  async savePrepPlan(jobDescription, prepPlan, meta = null) {
+    const dir = this.makeJobDir(jobDescription, meta);
     const filename = `prep_${Date.now()}.html`;
     const filepath = path.join(dir, filename);
     const html = this.renderPrepHtml(prepPlan, jobDescription);

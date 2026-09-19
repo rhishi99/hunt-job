@@ -24,6 +24,49 @@ export function findJobResumePdf({ jobId = null, url = null, db = null } = {}) {
   }
 }
 
+// ── Custom-question answers (B-30) ────────────────────────────────────────────
+
+const str = v => (v == null ? '' : String(v).trim());
+
+/**
+ * Personal facts for application questions, from the profile's
+ * `applicationAnswers:` block (legacy top-level keys still honoured).
+ * Every key is '' unless the user supplied it — nothing is guessed.
+ */
+export function buildAnswers(profile = {}) {
+  const a = profile.applicationAnswers || {};
+  return {
+    country: str(a.country ?? profile.country),
+    noticePeriod: str(a.noticePeriod ?? profile.noticePeriod ?? profile.notice_period),
+    currentCtc: str(a.currentCtc),
+    expectedCtc: str(a.expectedCtc),
+    workAuthorization: str(a.workAuthorization ?? profile.workAuthorization ?? profile.work_authorization),
+    needsSponsorship: str(a.needsSponsorship),
+    relocate: str(a.relocate),
+  };
+}
+
+// First match wins; order matters (current/expected CTC before generic salary).
+const QUESTION_RULES = [
+  { key: 'currentCtc', re: /(current|present).{0,30}(ctc|salary|compensation|pay)|(ctc|salary|compensation).{0,20}current/i },
+  { key: 'expectedCtc', re: /(expected|desired|target).{0,30}(ctc|salary|compensation|pay)|salary expectation|(ctc|salary|compensation).{0,20}expect/i },
+  { key: 'noticePeriod', re: /notice\s*period|how soon.{0,20}(join|start)|earliest.{0,20}start/i },
+  { key: 'needsSponsorship', re: /sponsor|require.{0,20}visa/i },
+  { key: 'workAuthorization', re: /(authori[sz]ed|legally|eligible|right).{0,25}work|work\s*authori[sz]ation/i },
+  { key: 'relocate', re: /relocat/i },
+  { key: 'country', re: /\bcountry\b/i },
+];
+
+/** Answer for one form question's label, or '' when unknown (leave for the user). */
+export function answerForQuestion(label, answers) {
+  const text = str(label);
+  if (!text || !answers) return '';
+  for (const { key, re } of QUESTION_RULES) {
+    if (re.test(text)) return answers[key] || '';
+  }
+  return '';
+}
+
 /**
  * AI-generate a short cover letter (≤180 words) tailored to the job.
  * Falls back gracefully on AI errors.
@@ -101,11 +144,11 @@ export async function buildFieldValues(profile, jobContext = '', options = {}) {
     ? `${profile.salary.min} LPA`
     : '';
 
-  // Notice period — check profile for explicit field, or guess from experience
-  const noticePeriod = profile.noticePeriod || profile.notice_period || '30 days';
-
-  // Work authorization
-  const workAuth = profile.workAuthorization || profile.work_authorization || 'Authorized to work in India';
+  // B-30: personal facts (notice period, CTC, work authorization…) come only from
+  // what the user wrote in the profile — never a guessed default.
+  const answers = buildAnswers(profile);
+  const noticePeriod = answers.noticePeriod;
+  const workAuth = answers.workAuthorization;
 
   // Skills as comma-separated string (for single textarea/input)
   const skillsStr = [
@@ -151,6 +194,9 @@ export async function buildFieldValues(profile, jobContext = '', options = {}) {
 
     // Skills
     skills:           skillsStr,
+
+    // Custom-question answers (B-30) — see answerForQuestion()
+    answers,
 
     // AI-generated (populated below if enabled)
     coverLetter:      '',

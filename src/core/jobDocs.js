@@ -88,6 +88,34 @@ export function findJobDocument(db, { jobId = null, url = null, type = 'resume' 
   return null;
 }
 
+// ── B-28: folder naming from the job row ─────────────────────────────────────
+
+/** Company + title of a stored job (aggregator employer wins over the source), or null. */
+export function lookupJobMeta(db, jobId) {
+  if (!jobId || !db) return null;
+  return (
+    db
+      .prepare(
+        `SELECT j.title AS title, COALESCE(j.employer, c.name, j.company_id) AS company
+         FROM jobs j LEFT JOIN companies c ON c.id = CAST(j.company_id AS INTEGER) WHERE j.id = ?`
+      )
+      .get(jobId) || null
+  );
+}
+
+/**
+ * Folder slug `Company_Title_date`. Company/title come from the job row when
+ * known, else from `Company:` / `Position:` lines in the JD text.
+ */
+export function makeJobSlug(jobText, meta = null) {
+  const titleMatch = jobText.match(/^Position:\s*(.+)/m);
+  const companyMatch = jobText.match(/^Company:\s*(.+)/m);
+  const title = meta?.title || (titleMatch ? titleMatch[1].trim() : 'Unknown-Role');
+  const company = meta?.company || (companyMatch ? companyMatch[1].trim() : 'Unknown-Company');
+  const date = new Date().toISOString().split('T')[0];
+  return `${company}_${title}_${date}`.replace(/[^\w\s-]/g, '').replace(/\s+/g, '-').slice(0, 80);
+}
+
 // ── B-12: PDF text verification ──────────────────────────────────────────────
 
 /**
