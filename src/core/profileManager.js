@@ -41,6 +41,31 @@ function loadEnvProfile() {
 const PLACEHOLDER_NAMES = new Set(['', 'updated name', 'your name', 'name', 'n/a']);
 
 /**
+ * Optional structured `rules:` block, read straight off the parsed profile
+ * object (yaml.parse already exposes arbitrary top-level keys — no schema
+ * enforcement happens at load time). Schema (docs/fable51-answers.md §1.2),
+ * consumed by `src/core/pipeline/prefilter.js#applyRules`:
+ *
+ * rules:
+ *   allowedOnsiteCities: string[]        // onsite-only postings outside these cities veto
+ *   vetoTitle:  string[]                 // regex patterns tested against job title
+ *   vetoText:   string[]                 // regex patterns tested against job description
+ *   minSeniority: string                 // e.g. 'senior' — junior/associate/intern titles veto
+ *   employmentTypes: (string|null)[]     // allow-list; null accepts an unreported type
+ *   maxAgeDays: number                   // postings older than this veto
+ *
+ * A missing or absent `rules` key is not an error — it just means S1 applies
+ * no vetoes for that profile (`applyRules` returns `{ veto: false }` for
+ * every job). `config/profile.yml` is personal/gitignored; there is no
+ * checked-in default.
+ *
+ * @returns {object|null}
+ */
+export function getRules(profile) {
+  return profile && typeof profile.rules === 'object' && profile.rules !== null ? profile.rules : null;
+}
+
+/**
  * Checks whether a profile carries enough signal for the evaluator and resume
  * generator to do real work. These are exactly the fields
  * `jobEvaluator.buildEvaluationPrompt()` interpolates into the LLM call — an
@@ -135,6 +160,10 @@ class ProfileManager {
     }
   }
 
+  // NOTE: `rules:` (see getRules() above for the schema) is deliberately not
+  // scaffolded here — it has no sane default and must be hand-derived from a
+  // filled-in `dealbreakers` list. `npm run profile:seed` / manual edit is
+  // where an owner adds it.
   async initializeProfile() {
     const profile = {
       name: '',
