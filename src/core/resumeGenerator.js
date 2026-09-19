@@ -4,6 +4,7 @@ import { createLogger } from './logger.js';
 import { fromProfile, mergeTailored, esc } from './resumeData.js';
 import { assertJobText, recordDocument, verifyResumeText } from './jobDocs.js';
 import { getDb } from './db.js';
+import { verifyTailored, renderTailorReport } from './tailorVerify.js';
 import { sha256 } from './pipeline/identity.js';
 import { chromium } from 'playwright';
 import fs from 'fs';
@@ -47,7 +48,9 @@ class ResumeGenerator {
     const base = fromProfile(userProfile);
     const keywords = await this.extractKeywords(jobPosting);
     const tailored = await this.generateTailored(jobPosting, base, keywords);
-    const resume = mergeTailored(base, tailored);
+    // T4: code judges the LLM's rewrite; ungrounded bullets revert to the base bullet
+    const { tailored: verified, report: tailorReport } = verifyTailored(base, tailored, { keywords });
+    const resume = mergeTailored(base, verified);
     const htmlContent = this.renderHtml(resume);
     const destDir = this.makeJobDir(jobPosting);
 
@@ -57,9 +60,16 @@ class ResumeGenerator {
     } catch (e) {
       log.op('resume_json_write_failed', { error: e.message });
     }
+    const reportPath = path.join(destDir, 'tailor-report.md');
+    try {
+      fs.writeFileSync(reportPath, renderTailorReport(tailorReport));
+    } catch (e) {
+      log.op('tailor_report_write_failed', { error: e.message });
+    }
     const pdfPath = await this.convertToPDF(htmlContent, destDir);
 
-    const verification = await this.verifyPdf(pdfPath, resume, keywords);
+    const verification = { ...(await this.verifyPdf(pdfPath, resume, keywords)), tailor: tailorReport };
+    if (tailorReport.warnings.length) console.warn(`[resume] tailoring warnings: ${tailorReport.warnings.join('; ')}`);
     let documentId = null;
     try {
       documentId = recordDocument(opts.db || getDb(), {
@@ -71,7 +81,7 @@ class ResumeGenerator {
     }
 
     log.op('resume_done', { path: pdfPath, keywords: keywords.length });
-    return { path: pdfPath, keywords, content: htmlContent, data: resume, verification, documentId };
+    return { path: pdfPath, reportPath, tailorReport, keywords, content: htmlContent, data: resume, verification, documentId };
   }
 
   /** B-12: re-read the PDF text; warn (never throw) if it isn't ATS-extractable. */
@@ -156,12 +166,13 @@ Return ONLY a valid JSON object (no markdown, no code fences):
   "summary": "2-3 sentence summary, rewritten to foreground the JD-relevant parts of the candidate's real background",
   "skills": ["ordered so JD-relevant skills come first — only skills already in the candidate's list"],
   "experience": [
-    { "company": "exact company name from above", "bullets": ["the job's real bullets, reworded tighter"] }
+    { "company": "exact company name from above", "bullets": [{ "source_index": 0, "text": "the job's bullet [0], reworded tighter" }] }
   ]
 }
 
 Hard rules:
 - Do NOT invent bullets, numbers, metrics, employers, dates, job titles, or tools. Every bullet must map to one the candidate already has.
+- Every bullet object names the "source_index" of the bullet it rewrites. Keep each job's bullet order.
 - Keep each job's bullet COUNT the same as the source. Reword only.
 - If a bullet has no metric in the source, leave it without one. Never add a percentage or figure.
 - Write plainly, past tense, one idea per bullet. No "Spearheaded / Leveraged / Utilized / Orchestrated", no buzzword stacking.
