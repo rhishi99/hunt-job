@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { getActiveClient } from './aiClient.js';
+import { getActiveClient, generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
 import { fromProfile, mergeTailored, esc } from './resumeData.js';
 import { chromium } from 'playwright';
@@ -127,22 +127,11 @@ Hard rules:
 - Write plainly, past tense, one idea per bullet. No "Spearheaded / Leveraged / Utilized / Orchestrated", no buzzword stacking.
 - "skills" must be a reordering/subset of the candidate's existing skills — add nothing new.`;
 
-    const response = await getActiveClient('heavy').messages.create({
-      max_tokens: 3000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = response.content[0].text
-      .replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '').trim();
-
-    try {
-      const start = text.indexOf('{');
-      const end = text.lastIndexOf('}');
-      if (start !== -1 && end !== -1) return JSON.parse(text.slice(start, end + 1));
-    } catch (e) {
-      console.warn('Failed to parse tailored resume JSON — using untailored resume:', e.message);
-    }
-    return {};
+    // B-04: was catch-and-return-{}, which silently produced an untailored
+    // resume on any parse hiccup. generateJSON retries once, then throws
+    // LLMParseError — the caller must not fall back to untailored silently.
+    const { data: tailored } = await generateJSON(prompt, { taskType: 'heavy', maxTokens: 3000 });
+    return tailored;
   }
 
   renderHtml(data) {

@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { getActiveClient } from './aiClient.js';
+import { generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
 import { getDb } from './db.js';
 import path from 'path';
@@ -175,7 +175,6 @@ function formatSalaryRange(salary) {
 
 class JobEvaluator {
   constructor() {
-    this.client = getActiveClient('heavy');
     // kept for backward compat (tests/callers may reference this path); no longer used for I/O
     this.evaluatedJobsPath = path.join(dataDir, 'evaluated-jobs.json');
   }
@@ -246,17 +245,10 @@ Return ONLY valid JSON, no markdown fences.`;
 
     const evaluationPrompt = JobEvaluator.buildEvaluationPrompt(jobText, profile);
 
-    const response = await this.client.messages.create({
-      max_tokens: 2048,
-      messages: [
-        {
-          role: 'user',
-          content: evaluationPrompt,
-        },
-      ],
-    });
-
-    const evaluation = JobEvaluator.parseEvaluationResponse(response.content[0].text);
+    // B-04: no more silent score-0 fallback on parse failure — generateJSON
+    // throws LLMParseError (after one repair retry), and it propagates to the
+    // CLI/flow caller instead of a junk evaluation getting persisted.
+    const { data: evaluation } = await generateJSON(evaluationPrompt, { taskType: 'heavy', maxTokens: 2048 });
     const savedJob = await this.saveEvaluatedJob(jobInput, evaluation, profile);
     log.op('evaluate_done', { score: evaluation.overallScore, recommendation: evaluation.recommendation });
 

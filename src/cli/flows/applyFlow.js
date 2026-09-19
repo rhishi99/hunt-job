@@ -2,6 +2,9 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import JobEvaluator from '../../core/jobEvaluator.js';
 import { getDb } from '../../core/db.js';
+import { getMinimumApplyScore } from '../../core/aiClient.js';
+
+const MIN_APPLY_SCORE = getMinimumApplyScore();
 import {
   clear, banner, section, success, warn, err, hint, pressEnter,
   scoreBar, showApplicationDataCard, showAutoFillReport,
@@ -183,8 +186,8 @@ export async function runApplicationTracker() {
   });
 
   console.log(chalk.gray(`\n  Total evaluated: ${jobs.length}`));
-  const applied = jobs.filter(j => (j.evaluation?.overallScore || 0) >= 4.0).length;
-  console.log(chalk.gray(`  Strong matches (≥4.0): ${applied}`));
+  const applied = jobs.filter(j => (j.evaluation?.overallScore || 0) >= MIN_APPLY_SCORE).length;
+  console.log(chalk.gray(`  Strong matches (≥${MIN_APPLY_SCORE.toFixed(1)}): ${applied}`));
 
   await pressEnter();
 }

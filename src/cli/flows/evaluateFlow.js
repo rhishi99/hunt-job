@@ -1,9 +1,12 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import JobEvaluator from '../../core/jobEvaluator.js';
+import { getMinimumApplyScore } from '../../core/aiClient.js';
 import { clear, banner, section, success, warn, err, pressEnter, scoreBar } from '../ui.js';
 import { runInterviewPrepFlow } from './prepFlow.js';
 import { runResumeGenFlow } from './resumeFlow.js';
+
+const MIN_APPLY_SCORE = getMinimumApplyScore();
 
 export async function runEvaluateFlow(profile, jobDescriptionOrUrl, skipNextStep = false) {
   clear(); banner();
@@ -72,7 +75,7 @@ export async function runEvaluateFlow(profile, jobDescriptionOrUrl, skipNextStep
 
     // Offer next steps based on score
     const score = evaluation.overallScore || 0;
-    if (score >= 4.0) {
+    if (score >= MIN_APPLY_SCORE) {
       success('Strong match! Recommended to apply.');
       if (!skipNextStep) {
         const { next } = await inquirer.prompt([{

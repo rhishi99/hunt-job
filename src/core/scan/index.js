@@ -5,6 +5,9 @@
  * soft-close jobs the company stopped reporting -> self-heal company health.
  */
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getDb } from '../db.js';
 import { createLogger } from '../logger.js';
 import { isIndiaLocation, jobMatchesArchetype } from './normalize.js';
@@ -36,6 +39,35 @@ const MIN_SCAN_INTERVAL_MS = {
   himalayas: 6 * 60 * 60 * 1000,
 };
 const FAIL_THRESHOLD = 5; // auto-disable a company after this many consecutive failures
+
+// B-01: a company that had a healthy board suddenly returning 0 jobs is more often
+// a transient ATS/parse hiccup than a real mass-closure. Above this many previously
+// active jobs, a 0-job response is not trusted until it repeats on the NEXT scan —
+// the interim sighting is recorded here so it survives process restarts (cron/
+// Task-Scheduler invocations are separate processes, not a long-lived watch loop).
+// A JSON sidecar under data/ was chosen over a DB column/table because another
+// agent is concurrently adding migration v5 to src/core/db.js in this same tree —
+// this needs no schema change and no coordination with that work.
+const ZERO_JOBS_SUSPECT_THRESHOLD = 5;
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_ZERO_STREAK_PATH = path.join(__dirname, '../../../data/scan-zero-streak.json');
+
+function loadZeroStreak(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveZeroStreak(filePath, streak) {
+  try {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify(streak));
+  } catch (err) {
+    log.warn('zero_streak_write_failed', { error: err.message });
+  }
+}
 
 async function mapLimit(items, limit, fn) {
   const results = new Array(items.length);
@@ -103,8 +135,11 @@ function upsertStatement(db) {
  *   `db` override is for tests — defaults to the real singleton connection.
  * @returns {Promise<{jobs: Array, newJobs: Array, closed: number, errors: Array}>}
  */
-export async function scanAll(archetype, { companies, db: dbOverride, includeAllLocations = false } = {}) {
+export async function scanAll(archetype, { companies, db: dbOverride, includeAllLocations = false, zeroStreakFile } = {}) {
   const db = dbOverride || getDb();
+  const zeroStreakPath = zeroStreakFile || DEFAULT_ZERO_STREAK_PATH;
+  const zeroStreak = loadZeroStreak(zeroStreakPath);
+  let zeroStreakChanged = false;
   // Accepts one archetype or several. Several matters for `gigs`, which hunts
   // every archetype in the profile: calling scanAll once per archetype would
   // re-fetch every company's board once per archetype.
@@ -169,6 +204,34 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
       return;
     }
 
+    if (normalized.length === 0) {
+      const previousActiveCount = db.prepare(
+        `SELECT COUNT(*) AS c FROM jobs WHERE company_id = ? AND status = 'active'`
+      ).get(companyId).c;
+
+      if (previousActiveCount > ZERO_JOBS_SUSPECT_THRESHOLD) {
+        if (!zeroStreak[companyId]) {
+          // First 0-job sighting for a previously-healthy board — do not close
+          // anything or mark the company healthy yet; wait for confirmation.
+          zeroStreak[companyId] = Date.now();
+          zeroStreakChanged = true;
+          errors.push({
+            company: company.name,
+            error: `suspected transient failure: 0 jobs returned (previously ${previousActiveCount} active) — will confirm on next scan`,
+          });
+          log.warn('provider_zero_jobs_suspected', { company: company.name, previousActiveCount });
+          return;
+        }
+        // Seen twice in a row now — accept the drop to zero as real and fall
+        // through to the normal close/markOk path below.
+        delete zeroStreak[companyId];
+        zeroStreakChanged = true;
+      }
+    } else if (zeroStreak[companyId]) {
+      delete zeroStreak[companyId];
+      zeroStreakChanged = true;
+    }
+
     // Persist EVERY posting the ATS reports (not just archetype matches) —
     // the jobs table is a shared cache across archetypes, and soft-close
     // must reflect "still open at the ATS", not "still matches this search".
@@ -216,6 +279,8 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
 
     if (company.id != null) markCompanyOk.run(now, company.id);
   });
+
+  if (zeroStreakChanged) saveZeroStreak(zeroStreakPath, zeroStreak);
 
   allJobs.sort((a, b) => (b.postedAt || 0) - (a.postedAt || 0));
   log.op('scan_all_done', { archetype: archetypes.join(', '), total: allJobs.length, new: newJobs.length, closed, errors: errors.length });

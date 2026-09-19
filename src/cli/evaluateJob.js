@@ -1,7 +1,10 @@
 #!/usr/bin/env node
 import JobEvaluator from '../core/jobEvaluator.js';
 import ProfileManager from '../core/profileManager.js';
+import { getMinimumApplyScore } from '../core/aiClient.js';
 import chalk from 'chalk';
+
+const MIN_APPLY_SCORE = getMinimumApplyScore();
 
 const jobEvaluator = new JobEvaluator();
 const profileManager = new ProfileManager();
@@ -30,7 +33,7 @@ async function evaluateJob() {
   console.log(chalk.green('✅ Evaluation Complete!\n'));
 
   if (evaluation.overallScore !== undefined) {
-    const scoreColor = evaluation.overallScore >= 4.0 ? chalk.green : evaluation.overallScore >= 3.0 ? chalk.yellow : chalk.red;
+    const scoreColor = evaluation.overallScore >= MIN_APPLY_SCORE ? chalk.green : evaluation.overallScore >= 3.0 ? chalk.yellow : chalk.red;
     console.log(scoreColor.bold(`Overall Score: ${evaluation.overallScore}/5.0`));
   }
 

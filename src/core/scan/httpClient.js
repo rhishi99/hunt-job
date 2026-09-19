@@ -112,15 +112,20 @@ export async function fetchRaw(url, opts = {}) {
   }
 }
 
-/** Fetches JSON. Returns null (not throw) on parse failure of an empty/blank body. */
+/**
+ * Fetches JSON. Returns null for an empty/blank body (nothing to parse — not an
+ * error). Throws for a non-empty body that isn't valid JSON (B-01): a garbled
+ * page returned as `[]` here used to make scan/index.js believe the ATS honestly
+ * reported zero jobs and close every active posting for the company.
+ */
 export async function fetchJson(url, opts = {}) {
   const text = await fetchRaw(url, opts);
-  if (!text) return null;
+  if (!text || !text.trim()) return null;
   try {
     return JSON.parse(text);
   } catch (err) {
     log.warn('json_parse_failed', { url, error: err.message });
-    return null;
+    throw new Error(`Unparseable JSON body from ${url}: ${err.message}`);
   }
 }
 

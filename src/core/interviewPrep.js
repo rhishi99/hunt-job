@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { getActiveClient } from './aiClient.js';
+import { generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
@@ -57,7 +57,6 @@ function normalizeConceptsToMaster(raw) {
 
 class InterviewPrep {
   constructor() {
-    this.client = getActiveClient('heavy');
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
   }
 
@@ -101,12 +100,10 @@ class InterviewPrep {
     log.op('prep_start', { input: jobDescription.slice(0, 100) });
     const prompt = this.buildPrepPrompt(jobDescription, profile);
 
-    const response = await this.client.messages.create({
-      max_tokens: 4000,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const prepPlan = this.parsePrepResponse(response.content[0].text);
+    // B-04: was catch-and-return-empty-structure, which silently rendered a
+    // blank prep plan on any parse failure. generateJSON retries once, then
+    // throws LLMParseError so the caller surfaces the failure instead.
+    const { data: prepPlan } = await generateJSON(prompt, { taskType: 'heavy', maxTokens: 4000 });
     log.op('prep_done', { focusAreas: (prepPlan.focusAreas || []).length });
 
     const enhancedPlan = await this.enrichWithYouTubeLinks(prepPlan);

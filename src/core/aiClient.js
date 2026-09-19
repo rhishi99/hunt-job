@@ -51,30 +51,18 @@ function isDailyQuotaExhausted(msg) {
          (msg.includes('429') && msg.includes('limit: 20'));
 }
 
-async function geminiGenerate(ai, model, prompt, maxTokens, retries = 3) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const response = await ai.models.generateContent({
-        model, contents: prompt, config: { maxOutputTokens: maxTokens }
-      });
-      return extractGeminiText(response);
-    } catch (err) {
-      const msg = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
-      const is503 = msg.includes('503') || msg.includes('UNAVAILABLE');
-      const is429 = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
-      const isDaily = isDailyQuotaExhausted(msg);
-
-      if (isDaily) throw new Error(`DAILY_QUOTA_EXHAUSTED: ${msg}`);
-
-      if (attempt < retries && (is503 || is429)) {
-        const suggested = parseRetryDelay(msg);
-        const wait = suggested ?? (is429 ? 30000 : attempt * 5000);
-        console.log(`  Gemini rate limit, waiting ${Math.round(wait / 1000)}s...`);
-        await new Promise(r => setTimeout(r, wait));
-        continue;
-      }
-      throw new Error(msg);
-    }
+// B-24: no in-provider retry/sleep here anymore. A single failed attempt throws
+// immediately so the caller (getActiveClient) can fail over to the next
+// provider right away — sleeping 30-90s before ever trying another provider
+// was the exact bug this replaces. Cooldown bookkeeping happens one level up.
+async function geminiGenerate(ai, model, prompt, config) {
+  try {
+    const response = await ai.models.generateContent({ model, contents: prompt, config });
+    return extractGeminiText(response);
+  } catch (err) {
+    const msg = typeof err === 'string' ? err : err?.message || JSON.stringify(err);
+    if (isDailyQuotaExhausted(msg)) throw new Error(`DAILY_QUOTA_EXHAUSTED: ${msg}`);
+    throw new Error(msg);
   }
 }
 
@@ -87,11 +75,15 @@ class GeminiClient {
   }
   get messages() {
     return {
-      create: async ({ max_tokens = 2048, messages, taskType = 'heavy' }) => {
+      create: async ({ max_tokens = 2048, messages, taskType = 'heavy', temperature, json = false }) => {
         this._init();
         const model = PROVIDER_MODELS.gemini[taskType] ?? PROVIDER_MODELS.gemini.heavy;
         const prompt = messages.filter(m => m.role === 'user').map(m => m.content).join('\n\n');
-        const text = await geminiGenerate(this._ai, model, prompt, max_tokens);
+        const config = { maxOutputTokens: max_tokens };
+        if (temperature !== undefined) config.temperature = temperature;
+        // B-04: native JSON mode — Gemini returns a JSON body directly, no fences to strip.
+        if (json) config.responseMimeType = 'application/json';
+        const text = await geminiGenerate(this._ai, model, prompt, config);
         return { content: [{ text }] };
       }
     };
@@ -105,14 +97,19 @@ class AnthropicClient {
   }
   get messages() {
     return {
-      create: async ({ max_tokens = 2048, messages, taskType = 'heavy' }) => {
+      create: async ({ max_tokens = 2048, messages, taskType = 'heavy', temperature, json = false }) => {
         this._init();
         const model = PROVIDER_MODELS.anthropic[taskType] ?? PROVIDER_MODELS.anthropic.heavy;
-        const response = await this._client.messages.create({
-          model, max_tokens,
-          messages: messages.map(m => ({ role: m.role, content: m.content })),
-        });
-        const text = response.content.find(b => b.type === 'text')?.text ?? '';
+        const apiMessages = messages.map(m => ({ role: m.role, content: m.content }));
+        // B-04: Claude has no response-format JSON mode — prefill the assistant
+        // turn with '{' so the model continues a JSON object instead of prefacing
+        // it with prose. The prefill text isn't echoed back, so it's re-added below.
+        if (json) apiMessages.push({ role: 'assistant', content: '{' });
+        const params = { model, max_tokens, messages: apiMessages };
+        if (temperature !== undefined) params.temperature = temperature;
+        const response = await this._client.messages.create(params);
+        let text = response.content.find(b => b.type === 'text')?.text ?? '';
+        if (json) text = '{' + text;
         return { content: [{ text }] };
       }
     };
@@ -130,8 +127,14 @@ class OpenAICompatibleClient {
   }
   get messages() {
     return {
-      create: async ({ max_tokens = 2048, messages, taskType = 'heavy' }) => {
+      create: async ({ max_tokens = 2048, messages, taskType = 'heavy', temperature, json = false }) => {
         const model = this._models[taskType] ?? this._models.heavy;
+        const body = { model, messages, max_tokens };
+        if (temperature !== undefined) body.temperature = temperature;
+        // B-04: OpenAI-compatible JSON mode (supported by Groq + OpenRouter's
+        // upstream models; providers that ignore the field just return prose,
+        // which generateJSON's repair retry still handles).
+        if (json) body.response_format = { type: 'json_object' };
         const res = await fetch(`${this._baseUrl}/chat/completions`, {
           method: 'POST',
           headers: {
@@ -139,7 +142,7 @@ class OpenAICompatibleClient {
             'Content-Type': 'application/json',
             ...this._extraHeaders,
           },
-          body: JSON.stringify({ model, messages, max_tokens }),
+          body: JSON.stringify(body),
           signal: AbortSignal.timeout(60000),
         });
         if (!res.ok) {
@@ -188,7 +191,47 @@ function makeOpenRouterClient() {
 // ─── Provider registry ────────────────────────────────────────────────────────
 
 const _clientCache    = {};
+// B-24: was a sticky boolean for the life of the process — one 429 disabled a
+// provider forever. Now a timed cooldown: `{ until: <epoch ms> }` while
+// unhealthy, absent (or expired) once it's eligible again.
 const _providerHealth = {};
+
+const RATE_LIMIT_COOLDOWN_MS  = 60 * 1000;        // 429 / RESOURCE_EXHAUSTED
+const UNAVAILABLE_COOLDOWN_MS = 30 * 1000;        // 503 / UNAVAILABLE
+const DAILY_QUOTA_COOLDOWN_MS = 24 * 60 * 60 * 1000; // daily quota exhausted
+const DEFAULT_COOLDOWN_MS     = 60 * 1000;        // any other provider error
+
+function isProviderHealthy(name) {
+  const h = _providerHealth[name];
+  return !h || Date.now() >= h.until;
+}
+
+function markProviderUnhealthy(name, cooldownMs) {
+  const until = Date.now() + cooldownMs;
+  const existing = _providerHealth[name];
+  if (!existing || until > existing.until) _providerHealth[name] = { until };
+}
+
+function markProviderHealthy(name) {
+  delete _providerHealth[name];
+}
+
+// Classifies a provider failure into a cooldown duration, preferring the
+// provider's own suggested retryDelay (Gemini) when one is present.
+function classifyProviderFailure(err) {
+  const msg = err?.message || String(err);
+  if (/DAILY_QUOTA_EXHAUSTED/i.test(msg)) {
+    return { cooldownMs: DAILY_QUOTA_COOLDOWN_MS, kind: 'daily_quota' };
+  }
+  const suggested = parseRetryDelay(msg);
+  if (/\b429\b/.test(msg) || /RESOURCE_EXHAUSTED/i.test(msg) || /rate.?limit/i.test(msg)) {
+    return { cooldownMs: suggested ?? RATE_LIMIT_COOLDOWN_MS, kind: 'rate_limit' };
+  }
+  if (/\b503\b/.test(msg) || /UNAVAILABLE/i.test(msg)) {
+    return { cooldownMs: suggested ?? UNAVAILABLE_COOLDOWN_MS, kind: 'unavailable' };
+  }
+  return { cooldownMs: DEFAULT_COOLDOWN_MS, kind: 'error' };
+}
 
 function buildClient(providerName) {
   switch (providerName) {
@@ -210,8 +253,20 @@ function getClient(providerName) {
 
 export function getActiveProviderName() {
   const available = getAvailableProviders();
-  const healthy = available.filter(p => _providerHealth[p] !== false);
+  const healthy = available.filter(isProviderHealthy);
   return healthy[0] ?? available[0] ?? null;
+}
+
+// ─── Settings-backed config (B-23) ─────────────────────────────────────────────
+
+/** Reproducible-by-default temperature for every provider call. */
+export function getTemperature() {
+  return settings.claude?.temperature ?? 0;
+}
+
+/** Shared minimum-apply-score threshold — single source of truth for CLI/flows. */
+export function getMinimumApplyScore() {
+  return settings.evaluation?.minimumApplyScore ?? 4.0;
 }
 
 // ─── Public API ───────────────────────────────────────────────────────────────
@@ -220,26 +275,42 @@ export function getActiveClient(taskType = 'heavy') {
   return {
     messages: {
       create: async (params) => {
-        const effectiveParams = { taskType, ...params };
+        // B-23: every provider call gets a temperature unless the caller
+        // explicitly overrides it.
+        const effectiveParams = { taskType, temperature: getTemperature(), ...params };
         const available = getAvailableProviders();
         if (!available.length) {
           throw new Error(
             'No API key found. Set one of: ANTHROPIC_API_KEY, OPENROUTER_API_KEY, GROQ_API_KEY, NVIDIA_API_KEY, GEMINI_API_KEY'
           );
         }
-        const healthy = available.filter(p => _providerHealth[p] !== false);
-        const candidates = healthy.length ? healthy : available;
+
+        // B-24: fail over across healthy providers first, with no sleep at all.
+        // Only when EVERY candidate is already cooling down do we wait — and
+        // only until the earliest cooldown clears — before trying again.
+        let candidates = available.filter(isProviderHealthy);
+        if (!candidates.length) {
+          const earliestUntil = Math.min(...available.map(p => _providerHealth[p]?.until ?? Date.now()));
+          const waitMs = Math.max(0, earliestUntil - Date.now());
+          if (waitMs > 0) {
+            console.warn(`  [AI] All providers cooling down — waiting ${Math.round(waitMs / 1000)}s`);
+            await new Promise(r => setTimeout(r, waitMs));
+          }
+          candidates = available.filter(isProviderHealthy);
+          if (!candidates.length) candidates = available; // clock nudge — try anyway rather than give up
+        }
 
         let lastError;
         for (const providerName of candidates) {
           try {
             const client = getClient(providerName);
             const result = await client.messages.create(effectiveParams);
-            _providerHealth[providerName] = true;
+            markProviderHealthy(providerName);
             return result;
           } catch (err) {
-            console.warn(`  [AI] ${providerName} failed: ${err.message.slice(0, 100)} — trying next provider`);
-            _providerHealth[providerName] = false;
+            const { cooldownMs, kind } = classifyProviderFailure(err);
+            console.warn(`  [AI] ${providerName} failed (${kind}): ${err.message.slice(0, 100)} — trying next provider`);
+            markProviderUnhealthy(providerName, cooldownMs);
             lastError = err;
           }
         }
@@ -252,6 +323,77 @@ export function getActiveClient(taskType = 'heavy') {
 // Backward-compat alias
 export function createClient() {
   return getActiveClient('heavy');
+}
+
+// ─── JSON mode (B-04) ───────────────────────────────────────────────────────────
+
+/**
+ * Thrown by generateJSON when the model's output still isn't valid JSON after
+ * one repair retry. Callers must let this propagate (or handle it explicitly)
+ * — never catch-and-persist a placeholder (score 0, {}, empty plan) in its place.
+ */
+export class LLMParseError extends Error {
+  constructor(message, { raw } = {}) {
+    super(message);
+    this.name = 'LLMParseError';
+    this.raw = raw;
+  }
+}
+
+function stripJsonFences(text) {
+  return (text || '').replace(/```(?:json)?\s*/gi, '').replace(/```\s*/g, '');
+}
+
+function extractJson(text) {
+  const stripped = stripJsonFences(text).trim();
+  try {
+    return JSON.parse(stripped);
+  } catch {
+    // fall through — try to salvage a JSON block from surrounding prose
+  }
+  const objMatch = stripped.match(/\{[\s\S]*\}/);
+  if (objMatch) {
+    try { return JSON.parse(objMatch[0]); } catch { /* try the array form below */ }
+  }
+  const arrMatch = stripped.match(/\[[\s\S]*\]/);
+  if (arrMatch) {
+    return JSON.parse(arrMatch[0]); // let this throw if it's still bad — caller handles it
+  }
+  throw new Error('No valid JSON object or array found in response');
+}
+
+/**
+ * Generates JSON from the active provider, using provider-native JSON mode
+ * where supported (Gemini responseMimeType, OpenAI-compatible response_format,
+ * Claude assistant-prefill). On a parse failure, makes exactly ONE repair retry
+ * — asking the model to fix its own invalid output — then throws LLMParseError.
+ *
+ * @returns {Promise<{data: any, raw: string}>}
+ */
+export async function generateJSON(prompt, opts = {}) {
+  const { taskType = 'heavy', maxTokens = 2048, temperature } = opts;
+  const client = getActiveClient(taskType);
+  const params = { max_tokens: maxTokens, json: true, messages: [{ role: 'user', content: prompt }] };
+  if (temperature !== undefined) params.temperature = temperature;
+
+  const first = await client.messages.create(params);
+  const firstText = first.content[0]?.text ?? '';
+  try {
+    return { data: extractJson(firstText), raw: firstText };
+  } catch (firstErr) {
+    console.warn(`  [AI] JSON parse failed, attempting one repair retry: ${firstErr.message}`);
+    const repairPrompt = `The following model output was supposed to be valid JSON but failed to parse (${firstErr.message}).\n\n---\n${firstText}\n---\n\nReturn ONLY the corrected, valid JSON. No markdown fences, no commentary, no explanation.`;
+    const second = await client.messages.create({ ...params, messages: [{ role: 'user', content: repairPrompt }] });
+    const secondText = second.content[0]?.text ?? '';
+    try {
+      return { data: extractJson(secondText), raw: secondText };
+    } catch (secondErr) {
+      throw new LLMParseError(
+        `LLM did not return valid JSON after one repair retry: ${secondErr.message}`,
+        { raw: secondText }
+      );
+    }
+  }
 }
 
 export async function testConnection(providerName = null) {

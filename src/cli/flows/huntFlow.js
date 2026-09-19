@@ -2,7 +2,10 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import JobEvaluator from '../../core/jobEvaluator.js';
 import InterviewPrep from '../../core/interviewPrep.js';
+import { getMinimumApplyScore } from '../../core/aiClient.js';
 import { clear, banner, section, success, warn, err, pressEnter, scoreBar } from '../ui.js';
+
+const MIN_APPLY_SCORE = getMinimumApplyScore();
 
 export async function runFullWorkflow(profile) {
   clear(); banner();
@@ -53,7 +56,7 @@ export async function runFullWorkflow(profile) {
       await pressEnter();
       return;
     }
-    if (score >= 4.0) success('Strong match! Recommended to apply.');
+    if (score >= MIN_APPLY_SCORE) success('Strong match! Recommended to apply.');
     else warn('Borderline match. Consider if role aligns with your goals.');
   } catch (e) {
     err(`Evaluation failed: ${e.message}`);
