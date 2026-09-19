@@ -27,6 +27,7 @@
     "profile:init": "node src/cli/profileInit.js",
     "profile:seed": "node scripts/seed-profile.js",
     "backfill:commitment": "node scripts/backfill-employment-type.js",
+    "migrate:v5": "node scripts/migrate-v5-backfill.js",
     "seed:aggregators": "node scripts/seed-aggregators.js",
     "profile:edit": "node src/cli/profileEdit.js",
     "parse-resume": "node src/cli/parseResume.js"
