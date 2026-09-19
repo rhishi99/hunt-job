@@ -9,6 +9,8 @@
  * Usage: npm run audit-portals
  */
 import chalk from 'chalk';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { getDb, closeDb } from '../core/db.js';
 import { PROVIDERS } from '../core/scan/index.js';
 import { detect } from '../core/scan/detect.js';
@@ -29,11 +31,17 @@ async function mapLimit(items, limit, fn) {
   return results;
 }
 
-async function auditCompany(db, company) {
+export async function auditCompany(db, company) {
   let platform = company.ats_platform;
   let slug = company.slug;
 
-  if (!platform || !slug) {
+  // Only fall back to URL-regex/DOM detection when the platform itself is
+  // unknown. A platform that's already set but has no slug is either a
+  // provider that doesn't need one (jsonld/aggregators — provider.needsSlug
+  // === false) or a scan_config-driven platform with no provider yet
+  // (workday/oraclehcm/successfactors, brief 8) — neither should be
+  // re-detected from career_url on every audit run.
+  if (!platform) {
     if (!company.career_url) return { name: company.name, ok: false, platform, slug, message: 'no career_url on file' };
     const detection = await detect(company.career_url).catch(() => null);
     if (!detection?.platform) return { name: company.name, ok: false, platform, slug, message: 'ATS undetected' };
@@ -42,8 +50,11 @@ async function auditCompany(db, company) {
   }
 
   const provider = PROVIDERS[platform];
-  if (!provider || !slug) {
-    return { name: company.name, ok: false, platform, slug, message: `detected ${platform || 'unknown'} — no scan provider yet` };
+  if (!provider) {
+    return { name: company.name, ok: false, platform, slug, message: `detected ${platform} — no scan provider yet` };
+  }
+  if (!slug && provider.needsSlug !== false) {
+    return { name: company.name, ok: false, platform, slug, message: `${platform} needs a slug — none on file` };
   }
 
   try {
@@ -80,4 +91,8 @@ async function main() {
   closeDb();
 }
 
-main().catch(err => { console.error(chalk.red('Error:'), err.message); process.exit(1); });
+// Guarded so `auditCompany` can be imported by tests (e.g. test/cli/auditPortals.test.js)
+// without running the real CLI against the live DB.
+if (process.argv[1] && fileURLToPath(import.meta.url) === path.resolve(process.argv[1])) {
+  main().catch(err => { console.error(chalk.red('Error:'), err.message); process.exit(1); });
+}

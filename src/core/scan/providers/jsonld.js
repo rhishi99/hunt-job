@@ -16,6 +16,10 @@ import crypto from 'crypto';
 import { fetchText } from '../httpClient.js';
 import { cleanHtml, normalizeJob } from '../normalize.js';
 
+// Reads career_url, not a board `slug` — auditPortals.js/index.js use this to
+// exempt the provider from "row is missing a slug" handling.
+export const needsSlug = false;
+
 const JSONLD_BLOCK_RE = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
 
 function extractJsonLdBlocks(html) {

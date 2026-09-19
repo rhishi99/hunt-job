@@ -19,6 +19,7 @@
     "scan-portals": "node src/cli/scanPortals.js",
     "audit-portals": "node src/cli/auditPortals.js",
     "seed:ats": "node scripts/seed-ats-companies.js",
+    "registry:apply": "node scripts/apply-verified-slugs.js",
     "list": "node src/cli/listJobs.js",
     "apply": "node src/cli/applyJob.js",
     "generate-resume": "node src/cli/generateResume.js",

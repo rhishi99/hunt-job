@@ -20,6 +20,10 @@
 import { fetchJson } from '../httpClient.js';
 import { cleanHtml, normalizeJob } from '../normalize.js';
 
+// Aggregator: one endpoint, no per-company board token — auditPortals.js/
+// index.js use this to exempt the source row from "missing a slug" handling.
+export const needsSlug = false;
+
 // Remotive's own category slug for infra work. Their taxonomy is coarse — this
 // is the closest bucket to DevOps/SRE/platform.
 const CATEGORY = 'devops-sysadmin';

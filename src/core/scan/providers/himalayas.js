@@ -13,6 +13,10 @@
 import { fetchJson } from '../httpClient.js';
 import { cleanHtml, normalizeJob } from '../normalize.js';
 
+// Aggregator: one endpoint, no per-company board token — auditPortals.js/
+// index.js use this to exempt the source row from "missing a slug" handling.
+export const needsSlug = false;
+
 // The API caps a page at 20 regardless of `limit`, and ignores every filter
 // param we probed (category/categories/search/q all return the same unfiltered
 // firehose, ~100k postings). So this is a newest-first feed we sample the head
