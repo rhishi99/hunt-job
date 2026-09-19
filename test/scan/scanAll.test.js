@@ -248,3 +248,47 @@ describe('scanAll zero-jobs suspicion (B-01)', () => {
     expect(result.errors).toHaveLength(0);
   });
 });
+
+describe('B-06 partial feeds', () => {
+  test('partial feed skips NOT-IN sweep; closes only rows older than 7d', async () => {
+    const db = freshDb();
+    const company = insertCompany(db);
+    insertActiveJobs(db, company.id, 3);
+    db.prepare(`UPDATE jobs SET last_seen_at = ? WHERE id = 'greenhouse:gitlab:2'`).run(Date.now() - 8 * 86400000);
+    const feed = [job({ id: 'greenhouse:gitlab:9' })];
+    feed.partial = true;
+    ghFetchJobs.mockResolvedValue(feed);
+
+    await scanAll('Backend Engineer', { companies: [company], db, zeroStreakFile: tmpZeroStreakFile() });
+
+    const st = id => db.prepare('SELECT status FROM jobs WHERE id = ?').get(id).status;
+    expect(st('greenhouse:gitlab:0')).toBe('active');
+    expect(st('greenhouse:gitlab:2')).toBe('closed');
+  });
+});
+
+describe('B-09 canary re-probe', () => {
+  test('disabled company is scheduled, then re-enabled once a due probe returns jobs', async () => {
+    const db = freshDb();
+    insertCompany(db);
+    db.prepare('UPDATE companies SET enabled = 0, fail_count = 5 WHERE id = 1').run();
+    const zeroStreakFile = tmpZeroStreakFile();
+    const canaryFile = path.join(path.dirname(zeroStreakFile), 'scan-canary.json');
+    try { fs.unlinkSync(canaryFile); } catch { /* none */ }
+    ghFetchJobs.mockResolvedValue([job()]);
+    try {
+      await scanAll('Backend Engineer', { db, zeroStreakFile });
+      expect(ghFetchJobs).not.toHaveBeenCalled();
+      const state = JSON.parse(fs.readFileSync(canaryFile, 'utf-8'));
+      state['1'].nextAt = Date.now() - 1000;
+      fs.writeFileSync(canaryFile, JSON.stringify(state));
+
+      await scanAll('Backend Engineer', { db, zeroStreakFile });
+      const row = db.prepare('SELECT enabled, fail_count FROM companies WHERE id = 1').get();
+      expect(row.enabled).toBe(1);
+      expect(row.fail_count).toBe(0);
+    } finally {
+      try { fs.unlinkSync(canaryFile); } catch { /* ok */ }
+    }
+  });
+});

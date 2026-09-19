@@ -59,6 +59,7 @@ export function parse(data, companyRef = {}) {
 export async function fetchJobs(companyRef = {}) {
   const all = [];
   let cursor = null;
+  let capped = false;
 
   for (let page = 0; page < MAX_PAGES; page++) {
     const url = `${BASE}?limit=${PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`;
@@ -72,6 +73,10 @@ export async function fetchJobs(companyRef = {}) {
     // ask for, so a length check would stop after page one.
     cursor = data?.nextCursor;
     if (!cursor) break;
+    if (page === MAX_PAGES - 1) capped = true;
   }
+  // B-06: page cap hit with a cursor still pending => we only saw the head of the feed.
+  // scanAll reads this to skip the NOT-IN soft-close sweep.
+  if (capped) all.partial = true;
   return all;
 }

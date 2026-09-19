@@ -1,8 +1,10 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
+import { resolveJobInput } from '../../core/jobDocs.js';
+import { getDb } from '../../core/db.js';
 import { clear, banner, section, success, err, pressEnter } from '../ui.js';
 
-export async function runResumeGenFlow(profile, jobDescriptionOrUrl) {
+export async function runResumeGenFlow(profile, jobDescriptionOrUrl, jobId = null) {
   clear(); banner();
   section('Generate Tailored Resume');
 
@@ -23,7 +25,9 @@ export async function runResumeGenFlow(profile, jobDescriptionOrUrl) {
   try {
     const { default: ResumeGenerator } = await import('../../core/resumeGenerator.js');
     const generator = new ResumeGenerator();
-    const result = await generator.generate(jobDescription, profile);
+    // B-02: URL -> real JD text (or a clear error); the model never sees a bare link
+    const resolved = await resolveJobInput(jobDescription, { db: getDb() });
+    const result = await generator.generate(resolved.jobText, profile, { jobId: jobId || resolved.jobId });
 
     success(`Resume saved: ${result.path}`);
     if (result.keywords?.length) {

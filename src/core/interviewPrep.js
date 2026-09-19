@@ -1,6 +1,9 @@
 import 'dotenv/config';
 import { generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
+import { assertJobText, recordDocument } from './jobDocs.js';
+import { getDb } from './db.js';
+import { sha256 } from './pipeline/identity.js';
 import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
@@ -96,7 +99,9 @@ class InterviewPrep {
     return dir;
   }
 
-  async generatePrepPlan(jobDescription, profile) {
+  /** @param {{jobId?: string, db?: object}} [opts] - jobId links the file in `documents` (B-03) */
+  async generatePrepPlan(jobDescription, profile, opts = {}) {
+    assertJobText(jobDescription); // B-02: never prep from a bare URL
     log.op('prep_start', { input: jobDescription.slice(0, 100) });
     const prompt = this.buildPrepPrompt(jobDescription, profile);
 
@@ -108,6 +113,14 @@ class InterviewPrep {
 
     const enhancedPlan = await this.enrichWithYouTubeLinks(prepPlan);
     const filePath = await this.savePrepPlan(jobDescription, enhancedPlan);
+    try {
+      recordDocument(opts.db || getDb(), {
+        jobId: opts.jobId || null, type: 'interview_prep', filePath,
+        contentHash: sha256(jobDescription),
+      });
+    } catch (e) {
+      log.op('prep_document_record_failed', { error: e.message });
+    }
 
     return { plan: enhancedPlan, filePath };
   }

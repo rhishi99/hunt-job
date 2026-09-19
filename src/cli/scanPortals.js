@@ -8,7 +8,7 @@ import 'dotenv/config';
 import chalk from 'chalk';
 import { scanAll } from '../core/scan/index.js';
 import { filterJobs } from '../core/scan/query.js';
-import { closeDb } from '../core/db.js';
+import { closeDb, getDb } from '../core/db.js';
 import { parseFilterArgs, printJobs, FILTER_HELP } from './jobBrowse.js';
 
 async function main() {
@@ -28,14 +28,26 @@ async function main() {
   const wideLocation = Boolean(o.location || o.remote || o.allLocations);
   const { jobs, newJobs, closed, errors } = await scanAll(o.archetype, { includeAllLocations: wideLocation });
 
-  let results = (o.newHours ? newJobs : jobs).map(j => ({
+  // B-15: `--new` / `--new-hours` mean the same as in `list`: first seen within the
+  // window (jobs.first_seen_at), NOT "new this run". scanAll has already upserted
+  // every posting, so first_seen_at is looked up per id.
+  const firstSeen = new Map();
+  if (o.newHours) {
+    const db = getDb();
+    for (let i = 0; i < jobs.length; i += 500) {
+      const ids = jobs.slice(i, i + 500).map(j => j.id);
+      const rows = db.prepare(`SELECT id, first_seen_at FROM jobs WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids);
+      for (const r of rows) firstSeen.set(r.id, r.first_seen_at);
+    }
+  }
+  let results = jobs.map(j => ({
     id: j.id, title: j.title, company: j.company, location: j.location,
     url: j.url, applyUrl: j.applyUrl, description: j.description,
-    source: j.source, postedAt: j.postedAt, firstSeenAt: null,
+    source: j.source, postedAt: j.postedAt, firstSeenAt: firstSeen.get(j.id) ?? null,
   }));
 
   // Archetype + broad-location already applied inside scanAll; apply the rest.
-  results = filterJobs(results, { ...o, archetype: undefined, newHours: undefined });
+  results = filterJobs(results, { ...o, archetype: undefined });
 
   console.log(chalk.gray(
     `scanned · ${jobs.length} matched · ${newJobs.length} new · ${closed} closed · ${errors.length} errors`

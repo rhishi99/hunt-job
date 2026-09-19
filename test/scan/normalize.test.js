@@ -54,6 +54,16 @@ describe('jobMatchesArchetype', () => {
   test('does not match unrelated roles', () => {
     expect(jobMatchesArchetype('Account Executive - Italy', 'Sales', 'Data Engineer')).toBe(false);
   });
+
+  test('B-08: all-generic archetype falls back to all tokens (AND)', () => {
+    expect(jobMatchesArchetype('Manager, Engineering - Payments', null, 'Engineering Manager')).toBe(true);
+    expect(jobMatchesArchetype('Product Manager', null, 'Engineering Manager')).toBe(false);
+  });
+
+  test('B-08: multi-word archetype needs every meaningful word', () => {
+    expect(jobMatchesArchetype('Platform Engineer, Data Infrastructure', null, 'Data Platform Engineer')).toBe(true);
+    expect(jobMatchesArchetype('Data Scientist', null, 'Data Platform Engineer')).toBe(false);
+  });
 });
 
 describe('daysAgoLabel', () => {

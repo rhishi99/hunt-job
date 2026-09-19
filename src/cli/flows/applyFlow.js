@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import JobEvaluator from '../../core/jobEvaluator.js';
 import { getDb } from '../../core/db.js';
 import { getMinimumApplyScore } from '../../core/aiClient.js';
+import { evaluationSnapshot } from './applyGate.js';
 
 const MIN_APPLY_SCORE = getMinimumApplyScore();
 import {
@@ -19,7 +20,8 @@ export async function runAutoFill(job, profile, jobContext) {
     job.url,
     job.applyUrl || null,
     profile,
-    jobContext || ''
+    jobContext || '',
+    { jobId: job.id || null }
   );
 
   showAutoFillReport(result);
@@ -88,7 +90,7 @@ export async function applyToJob(job, profile, jobContext = '') {
           try {
             const { autoFillApplication } = await import('../../core/autoFillBrowser.js');
             const retryResult = await autoFillApplication(
-              job.url, job.applyUrl || null, profile, jobContext || ''
+              job.url, job.applyUrl || null, profile, jobContext || '', { jobId: job.id || null }
             );
             showAutoFillReport(retryResult);
             autoFillResult = retryResult;
@@ -139,15 +141,19 @@ export async function applyToJob(job, profile, jobContext = '') {
     platform:      autoFillResult?.platform || null,
     fieldsFilledCount: autoFillResult?.filled?.length || 0,
     resumeUploaded:    autoFillResult?.uploaded || false,
+    resumePath:        autoFillResult?.fieldValues?.resumePath || null,
+    ...evaluationSnapshot(getDb(), job, jobContext), // B-17: score/recommendation at apply time
   };
 
   getDb().prepare(`
     INSERT INTO applications (
       id, title, company, location, url, status, applied_at,
-      applicant_name, apply_method, platform, fields_filled_count, resume_uploaded
+      applicant_name, apply_method, platform, fields_filled_count, resume_uploaded,
+      resume_path, evaluation_score, recommendation, job_id, evaluation_id, attempt
     ) VALUES (
       @id, @title, @company, @location, @url, @status, @appliedAt,
-      @applicantName, @applyMethod, @platform, @fieldsFilledCount, @resumeUploaded
+      @applicantName, @applyMethod, @platform, @fieldsFilledCount, @resumeUploaded,
+      @resumePath, @evaluationScore, @recommendation, @jobId, @evaluationId, @attempt
     )
   `).run({ ...application, resumeUploaded: application.resumeUploaded ? 1 : 0 });
 

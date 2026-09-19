@@ -1,9 +1,11 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import InterviewPrep from '../../core/interviewPrep.js';
+import { resolveJobInput } from '../../core/jobDocs.js';
+import { getDb } from '../../core/db.js';
 import { clear, banner, section, success, err, pressEnter } from '../ui.js';
 
-export async function runInterviewPrepFlow(profile, jobDescriptionOrUrl) {
+export async function runInterviewPrepFlow(profile, jobDescriptionOrUrl, jobId = null) {
   clear(); banner();
   section('Interview Preparation');
 
@@ -23,7 +25,8 @@ export async function runInterviewPrepFlow(profile, jobDescriptionOrUrl) {
 
   try {
     const prep = new InterviewPrep();
-    const { plan } = await prep.generatePrepPlan(jobDescription, profile);
+    const resolved = await resolveJobInput(jobDescription, { db: getDb() }); // B-02
+    const { plan } = await prep.generatePrepPlan(resolved.jobText, profile, { jobId: jobId || resolved.jobId });
 
     section('Prep Plan');
     console.log(prep.formatPrepPlanText(plan));

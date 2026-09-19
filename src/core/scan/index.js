@@ -38,6 +38,11 @@ const MIN_SCAN_INTERVAL_MS = {
   remotive: 6 * 60 * 60 * 1000,
   himalayas: 6 * 60 * 60 * 1000,
 };
+// B-06: a partial aggregator feed (page cap hit) can't prove absence, so it skips the
+// NOT-IN sweep and only closes rows not seen for this many days.
+const PARTIAL_FEED_CLOSE_AFTER_DAYS = 7;
+// B-09: canary re-probe of auto-disabled companies, backoff in days per failed probe.
+const CANARY_BACKOFF_DAYS = [1, 3, 7];
 const FAIL_THRESHOLD = 5; // auto-disable a company after this many consecutive failures
 
 // B-01: a company that had a healthy board suddenly returning 0 jobs is more often
@@ -67,6 +72,59 @@ function saveZeroStreak(filePath, streak) {
   } catch (err) {
     log.warn('zero_streak_write_failed', { error: err.message });
   }
+}
+
+/**
+ * B-09: auto-disabled companies (fail_count >= FAIL_THRESHOLD) never came back
+ * unattended. Probe them at 1d/3d/7d backoff; a probe that returns jobs
+ * re-enables the row. State lives in a JSON sidecar (same reasoning as the
+ * zero-streak file: no schema change). First sighting only schedules the first
+ * probe — we don't know when the row was disabled.
+ * @returns {Promise<Array>} rows re-enabled this pass
+ */
+async function canaryReprobe(db, canaryPath) {
+  const disabled = db.prepare(`
+    SELECT * FROM companies
+    WHERE enabled = 0 AND fail_count >= ? AND ats_platform IS NOT NULL AND ats_platform != ''
+      AND (ats_platform = 'jsonld' OR (slug IS NOT NULL AND slug != ''))
+  `).all(FAIL_THRESHOLD);
+  if (!disabled.length) return [];
+
+  const state = loadZeroStreak(canaryPath);
+  const now = Date.now();
+  const DAY_MS = 86400000;
+  const revived = [];
+  let changed = false;
+
+  for (const company of disabled) {
+    const key = String(company.id);
+    const entry = state[key];
+    if (!entry) {
+      state[key] = { probes: 0, nextAt: now + CANARY_BACKOFF_DAYS[0] * DAY_MS };
+      changed = true;
+      continue;
+    }
+    if (entry.nextAt > now) continue;
+    const provider = PROVIDERS[company.ats_platform];
+    if (!provider) continue;
+    changed = true;
+    try {
+      const jobs = await provider.fetchJobs(company);
+      if (jobs.length > 0) {
+        db.prepare('UPDATE companies SET enabled = 1, fail_count = 0 WHERE id = ?').run(company.id);
+        delete state[key];
+        revived.push({ ...company, enabled: 1, fail_count: 0 });
+        log.info('canary_revived', { company: company.name });
+        continue;
+      }
+    } catch (err) {
+      log.warn('canary_probe_failed', { company: company.name, error: err.message });
+    }
+    entry.probes += 1;
+    entry.nextAt = now + CANARY_BACKOFF_DAYS[Math.min(entry.probes, CANARY_BACKOFF_DAYS.length - 1)] * DAY_MS;
+  }
+  if (changed) saveZeroStreak(canaryPath, state);
+  return revived;
 }
 
 async function mapLimit(items, limit, fn) {
@@ -146,6 +204,10 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
   const archetypes = Array.isArray(archetype) ? archetype : [archetype];
   const matchesAnyArchetype = title => archetypes.some(a => jobMatchesArchetype(title, null, a));
   const companyRows = companies?.length ? companies : loadEnabledCompanies(db);
+  if (!companies?.length) {
+    const canaryPath = path.join(path.dirname(zeroStreakPath), 'scan-canary.json');
+    companyRows.push(...await canaryReprobe(db, canaryPath));
+  }
   const existingIds = new Set(db.prepare('SELECT id FROM jobs').pluck().all());
 
   const upsert = upsertStatement(db);
@@ -196,7 +258,7 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
 
     let normalized;
     try {
-      normalized = await provider.fetchJobs(company);
+      normalized = await provider.fetchJobs({ ...company, archetypes }); // archetypes: B-11 (remotive category map)
     } catch (err) {
       errors.push({ company: company.name, error: err.message });
       if (company.id != null) markCompanyFail.run(FAIL_THRESHOLD, company.id);
@@ -261,7 +323,12 @@ export async function scanAll(archetype, { companies, db: dbOverride, includeAll
         upsert.run(row);
         seenIds.push(job.id);
       }
-      if (seenIds.length) {
+      if (normalized.partial) {
+        // B-06: incomplete feed — absence proves nothing. Age-based close only.
+        closed += db.prepare(
+          `UPDATE jobs SET status = 'closed' WHERE company_id = ? AND status = 'active' AND last_seen_at < ?`
+        ).run(companyId, now - PARTIAL_FEED_CLOSE_AFTER_DAYS * 86400000).changes;
+      } else if (seenIds.length) {
         const placeholders = seenIds.map(() => '?').join(',');
         closed += db.prepare(
           `UPDATE jobs SET status = 'closed' WHERE company_id = ? AND status = 'active' AND id NOT IN (${placeholders})`

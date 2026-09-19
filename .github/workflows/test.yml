@@ -24,3 +24,6 @@ jobs:
 
     - name: Run Vitest and Integration Tests
       run: npm test
+
+    - name: Run pipeline tests
+      run: npm run test:pipeline

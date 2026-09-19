@@ -4,7 +4,7 @@ import { createClient } from './aiClient.js';
 
 const client = createClient();
 
-async function extractTextFromPdf(pdfPath) {
+export async function extractTextFromPdf(pdfPath) {
   // Import lib directly — pdf-parse index.js runs test files on load
   const { default: pdfParse } = await import('pdf-parse/lib/pdf-parse.js');
   const buffer = fs.readFileSync(pdfPath);

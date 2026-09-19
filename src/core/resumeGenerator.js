@@ -2,6 +2,9 @@ import 'dotenv/config';
 import { getActiveClient, generateJSON } from './aiClient.js';
 import { createLogger } from './logger.js';
 import { fromProfile, mergeTailored, esc } from './resumeData.js';
+import { assertJobText, recordDocument, verifyResumeText } from './jobDocs.js';
+import { getDb } from './db.js';
+import { sha256 } from './pipeline/identity.js';
 import { chromium } from 'playwright';
 import fs from 'fs';
 import path from 'path';
@@ -33,7 +36,13 @@ class ResumeGenerator {
     return dir;
   }
 
-  async generate(jobPosting, userProfile) {
+  /**
+   * @param {string} jobPosting - resolved JD TEXT (B-02: a bare URL is rejected)
+   * @param {object} userProfile
+   * @param {{jobId?: string, db?: object}} [opts] - jobId links the PDF in `documents` (B-03)
+   */
+  async generate(jobPosting, userProfile, opts = {}) {
+    assertJobText(jobPosting);
     log.op('resume_start', { input: jobPosting.slice(0, 100) });
     const base = fromProfile(userProfile);
     const keywords = await this.extractKeywords(jobPosting);
@@ -50,8 +59,39 @@ class ResumeGenerator {
     }
     const pdfPath = await this.convertToPDF(htmlContent, destDir);
 
+    const verification = await this.verifyPdf(pdfPath, resume, keywords);
+    let documentId = null;
+    try {
+      documentId = recordDocument(opts.db || getDb(), {
+        jobId: opts.jobId || null, type: 'resume', filePath: pdfPath,
+        contentHash: sha256(jobPosting), verification,
+      });
+    } catch (e) {
+      log.op('resume_document_record_failed', { error: e.message });
+    }
+
     log.op('resume_done', { path: pdfPath, keywords: keywords.length });
-    return { path: pdfPath, keywords, content: htmlContent, data: resume };
+    return { path: pdfPath, keywords, content: htmlContent, data: resume, verification, documentId };
+  }
+
+  /** B-12: re-read the PDF text; warn (never throw) if it isn't ATS-extractable. */
+  async verifyPdf(pdfPath, resume, keywords) {
+    try {
+      const { extractTextFromPdf } = await import('./resumeParser.js');
+      const text = await extractTextFromPdf(pdfPath);
+      const v = verifyResumeText(text, {
+        email: resume.contact?.email, phone: resume.contact?.phone,
+        skills: resume.skills, keywords,
+      });
+      if (!v.ok) {
+        console.warn(`[resume] PDF verification warnings: ${v.issues.join('; ')}`);
+        log.op('resume_verify_warn', { issues: v.issues });
+      }
+      return v;
+    } catch (e) {
+      console.warn(`[resume] PDF verification could not run: ${e.message}`);
+      return { ok: false, issues: [`verification failed: ${e.message}`], length: 0, coverage: null };
+    }
   }
 
   async extractKeywords(jobPosting) {

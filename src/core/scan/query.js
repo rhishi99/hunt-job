@@ -63,7 +63,7 @@ export function filterJobs(jobs, opts = {}) {
 /** Query the jobs table (active by default) and apply filterJobs. Instant — no network. */
 export function queryJobs(opts = {}, db = getDb()) {
   const rows = db.prepare(`
-    SELECT j.id, j.title, j.location, j.url, j.apply_url AS applyUrl, j.description,
+    SELECT j.id, j.title, j.location, j.url, j.apply_url AS applyUrl,
            j.posted_at AS postedAt, j.first_seen_at AS firstSeenAt, j.ats_platform AS source,
            j.employment_type AS employmentType,
            -- employer wins for aggregator sources, where company_id is the SOURCE
@@ -73,7 +73,19 @@ export function queryJobs(opts = {}, db = getDb()) {
     LEFT JOIN companies c ON c.id = j.company_id
     WHERE j.status = ?
   `).all(opts.status || 'active');
-  return filterJobs(rows, opts);
+  // B-10: filter + LIMIT over the light rows first, then load the (large)
+  // description blob only for the page that survives.
+  const page = filterJobs(rows, opts);
+  const CHUNK = 500;
+  for (let i = 0; i < page.length; i += CHUNK) {
+    const slice = page.slice(i, i + CHUNK);
+    const byId = new Map(
+      db.prepare(`SELECT id, description FROM jobs WHERE id IN (${slice.map(() => '?').join(',')})`)
+        .all(...slice.map(j => j.id)).map(r => [r.id, r.description])
+    );
+    for (const j of slice) j.description = byId.get(j.id);
+  }
+  return page;
 }
 
 // ── self-check ────────────────────────────────────────────────────────────────

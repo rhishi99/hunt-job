@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 import InterviewPrep from '../core/interviewPrep.js';
 import ProfileManager from '../core/profileManager.js';
+import { resolveJobInput } from '../core/jobDocs.js';
+import { getDb } from '../core/db.js';
 import chalk from 'chalk';
 import fs from 'fs';
 
@@ -32,7 +34,16 @@ async function prepareForInterview() {
     jobDescription = fs.readFileSync(jobDescriptionOrFile, 'utf-8');
   }
 
-  const { plan, filePath } = await interviewPrep.generatePrepPlan(jobDescription, profile);
+  // B-02: URL -> real JD text, or fail loudly. Never prep from a bare link.
+  let resolved;
+  try {
+    resolved = await resolveJobInput(jobDescription, { db: getDb() });
+  } catch (e) {
+    console.error(chalk.red(`Error: ${e.message}`));
+    process.exit(1);
+  }
+
+  const { plan, filePath } = await interviewPrep.generatePrepPlan(resolved.jobText, profile, { jobId: resolved.jobId });
 
   // Display formatted plan
   const formattedPlan = interviewPrep.formatPrepPlanText(plan);

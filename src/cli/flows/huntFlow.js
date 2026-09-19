@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import JobEvaluator from '../../core/jobEvaluator.js';
 import InterviewPrep from '../../core/interviewPrep.js';
 import { getMinimumApplyScore } from '../../core/aiClient.js';
+import { resolveJobInput } from '../../core/jobDocs.js';
+import { getDb } from '../../core/db.js';
 import { clear, banner, section, success, warn, err, pressEnter, scoreBar } from '../ui.js';
 
 const MIN_APPLY_SCORE = getMinimumApplyScore();
@@ -64,6 +66,16 @@ export async function runFullWorkflow(profile) {
     return;
   }
 
+  // B-02: prep + resume need real JD text, not the raw URL the user pasted.
+  let jd = null;
+  try {
+    jd = await resolveJobInput(jobInput, { db: getDb() });
+  } catch (e) {
+    err(`Could not resolve the job description: ${e.message}`);
+    await pressEnter();
+    return;
+  }
+
   // Step 2 — Interview Prep
   section('Step 2 / 3  —  Interview Prep');
   const { doPr } = await inquirer.prompt([{
@@ -74,7 +86,7 @@ export async function runFullWorkflow(profile) {
     console.log(chalk.gray('\n  Generating prep plan...\n'));
     try {
       const prep = new InterviewPrep();
-      const { plan } = await prep.generatePrepPlan(jobInput, profile);
+      const { plan } = await prep.generatePrepPlan(jd.jobText, profile, { jobId: jd.jobId });
       console.log(prep.formatPrepPlanText(plan));
       success('Prep plan saved as HTML in data/');
     } catch (e) { err(`Prep failed: ${e.message}`); }
@@ -91,7 +103,7 @@ export async function runFullWorkflow(profile) {
     try {
       const { default: ResumeGenerator } = await import('../../core/resumeGenerator.js');
       const gen = new ResumeGenerator();
-      const result = await gen.generate(jobInput, profile);
+      const result = await gen.generate(jd.jobText, profile, { jobId: jd.jobId });
       success(`Resume saved: ${result.path}`);
     } catch (e) { err(`Resume failed: ${e.message}`); }
   }

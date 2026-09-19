@@ -2,6 +2,8 @@
 import ResumeGenerator from '../core/resumeGenerator.js';
 import ProfileManager from '../core/profileManager.js';
 import JobEvaluator from '../core/jobEvaluator.js';
+import { resolveJobInput } from '../core/jobDocs.js';
+import { getDb } from '../core/db.js';
 import chalk from 'chalk';
 
 const resumeGenerator = new ResumeGenerator();
@@ -31,7 +33,16 @@ async function generateResume() {
     process.exit(1);
   }
 
-  const result = await resumeGenerator.generate(job.url, profile);
+  // B-02: never hand the model a bare URL — resolve to real JD text or stop.
+  let resolved;
+  try {
+    resolved = await resolveJobInput(job.url, { db: getDb() });
+  } catch (e) {
+    console.error(chalk.red(`Error: ${e.message}`));
+    process.exit(1);
+  }
+
+  const result = await resumeGenerator.generate(resolved.jobText, profile, { jobId: resolved.jobId });
 
   console.log(chalk.green('✅ Resume generated successfully!\n'));
   console.log(chalk.cyan('📄 Resume PDF:'), result.path);

@@ -6,28 +6,22 @@
  */
 
 import { getActiveClient } from '../aiClient.js';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { getDb } from '../db.js';
+import { findJobDocument } from '../jobDocs.js';
 
 /**
- * Find the most recently generated resume PDF in data/resumes/.
- * Returns absolute path or null if none found.
+ * B-03: the résumé PDF generated FOR THIS JOB, from the `documents` table.
+ * Never guesses "newest file" — no job PDF returns null and the caller warns.
+ * @param {{jobId?: string|null, url?: string|null, db?: object}} ref
+ * @returns {string|null} absolute path
  */
-export function findLatestResumePdf() {
-  const resumeDir = path.join(__dirname, '../../../data/resumes');
-  if (!fs.existsSync(resumeDir)) return null;
-  const pdfs = fs.readdirSync(resumeDir)
-    .filter(f => f.endsWith('.pdf'))
-    .map(f => ({
-      name: f,
-      mtime: fs.statSync(path.join(resumeDir, f)).mtimeMs,
-      fullPath: path.join(resumeDir, f),
-    }))
-    .sort((a, b) => b.mtime - a.mtime);
-  return pdfs.length ? pdfs[0].fullPath : null;
+export function findJobResumePdf({ jobId = null, url = null, db = null } = {}) {
+  try {
+    const found = findJobDocument(db || getDb(), { jobId, url, type: 'resume' });
+    return found ? found.path : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -88,6 +82,7 @@ Output ONLY the summary text.`;
  * @param {string} jobContext — job title + description text (used for cover letter)
  * @param {object} options
  * @param {boolean} options.generateAIContent — if true, generates cover letter + summary via AI
+ * @param {string} [options.jobId] / [options.jobUrl] — locate this job's own résumé PDF (B-03)
  * @returns {Promise<object>} fieldValues
  */
 export async function buildFieldValues(profile, jobContext = '', options = {}) {
@@ -162,7 +157,7 @@ export async function buildFieldValues(profile, jobContext = '', options = {}) {
     summary:          '',
 
     // Resume path (for file upload)
-    resumePath:       findLatestResumePdf() || '',
+    resumePath:       options.resumePath || findJobResumePdf({ jobId: options.jobId, url: options.jobUrl, db: options.db }) || '',
   };
 
   if (generateAIContent) {

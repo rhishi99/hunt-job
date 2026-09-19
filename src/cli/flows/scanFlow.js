@@ -1,12 +1,14 @@
 import inquirer from 'inquirer';
 import chalk from 'chalk';
 import PortalScanner, { SCANNABLE_COMPANIES } from '../../core/portalScanner.js';
-import { getRecentScans, saveScans, clearCache, closeDb, hasFreshScan, TTL_HOURS } from '../../core/jobCache.js';
+import { closeDb, getDb } from '../../core/db.js';
 import { clear, banner, section, warn, err, pressEnter } from '../ui.js';
 import { runEvaluateFlow } from './evaluateFlow.js';
 import { runInterviewPrepFlow } from './prepFlow.js';
 import { runResumeGenFlow } from './resumeFlow.js';
 import { applyToJob } from './applyFlow.js';
+import { confirmApplyBelowThreshold } from './applyGate.js';
+import { getMinimumApplyScore } from '../../core/aiClient.js';
 
 export async function runScanFlow(profile) {
   clear(); banner();
@@ -29,70 +31,8 @@ export async function runScanFlow(profile) {
     archetype = custom;
   }
 
-  // ── Cache lookup ─────────────────────────────────────────────────────────
+  // B-22: the legacy jobCache scan-blob cache is gone; scan/ + the jobs table cover it.
   let jobs = null;
-
-  const cachedScans = getRecentScans(archetype);
-  const freshExists  = hasFreshScan(archetype);   // within TTL_HOURS
-
-  if (cachedScans.length > 0 && freshExists) {
-    // Only offer cache when there's actually a recent scan
-    const now = Date.now();
-    const cacheChoices = cachedScans.map(scan => {
-      const ageMs   = scan.ageMs;
-      const ageDays = Math.floor(ageMs / 86_400_000);
-      const ageHrs  = Math.floor(ageMs / 3_600_000);
-      const ageMins = Math.floor((ageMs % 3_600_000) / 60_000);
-      const ageLabel = ageDays > 0 ? `${ageDays}d old` : ageHrs > 0 ? `${ageHrs}h ${ageMins}m old` : `${ageMins}m old`;
-      const scope = scan.companyFilter
-        ? scan.companyFilter.slice(0, 40) + (scan.companyFilter.length > 40 ? '…' : '')
-        : 'All companies';
-      const staleTag = ageDays >= 3 ? chalk.red(' ⚠ STALE') : ageDays >= 1 ? chalk.yellow(' (old)') : chalk.green(' (fresh)');
-      return {
-        name : `📦  ${scan.jobCount} jobs  ·  ${ageLabel}${staleTag}  ·  ${scope}`,
-        value: scan,
-      };
-    });
-
-    const { scanSource } = await inquirer.prompt([{
-      type    : 'list',
-      name    : 'scanSource',
-      message : `Cached scans for "${archetype}" (select or do a fresh search):`,
-      choices : [
-        { name: '🔍  Fresh search  (hit live job boards NOW)', value: 'fresh' },
-        { name: '🗑️   Clear cache + fresh search', value: 'clear' },
-        new inquirer.Separator(),
-        ...cacheChoices,
-      ],
-    }]);
-
-    if (scanSource === 'clear') {
-      clearCache(archetype);
-      console.log(chalk.gray('  Cache cleared. Running fresh search...\n'));
-      // fall through to fresh scan (jobs stays null)
-    } else if (scanSource !== 'fresh') {
-      jobs = scanSource.jobs;
-      const ageMs   = scanSource.ageMs;
-      const ageDays = Math.floor(ageMs / 86_400_000);
-      if (ageDays >= 3) {
-        warn(`These results are ${ageDays} day(s) old. Consider doing a fresh search for latest openings.`);
-      } else {
-        const ageHrs = Math.floor(ageMs / 3_600_000);
-        const ageMins = Math.floor((ageMs % 3_600_000) / 60_000);
-        const ageLabel = ageHrs > 0 ? `${ageHrs}h ${ageMins}m` : `${ageMins}m`;
-        console.log(chalk.gray(`\n  Loaded ${jobs.length} cached jobs (${ageLabel} old).\n`));
-      }
-    }
-  } else if (cachedScans.length > 0) {
-    // Cache exists but is stale (> TTL_HOURS) — inform and auto-run fresh scan
-    const oldest = cachedScans[0];
-    const ageHrs = Math.floor(oldest.ageMs / 3_600_000);
-    warn(`Last scan was ${ageHrs}h ago (limit: ${TTL_HOURS}h). Running a fresh search automatically.`);
-    console.log(chalk.gray('  Use "🗑️ Clear cache" in the menu after if you also want to remove old entries.\n'));
-    // jobs stays null → fresh scan below
-  } else {
-    console.log(chalk.gray('  No cached scans found — running fresh search.\n'));
-  }
 
   // ── Fresh scan (cache empty or user chose fresh) ──────────────────────────
   if (!jobs) {
@@ -149,10 +89,6 @@ export async function runScanFlow(profile) {
         console.log(chalk.gray(`  Filtered: ${rawJobs.length - jobs.length} older jobs hidden (posted > ${recencyDays}d ago).\n`));
       }
 
-      if (jobs.length) {
-        const filterLabel = selectedCompanies ? selectedCompanies.join(', ') : null;
-        saveScans(archetype, jobs, filterLabel);
-      }
     } catch (e) {
       err(`Scan failed: ${e.message}`);
       await pressEnter();
@@ -236,13 +172,20 @@ export async function runScanFlow(profile) {
 
     if (action === 'full') {
       try { await runEvaluateFlow(profile, jobInput, true); } catch (e) { err(`Evaluate failed: ${e.message}`); }
-      try { await runInterviewPrepFlow(profile, jobInput); } catch (e) { err(`Prep failed: ${e.message}`); }
-      try { await runResumeGenFlow(profile, jobInput); } catch (e) { err(`Resume failed: ${e.message}`); }
-      try { await applyToJob(selected, profile, jobInput); } catch (e) { err(`Apply failed: ${e.message}`); }
+      try { await runInterviewPrepFlow(profile, jobInput, selected.id); } catch (e) { err(`Prep failed: ${e.message}`); }
+      try { await runResumeGenFlow(profile, jobInput, selected.id); } catch (e) { err(`Resume failed: ${e.message}`); }
+      try {
+        // B-21: don't open the apply browser for a below-threshold job without an explicit yes
+        if (await confirmApplyBelowThreshold(getDb(), selected, jobInput, getMinimumApplyScore())) {
+          await applyToJob(selected, profile, jobInput);
+        } else {
+          warn('Skipped apply — score below your threshold.');
+        }
+      } catch (e) { err(`Apply failed: ${e.message}`); }
     }
     if (action === 'evaluate') { try { await runEvaluateFlow(profile, jobInput); } catch (e) { err(`Evaluate failed: ${e.message}`); } }
-    if (action === 'prep') { try { await runInterviewPrepFlow(profile, jobInput); } catch (e) { err(`Prep failed: ${e.message}`); } }
-    if (action === 'resume') { try { await runResumeGenFlow(profile, jobInput); } catch (e) { err(`Resume failed: ${e.message}`); } }
+    if (action === 'prep') { try { await runInterviewPrepFlow(profile, jobInput, selected.id); } catch (e) { err(`Prep failed: ${e.message}`); } }
+    if (action === 'resume') { try { await runResumeGenFlow(profile, jobInput, selected.id); } catch (e) { err(`Resume failed: ${e.message}`); } }
     if (action === 'apply') { try { await applyToJob(selected, profile, jobInput); } catch (e) { err(`Apply failed: ${e.message}`); } }
 
     // After completing an action, loop back to let the user pick another

@@ -58,7 +58,7 @@ export function cleanHtml(s) {
 
 // Generic level/type words — not meaningful on their own for role matching
 const GENERIC_WORDS = new Set(['engineer', 'developer', 'lead', 'manager', 'architect',
-  'analyst', 'specialist', 'senior', 'junior', 'staff', 'principal', 'associate']);
+  'analyst', 'specialist', 'senior', 'junior', 'staff', 'principal', 'associate', 'engineering']);
 
 // Role keyword synonyms — OR groups keyed by archetype word
 const ROLE_SYNONYMS = {
@@ -87,11 +87,17 @@ export function jobMatchesArchetype(jobTitle, teamName, archetype) {
   // 1. Full phrase match
   if (haystack.includes(archetype.toLowerCase())) return true;
 
-  // 2. Check meaningful (non-generic) words — OR logic: any meaningful word matching = relevant
-  const meaningful = archetype.toLowerCase().split(/\s+/).filter(w => !GENERIC_WORDS.has(w));
-  if (!meaningful.length) return false;
+  // 2. Word-level match. AND semantics (B-08): every meaningful word of a
+  // multi-word archetype must hit, so "Data Platform Engineer" no longer matches
+  // any "data" posting. When EVERY word is generic ("Engineering Manager") there is
+  // nothing distinctive to key on, so fall back to requiring all tokens instead of
+  // returning false (which used to leave only the exact-phrase path).
+  const tokens = archetype.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!tokens.length) return false;
+  const meaningful = tokens.filter(w => !GENERIC_WORDS.has(w));
+  const required = meaningful.length ? meaningful : tokens;
 
-  return meaningful.some(word => {
+  return required.every(word => {
     const synonyms = ROLE_SYNONYMS[word] ?? [word];
     return synonyms.some(kw => haystack.includes(kw));
   });

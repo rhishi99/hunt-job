@@ -16,7 +16,17 @@ const MIN_GAP_MS = 500; // 2 req/sec per host
 // ponytail: fixed-gap throttle per host, not a token bucket — good enough at
 // our request volume (tens of companies, not thousands). Upgrade if we ever
 // burst-scan hundreds of hosts concurrently.
-const lastRequestAtByHost = new Map();
+// B-05: holds the next FREE slot per host, reserved synchronously so concurrent
+// callers queue behind each other instead of all reading the same stale time.
+const nextSlotByHost = new Map();
+
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // B-14: purge cache rows older than 30d
+let cachePurged = false;
+
+// B-14: cursor/offset/page URLs are one-shot feed pages — caching them only bloats the table.
+function isPaginatedUrl(url) {
+  return /[?&](cursor|offset|page|start|after|from)=/i.test(url);
+}
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
@@ -35,11 +45,27 @@ function parseRetryAfter(value) {
   return null;
 }
 
-async function throttle(hostname) {
-  const last = lastRequestAtByHost.get(hostname) || 0;
-  const wait = MIN_GAP_MS - (Date.now() - last);
+export async function throttle(hostname) {
+  const now = Date.now();
+  const slot = Math.max(now, nextSlotByHost.get(hostname) || 0);
+  nextSlotByHost.set(hostname, slot + MIN_GAP_MS); // reserved before any await
+  const wait = slot - now;
   if (wait > 0) await sleep(wait);
-  lastRequestAtByHost.set(hostname, Date.now());
+}
+
+/** Test hook: forget reserved throttle slots. */
+export function _resetThrottle() {
+  nextSlotByHost.clear();
+}
+
+function purgeStaleCache() {
+  if (cachePurged) return;
+  cachePurged = true;
+  try {
+    getDb().prepare('DELETE FROM http_cache WHERE cached_at < ?').run(Date.now() - CACHE_TTL_MS);
+  } catch (err) {
+    log.warn('cache_purge_failed', { error: err.message });
+  }
 }
 
 function getCacheRow(url) {
@@ -48,6 +74,7 @@ function getCacheRow(url) {
 }
 
 function saveCacheRow(url, { etag, lastModified, status, body }) {
+  if (isPaginatedUrl(url)) return;
   if (!etag && !lastModified) return; // nothing to key future conditional requests on
   const db = getDb();
   db.prepare(`
@@ -65,7 +92,8 @@ function saveCacheRow(url, { etag, lastModified, status, body }) {
  */
 export async function fetchRaw(url, opts = {}) {
   const hostname = new URL(url).hostname;
-  const cacheRow = getCacheRow(url);
+  purgeStaleCache();
+  const cacheRow = isPaginatedUrl(url) ? null : getCacheRow(url);
   const headers = { ...(opts.headers || {}) };
   if (cacheRow?.etag) headers['If-None-Match'] = cacheRow.etag;
   if (cacheRow?.last_modified) headers['If-Modified-Since'] = cacheRow.last_modified;

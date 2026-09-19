@@ -191,6 +191,46 @@ export function fromProfile(profile = {}) {
   return r;
 }
 
+/** Common spelling variants -> one canonical key, so "k8s" matches base "Kubernetes". */
+const SKILL_ALIASES = {
+  k8s: 'kubernetes', kube: 'kubernetes', js: 'javascript', ts: 'typescript',
+  golang: 'go', postgres: 'postgresql', 'amazon web services': 'aws',
+  'amazon s3': 's3', 'amazon ec2': 'ec2', 'amazon rds': 'rds',
+  'github actions': 'github actions', 'ci/cd': 'ci/cd', 'cicd': 'ci/cd',
+  newrelic: 'new relic', sonar: 'sonarqube', 'claude-code': 'claude code',
+  'ai automation': 'ai automation', 'infrastructure as code': 'iac',
+};
+
+function skillKey(s) {
+  const k = String(s ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
+  return SKILL_ALIASES[k] || k;
+}
+
+/** Tailored skills that exist in `baseSkills` (via alias map), in tailored order, base spelling, deduped. */
+export function intersectSkills(baseSkills = [], tailoredSkills = []) {
+  const byKey = new Map();
+  for (const b of baseSkills) if (!byKey.has(skillKey(b))) byKey.set(skillKey(b), b);
+  const out = [];
+  const seen = new Set();
+  for (const t of tailoredSkills) {
+    const k = skillKey(t);
+    if (byKey.has(k) && !seen.has(k)) { seen.add(k); out.push(byKey.get(k)); }
+  }
+  return out;
+}
+
+/** Restrict/reorder each group to the kept skills; drop empty groups. */
+function regroupSkills(groups = {}, kept) {
+  const order = new Map(kept.map((s, i) => [skillKey(s), i]));
+  const out = {};
+  for (const [name, list] of Object.entries(groups || {})) {
+    const filtered = (list || []).filter(s => order.has(skillKey(s)))
+      .sort((a, b) => order.get(skillKey(a)) - order.get(skillKey(b)));
+    if (filtered.length) out[name] = filtered;
+  }
+  return out;
+}
+
 /**
  * Merge an LLM-tailored partial ({ summary?, skills?, experience:[{title,company,dates,bullets}] })
  * over a canonical base. Only overrides fields the model actually returned; never
@@ -199,7 +239,14 @@ export function fromProfile(profile = {}) {
 export function mergeTailored(base, tailored = {}) {
   const out = JSON.parse(JSON.stringify(base));
   if (tailored.summary) out.summary = tailored.summary;
-  if (Array.isArray(tailored.skills) && tailored.skills.length) out.skills = tailored.skills;
+  if (Array.isArray(tailored.skills) && tailored.skills.length) {
+    // B-07: the model may only reorder/subset the candidate's real skills.
+    const kept = intersectSkills(base.skills, tailored.skills);
+    if (kept.length) {
+      out.skills = kept;
+      out.skillGroups = regroupSkills(base.skillGroups, kept);
+    }
+  }
 
   if (Array.isArray(tailored.experience)) {
     const norm = s => (s || '').toLowerCase().trim();

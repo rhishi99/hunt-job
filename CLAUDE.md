@@ -179,7 +179,6 @@ hunt-job/
 │   │   ├── interviewPrep.js           # Prep guide generation + YouTube resources
 │   │   ├── profileManager.js          # Profile CRUD
 │   │   ├── portalScanner.js           # v1 scanner — kept for its pure helpers (India/archetype filters)
-│   │   ├── jobCache.js                # legacy scan-blob cache — superseded by scan/ + db.js `jobs` table
 │   │   ├── autoFillBrowser.js         # Playwright browser driver for auto-fill
 │   │   ├── autoFill/                  # ATS platform detection + form-fill adapters
 │   │   │   ├── index.js

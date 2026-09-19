@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'vitest';
 import ResumeGenerator from '../src/core/resumeGenerator.js';
-import { defaultResumeData, fromProfile, mergeTailored, esc } from '../src/core/resumeData.js';
+import { defaultResumeData, fromProfile, mergeTailored, intersectSkills, esc } from '../src/core/resumeData.js';
 
 describe('_extractBalancedArray', () => {
   const rg = new ResumeGenerator();
@@ -89,6 +89,29 @@ describe('mergeTailored', () => {
     expect(out.experience).toHaveLength(base.experience.length);
     expect(out.experience[0].bullets).toEqual(['Shorter bullet.']);
     expect(out.experience.some(j => j.company === 'Ghost Corp')).toBe(false);
+  });
+
+  test('B-07: skills the candidate never had are dropped; skillGroups stay consistent', () => {
+    const base = defaultResumeData();
+    const out = mergeTailored(base, { skills: ['K8s', 'Rust', 'aws', 'Docker', 'Go', 'Docker'] });
+    expect(out.skills).toEqual(['Kubernetes', 'AWS', 'Docker']); // alias k8s, case-insens, deduped, no Rust/Go
+    expect(out.skillGroups).toEqual({
+      'Cloud & AWS': ['AWS'],
+      'Containers': ['Kubernetes', 'Docker'],
+    });
+    for (const list of Object.values(out.skillGroups)) list.forEach(s => expect(out.skills).toContain(s));
+  });
+
+  test('B-07: all-invented skills fall back to the base list', () => {
+    const base = defaultResumeData();
+    const out = mergeTailored(base, { skills: ['Rust', 'Haskell'] });
+    expect(out.skills).toEqual(base.skills);
+    expect(out.skillGroups).toEqual(base.skillGroups);
+  });
+
+  test('intersectSkills maps aliases back to the base spelling', () => {
+    expect(intersectSkills(['Kubernetes', 'PostgreSQL', 'Go'], ['postgres', 'golang', 'k8s', 'Cobol']))
+      .toEqual(['PostgreSQL', 'Go', 'Kubernetes']);
   });
 
   test('empty tailored partial leaves the base untouched', () => {

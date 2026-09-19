@@ -7,11 +7,14 @@ import inquirer from 'inquirer';
 import chalk from 'chalk';
 import { queryJobs } from '../../core/scan/query.js';
 import { daysAgoLabel } from '../../core/scan/normalize.js';
+import { getDb } from '../../core/db.js';
 import { clear, banner, section, warn, err, pressEnter } from '../ui.js';
 import { runEvaluateFlow } from './evaluateFlow.js';
 import { runInterviewPrepFlow } from './prepFlow.js';
 import { runResumeGenFlow } from './resumeFlow.js';
 import { applyToJob } from './applyFlow.js';
+import { confirmApplyBelowThreshold } from './applyGate.js';
+import { getMinimumApplyScore } from '../../core/aiClient.js';
 
 export async function runBrowseFlow(profile) {
   clear(); banner();
@@ -101,13 +104,20 @@ export async function runBrowseFlow(profile) {
 
     if (action === 'full') {
       try { await runEvaluateFlow(profile, jobInput, true); } catch (e) { err(`Evaluate failed: ${e.message}`); }
-      try { await runInterviewPrepFlow(profile, jobInput); } catch (e) { err(`Prep failed: ${e.message}`); }
-      try { await runResumeGenFlow(profile, jobInput); } catch (e) { err(`Resume failed: ${e.message}`); }
-      try { await applyToJob(selected, profile, jobInput); } catch (e) { err(`Apply failed: ${e.message}`); }
+      try { await runInterviewPrepFlow(profile, jobInput, selected.id); } catch (e) { err(`Prep failed: ${e.message}`); }
+      try { await runResumeGenFlow(profile, jobInput, selected.id); } catch (e) { err(`Resume failed: ${e.message}`); }
+      try {
+        // B-21: don't open the apply browser for a below-threshold job without an explicit yes
+        if (await confirmApplyBelowThreshold(getDb(), selected, jobInput, getMinimumApplyScore())) {
+          await applyToJob(selected, profile, jobInput);
+        } else {
+          warn('Skipped apply — score below your threshold.');
+        }
+      } catch (e) { err(`Apply failed: ${e.message}`); }
     }
     if (action === 'evaluate') { try { await runEvaluateFlow(profile, jobInput); } catch (e) { err(`Evaluate failed: ${e.message}`); } }
-    if (action === 'prep') { try { await runInterviewPrepFlow(profile, jobInput); } catch (e) { err(`Prep failed: ${e.message}`); } }
-    if (action === 'resume') { try { await runResumeGenFlow(profile, jobInput); } catch (e) { err(`Resume failed: ${e.message}`); } }
+    if (action === 'prep') { try { await runInterviewPrepFlow(profile, jobInput, selected.id); } catch (e) { err(`Prep failed: ${e.message}`); } }
+    if (action === 'resume') { try { await runResumeGenFlow(profile, jobInput, selected.id); } catch (e) { err(`Resume failed: ${e.message}`); } }
     if (action === 'apply') { try { await applyToJob(selected, profile, jobInput); } catch (e) { err(`Apply failed: ${e.message}`); } }
   }
 }

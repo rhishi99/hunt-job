@@ -24,10 +24,28 @@ import { cleanHtml, normalizeJob } from '../normalize.js';
 // index.js use this to exempt the source row from "missing a slug" handling.
 export const needsSlug = false;
 
-// Remotive's own category slug for infra work. Their taxonomy is coarse — this
-// is the closest bucket to DevOps/SRE/platform.
-const CATEGORY = 'devops-sysadmin';
-const ENDPOINT = `https://remotive.com/api/remote-jobs?category=${CATEGORY}`;
+// B-11: Remotive's taxonomy is coarse. Map profile archetypes onto its category
+// slugs (first matching rule wins per archetype) instead of hardcoding one bucket.
+const DEFAULT_CATEGORY = 'devops-sysadmin';
+const CATEGORY_RULES = [
+  [/devops|sre|reliability|platform|infra|cloud|kubernetes|sysadmin|security/i, 'devops-sysadmin'],
+  [/data|analytics|machine learning|\bml\b|\bai\b|mlops/i, 'data'],
+  [/\bqa\b|quality|test|sdet/i, 'qa'],
+  [/product/i, 'product'],
+  [/backend|frontend|front-end|back-end|full[\s-]?stack|software|developer|mobile|engineer/i, 'software-dev'],
+];
+
+/** Pure: archetype names -> distinct Remotive category slugs (default when none map). */
+export function categoriesFor(archetypes) {
+  const out = new Set();
+  for (const a of archetypes || []) {
+    const hit = CATEGORY_RULES.find(([re]) => re.test(String(a)));
+    if (hit) out.add(hit[1]);
+  }
+  return out.size ? [...out] : [DEFAULT_CATEGORY];
+}
+
+const endpointFor = category => `https://remotive.com/api/remote-jobs?category=${category}`;
 
 // Scan interval is enforced centrally in scan/index.js (MIN_SCAN_INTERVAL_MS),
 // which is where last_ok_at lives — 6h for this source.
@@ -38,7 +56,7 @@ export function parse(data, companyRef = {}) {
   if (!Array.isArray(jobs)) return [];
   return jobs.map(j => normalizeJob({
     platform: 'remotive',
-    companyToken: companyRef.slug || CATEGORY,
+    companyToken: companyRef.slug || DEFAULT_CATEGORY,
     externalId: String(j.id),
     company: j.company_name,
     employer: j.company_name,
@@ -55,6 +73,9 @@ export function parse(data, companyRef = {}) {
 }
 
 export async function fetchJobs(companyRef = {}) {
-  const data = await fetchJson(ENDPOINT);
-  return parse(data, companyRef);
+  const byId = new Map();
+  for (const category of categoriesFor(companyRef.archetypes)) {
+    for (const j of parse(await fetchJson(endpointFor(category)), companyRef)) byId.set(j.id, j);
+  }
+  return [...byId.values()];
 }
