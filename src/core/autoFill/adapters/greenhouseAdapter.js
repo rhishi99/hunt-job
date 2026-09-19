@@ -135,7 +135,7 @@ export async function fillCustomQuestions(context, answers) {
     try {
       if (!(await el.isVisible()) || !(await el.isEditable())) continue;
       const current = await el.evaluate(n => (n.tagName === 'SELECT' ? n.selectedOptions[0]?.textContent?.trim() : n.value) || '');
-      if (current && !/^(select|please select|--)/i.test(current)) continue;
+      if (current && !/^(select|please|choose|pick|--|—|\.\.\.)/i.test(current)) continue;
       const label = await labelOf(el);
       if (!label) continue;
       const answer = answerForQuestion(label, answers);

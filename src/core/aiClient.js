@@ -239,11 +239,16 @@ function isProviderHealthy(name) {
 // B-29 wait caps (see the all-cooling-down branch in getActiveClient).
 const MAX_COOLDOWN_WAIT_MS = 60_000;
 const MAX_TOTAL_COOLDOWN_WAIT_MS = 5 * 60_000;
+const COOLDOWN_BUDGET_WINDOW_MS = 30 * 60_000; // budget refills so a long `run` loop recovers
 let _totalCooldownWaitMs = 0;
+let _cooldownBudgetSince = Date.now();
 
-/** Test hook: reset the per-process cooldown wait budget. */
-export function _resetCooldownWaitBudget() {
-  _totalCooldownWaitMs = 0;
+function cooldownWaitSoFar() {
+  if (Date.now() - _cooldownBudgetSince > COOLDOWN_BUDGET_WINDOW_MS) {
+    _totalCooldownWaitMs = 0;
+    _cooldownBudgetSince = Date.now();
+  }
+  return _totalCooldownWaitMs;
 }
 
 function markProviderUnhealthy(name, cooldownMs) {
@@ -335,7 +340,7 @@ export function getActiveClient(taskType = 'heavy') {
           // B-29: cap the wait — per attempt and cumulatively per process — so a
           // spent quota fails the task (the queue retries later) instead of
           // pinning a scheduled run for the whole task limit.
-          if (waitMs > MAX_COOLDOWN_WAIT_MS || _totalCooldownWaitMs + waitMs > MAX_TOTAL_COOLDOWN_WAIT_MS) {
+          if (waitMs > MAX_COOLDOWN_WAIT_MS || cooldownWaitSoFar() + waitMs > MAX_TOTAL_COOLDOWN_WAIT_MS) {
             throw new Error(
               `All providers cooling down (earliest clears in ${Math.round(waitMs / 1000)}s) — not waiting; try again later`
             );
