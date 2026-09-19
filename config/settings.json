@@ -27,6 +27,10 @@
     ],
     "keywordLimit": 20
   },
+  "budget": {
+    "daily": { "evaluate": 150, "tailor": 25, "prep": 25, "inbox": 30 },
+    "reserve": 0.2
+  },
   "evaluation": {
     "minimumApplyScore": 4.0,
     "dimensions": [

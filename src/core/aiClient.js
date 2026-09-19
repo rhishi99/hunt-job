@@ -12,6 +12,32 @@ const settings = JSON.parse(
 const PROVIDER_MODELS   = settings.providers.models;
 const PRIORITY_ORDER    = settings.providers.priorityOrder;
 
+// ─── LLM call ledger hook (brief 3, §1.4) ──────────────────────────────────────
+// aiClient stays decoupled from db.js/budget.js by default (no import, no
+// forced DB access — tests never touch a real database as a side effect of
+// exercising a provider call). A caller that owns a `db` (runner.js, a CLI
+// bootstrap) wires this once via setRecordHook(entry => budget.record(db, entry)).
+// The hook is best-effort: a throwing hook must never break the LLM call it's
+// describing, so every invocation is wrapped in try/catch.
+let _recordHook = null;
+
+export function setRecordHook(fn) {
+  _recordHook = typeof fn === 'function' ? fn : null;
+}
+
+function recordCall(entry) {
+  if (!_recordHook) return;
+  try {
+    _recordHook(entry);
+  } catch {
+    // recording must never break the caller
+  }
+}
+
+// classifyProviderFailure's `kind` -> llm_calls.error_class enum
+// ('rate_limit' | 'daily_quota' | 'parse' | 'http').
+const ERROR_CLASS_MAP = { daily_quota: 'daily_quota', rate_limit: 'rate_limit', unavailable: 'http', error: 'http' };
+
 const PROVIDER_ENV_MAP = {
   anthropic:  'ANTHROPIC_API_KEY',
   openrouter: 'OPENROUTER_API_KEY',
@@ -110,7 +136,11 @@ class AnthropicClient {
         const response = await this._client.messages.create(params);
         let text = response.content.find(b => b.type === 'text')?.text ?? '';
         if (json) text = '{' + text;
-        return { content: [{ text }] };
+        return {
+          content: [{ text }],
+          model,
+          usage: { tokensIn: response.usage?.input_tokens ?? null, tokensOut: response.usage?.output_tokens ?? null },
+        };
       }
     };
   }
@@ -302,15 +332,33 @@ export function getActiveClient(taskType = 'heavy') {
 
         let lastError;
         for (const providerName of candidates) {
+          const startedAt = Date.now();
           try {
             const client = getClient(providerName);
             const result = await client.messages.create(effectiveParams);
             markProviderHealthy(providerName);
+            recordCall({
+              provider: providerName,
+              model: result?.model ?? PROVIDER_MODELS[providerName]?.[taskType] ?? null,
+              taskKind: effectiveParams.taskKind ?? null,
+              ok: true,
+              tokensIn: result?.usage?.tokensIn ?? null,
+              tokensOut: result?.usage?.tokensOut ?? null,
+              ms: Date.now() - startedAt,
+            });
             return result;
           } catch (err) {
             const { cooldownMs, kind } = classifyProviderFailure(err);
             console.warn(`  [AI] ${providerName} failed (${kind}): ${err.message.slice(0, 100)} — trying next provider`);
             markProviderUnhealthy(providerName, cooldownMs);
+            recordCall({
+              provider: providerName,
+              model: PROVIDER_MODELS[providerName]?.[taskType] ?? null,
+              taskKind: effectiveParams.taskKind ?? null,
+              ok: false,
+              errorClass: ERROR_CLASS_MAP[kind] ?? 'http',
+              ms: Date.now() - startedAt,
+            });
             lastError = err;
           }
         }
@@ -371,10 +419,11 @@ function extractJson(text) {
  * @returns {Promise<{data: any, raw: string}>}
  */
 export async function generateJSON(prompt, opts = {}) {
-  const { taskType = 'heavy', maxTokens = 2048, temperature } = opts;
+  const { taskType = 'heavy', maxTokens = 2048, temperature, taskKind } = opts;
   const client = getActiveClient(taskType);
   const params = { max_tokens: maxTokens, json: true, messages: [{ role: 'user', content: prompt }] };
   if (temperature !== undefined) params.temperature = temperature;
+  if (taskKind !== undefined) params.taskKind = taskKind;
 
   const first = await client.messages.create(params);
   const firstText = first.content[0]?.text ?? '';
@@ -388,6 +437,12 @@ export async function generateJSON(prompt, opts = {}) {
     try {
       return { data: extractJson(secondText), raw: secondText };
     } catch (secondErr) {
+      recordCall({
+        provider: getActiveProviderName() ?? 'unknown',
+        taskKind: taskKind ?? null,
+        ok: false,
+        errorClass: 'parse',
+      });
       throw new LLMParseError(
         `LLM did not return valid JSON after one repair retry: ${secondErr.message}`,
         { raw: secondText }

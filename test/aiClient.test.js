@@ -136,6 +136,64 @@ describe('provider cooldown + failover (B-24)', () => {
   });
 });
 
+describe('record hook (brief 3, §1.4)', () => {
+  test('records an ok call with provider, taskKind and ms', async () => {
+    const { getActiveClient, setRecordHook } = await freshAiClient();
+    const entries = [];
+    setRecordHook((e) => entries.push(e));
+    anthropicCreate.mockResolvedValueOnce({ content: [{ type: 'text', text: 'ok' }], usage: { input_tokens: 10, output_tokens: 5 } });
+
+    await getActiveClient('heavy').messages.create({ messages: [{ role: 'user', content: 'hi' }], taskKind: 'evaluate' });
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ provider: 'anthropic', taskKind: 'evaluate', ok: true, tokensIn: 10, tokensOut: 5 });
+    expect(typeof entries[0].ms).toBe('number');
+  });
+
+  test('records a failed call with error_class mapped from the provider failure (rate_limit)', async () => {
+    const { getActiveClient, setRecordHook } = await freshAiClient();
+    const entries = [];
+    setRecordHook((e) => entries.push(e));
+    anthropicCreate.mockRejectedValueOnce(new Error('429 rate limit exceeded'));
+    geminiGenerateContent.mockResolvedValue({ text: 'from-gemini' });
+
+    await getActiveClient('heavy').messages.create({ messages: [{ role: 'user', content: 'hi' }], taskKind: 'evaluate' });
+
+    const failedEntry = entries.find(e => e.provider === 'anthropic');
+    expect(failedEntry).toMatchObject({ ok: false, errorClass: 'rate_limit', taskKind: 'evaluate' });
+  });
+
+  test('a throwing hook never breaks the underlying provider call (best-effort)', async () => {
+    const { getActiveClient, setRecordHook } = await freshAiClient();
+    setRecordHook(() => { throw new Error('hook exploded'); });
+    anthropicCreate.mockResolvedValueOnce({ content: [{ type: 'text', text: 'still works' }] });
+
+    const result = await getActiveClient('heavy').messages.create({ messages: [{ role: 'user', content: 'hi' }] });
+    expect(result.content[0].text).toBe('still works');
+  });
+
+  test('records errorClass "parse" when generateJSON exhausts its repair retry', async () => {
+    const { generateJSON, LLMParseError, setRecordHook } = await freshAiClient();
+    const entries = [];
+    setRecordHook((e) => entries.push(e));
+    anthropicCreate
+      .mockResolvedValueOnce({ content: [{ type: 'text', text: 'not json' }] })
+      .mockResolvedValueOnce({ content: [{ type: 'text', text: 'still not json' }] });
+
+    await expect(generateJSON('x', { taskKind: 'evaluate' })).rejects.toBeInstanceOf(LLMParseError);
+
+    const parseEntry = entries.find(e => e.errorClass === 'parse');
+    expect(parseEntry).toMatchObject({ ok: false, taskKind: 'evaluate' });
+  });
+
+  test('with no hook set, a call completes normally without attempting to record anything', async () => {
+    const { getActiveClient } = await freshAiClient();
+    anthropicCreate.mockResolvedValueOnce({ content: [{ type: 'text', text: 'fine' }] });
+    const result = await getActiveClient('heavy').messages.create({ messages: [{ role: 'user', content: 'hi' }] });
+    expect(result.content[0].text).toBe('fine');
+  });
+});
+
 describe('settings-backed helpers (B-23)', () => {
   test('getTemperature() and getMinimumApplyScore() read config/settings.json', async () => {
     const { getTemperature, getMinimumApplyScore } = await freshAiClient();
