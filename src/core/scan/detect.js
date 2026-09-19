@@ -26,9 +26,47 @@ const EXTRA_URL_PATTERNS = [
   { platform: 'workable', re: /apply\.workable\.com\/([a-zA-Z0-9-]+)|([a-zA-Z0-9-]+)\.workable\.com/i },
 ];
 
-/** URL-only detection. Returns { platform, token, method: 'url' } or null. */
+// Rungs 2-3 (docs/fable51-answers.md §4.2): platforms whose coordinates live in
+// companies.scan_config. Each returns { token, config } from a URL OR page text.
+const CONFIG_EXTRACTORS = {
+  workday(s) {
+    const m = s.match(/([a-z0-9-]+)\.(wd\d+)\.myworkdayjobs\.com(?:\/(?:([a-z]{2}-[A-Z]{2})\/)?([A-Za-z0-9_-]+))?/);
+    if (!m || m[1] === 'www') return null;
+    const [, tenant, wd, locale, site] = m;
+    const config = { tenant, wd };
+    if (site && !/^(wday|cxs)$/i.test(site)) config.site = site;
+    if (locale) config.prefix = `/${locale}`;
+    return { token: tenant, config };
+  },
+  oraclehcm(s) {
+    const host = s.match(/([a-z0-9-]+(?:\.[a-z0-9-]+)*\.fa(?:\.[a-z0-9-]+)?\.oraclecloud\.com)/i)?.[1];
+    if (!host) return null;
+    const site = s.match(/\/sites\/([A-Za-z0-9_]+)/)?.[1];
+    return { token: host, config: site ? { host, site } : { host } };
+  },
+  successfactors(s) {
+    const host = s.match(/([a-z0-9-]+(?:\.[a-z0-9-]+)*\.successfactors\.(?:com|eu))/i)?.[1]
+      || s.match(/(jobs\.sap\.com)/i)?.[1];
+    return host ? { token: host, config: { host } } : null;
+  },
+  amazon(s) {
+    return /(?:www\.)?amazon\.jobs/i.test(s) ? { token: 'amazon', config: {} } : null;
+  },
+};
+
+/** Exported for audit-portals/tests: coordinates for a scan_config platform, or null. */
+export function extractConfig(platform, text) {
+  return CONFIG_EXTRACTORS[platform]?.(text || '') || null;
+}
+
+/** URL-only detection. Returns { platform, token, method: 'url' [, config] } or null. */
 export function detectFromUrl(url) {
   if (!url) return null;
+
+  for (const platform of Object.keys(CONFIG_EXTRACTORS)) {
+    const hit = extractConfig(platform, url);
+    if (hit) return { platform, token: hit.token, config: hit.config, method: 'url' };
+  }
 
   const platform = detectPlatform(url);
   if (platform !== 'generic') {
@@ -64,6 +102,12 @@ export async function detectFromPage(url) {
     return null;
   }
   if (!html) return null;
+  // Landing-page marker rung: capture coordinates, not just the platform.
+  for (const platform of Object.keys(CONFIG_EXTRACTORS)) {
+    if (platform === 'amazon') continue; // a mention of amazon.jobs on a page is not a board
+    const hit = extractConfig(platform, html);
+    if (hit) return { platform, token: hit.token, config: hit.config, method: 'dom' };
+  }
   for (const { platform, needles } of DOM_FINGERPRINTS) {
     if (needles.some(n => html.includes(n))) return { platform, token: null, method: 'dom' };
   }

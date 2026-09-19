@@ -93,7 +93,9 @@ function saveCacheRow(url, { etag, lastModified, status, body }) {
 export async function fetchRaw(url, opts = {}) {
   const hostname = new URL(url).hostname;
   purgeStaleCache();
-  const cacheRow = isPaginatedUrl(url) ? null : getCacheRow(url);
+  // POST bodies (Workday CXS) vary per call on one URL, so the URL can't key a cache.
+  const isPost = String(opts.method || 'GET').toUpperCase() === 'POST';
+  const cacheRow = isPaginatedUrl(url) || isPost ? null : getCacheRow(url);
   const headers = { ...(opts.headers || {}) };
   if (cacheRow?.etag) headers['If-None-Match'] = cacheRow.etag;
   if (cacheRow?.last_modified) headers['If-Modified-Since'] = cacheRow.last_modified;
@@ -130,7 +132,7 @@ export async function fetchRaw(url, opts = {}) {
     }
 
     const text = await res.text();
-    saveCacheRow(url, {
+    if (!isPost) saveCacheRow(url, {
       etag: res.headers.get('etag'),
       lastModified: res.headers.get('last-modified'),
       status: res.status,

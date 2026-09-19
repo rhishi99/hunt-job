@@ -64,7 +64,7 @@ describe('auditCompany — slug-less providers are never flagged as broken', () 
     expect(result.message).toMatch(/needs a slug/);
   });
 
-  test('a scan_config-driven platform with no provider yet (workday) is reported cleanly, not as ATS-undetected', async () => {
+  test('a scan_config-driven platform (workday) with no scan_config is reported cleanly, not as ATS-undetected', async () => {
     const db = freshDb();
     const company = insertCompany(db, {
       name: 'Accenture', ats_platform: 'workday', slug: null, career_url: null,
@@ -74,7 +74,7 @@ describe('auditCompany — slug-less providers are never flagged as broken', () 
 
     expect(detect).not.toHaveBeenCalled();
     expect(result.ok).toBe(false);
-    expect(result.message).toMatch(/no scan provider yet/);
+    expect(result.message).toMatch(/scan_config/);
   });
 
   test('a row with no platform at all still goes through detect() as before', async () => {

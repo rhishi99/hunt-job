@@ -1,0 +1,11 @@
+{
+  "items": [
+    {
+      "TotalJobsCount": 2,
+      "requisitionList": [
+        { "Id": "210500123", "Title": "DevOps Engineer", "PostedDate": "2026-09-10", "PrimaryLocation": "Bengaluru, Karnataka, India", "PrimaryLocationCountry": "IN", "ShortDescriptionStr": "Build pipelines.", "ExternalResponsibilitiesStr": "<ul><li>Own CI/CD</li></ul>", "ExternalQualificationsStr": "<p>3+ years Kubernetes</p>" },
+        { "Id": "210500124", "Title": "Contract SRE", "PostedDate": null, "PrimaryLocation": "Hyderabad, India", "ShortDescriptionStr": "Keep it up." }
+      ]
+    }
+  ]
+}

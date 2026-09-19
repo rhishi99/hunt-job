@@ -1,0 +1,12 @@
+{
+  "jobPostingInfo": {
+    "id": "abc",
+    "title": "DevOps Engineer",
+    "jobDescription": "&lt;p&gt;Run &lt;b&gt;Kubernetes&lt;/b&gt; clusters.&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Terraform&lt;/li&gt;&lt;/ul&gt;",
+    "location": "India, Bangalore",
+    "additionalLocations": ["India, Pune"],
+    "postedOn": "Posted 3 Days Ago",
+    "timeType": "Part time",
+    "jobReqId": "R-100"
+  }
+}

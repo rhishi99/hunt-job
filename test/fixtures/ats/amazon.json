@@ -1,0 +1,7 @@
+{
+  "hits": 2,
+  "jobs": [
+    { "id": "3001", "id_icims": "3001", "title": "DevOps Engineer II", "description": "Operate <b>AWS</b> services.", "basic_qualifications": "3+ years Linux", "preferred_qualifications": "Terraform", "normalized_location": "Bengaluru, Karnataka, IND", "posted_date": "September 10, 2026", "job_path": "/en/jobs/3001/devops-engineer-ii", "job_schedule_type": "full-time" },
+    { "id": "3002", "id_icims": "3002", "title": "Systems Engineer", "description": "Fix things.", "normalized_location": "Hyderabad, Telangana, IND", "posted_date": null, "job_path": "/en/jobs/3002/systems-engineer", "job_schedule_type": null }
+  ]
+}

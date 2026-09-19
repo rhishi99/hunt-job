@@ -20,6 +20,10 @@ import * as workable from './providers/workable.js';
 import * as jsonld from './providers/jsonld.js';
 import * as remotive from './providers/remotive.js';
 import * as himalayas from './providers/himalayas.js';
+import * as workday from './providers/workday.js';
+import * as oraclehcm from './providers/oraclehcm.js';
+import * as successfactors from './providers/successfactors.js';
+import * as amazon from './providers/amazon.js';
 
 const log = createLogger('scan.index');
 
@@ -27,6 +31,8 @@ const PROVIDERS = {
   greenhouse, lever, ashby, smartrecruiters, recruitee, workable, jsonld,
   // Aggregators: one row covers many employers (see providers/remotive.js).
   remotive, himalayas,
+  // scan_config-driven (no slug): see scanConfig.js. All return `partial` feeds.
+  workday, oraclehcm, successfactors, amazon,
 };
 const CONCURRENCY = 5;
 
@@ -86,8 +92,7 @@ async function canaryReprobe(db, canaryPath) {
   const disabled = db.prepare(`
     SELECT * FROM companies
     WHERE enabled = 0 AND fail_count >= ? AND ats_platform IS NOT NULL AND ats_platform != ''
-      AND (ats_platform = 'jsonld' OR (slug IS NOT NULL AND slug != ''))
-  `).all(FAIL_THRESHOLD);
+  `).all(FAIL_THRESHOLD).filter(hasScanCoordinates);
   if (!disabled.length) return [];
 
   const state = loadZeroStreak(canaryPath);
@@ -140,14 +145,20 @@ async function mapLimit(items, limit, fn) {
   return results;
 }
 
+// A row is scannable when it has a slug, or its provider declares `needsSlug = false`
+// (jsonld reads career_url; workday/oraclehcm/successfactors/amazon read scan_config).
+// Kept as a local set (mirrors each provider's `needsSlug = false`) so a stubbed provider
+// module doesn't have to export it.
+const NO_SLUG_PLATFORMS = new Set(['jsonld', 'workday', 'oraclehcm', 'successfactors', 'amazon']);
+function hasScanCoordinates(company) {
+  return NO_SLUG_PLATFORMS.has(company.ats_platform) || !!company.slug;
+}
+
 function loadEnabledCompanies(db) {
-  // jsonld doesn't need a board `slug` (it only needs career_url), unlike the
-  // API providers — so it's exempted from the slug requirement below.
   return db.prepare(`
     SELECT * FROM companies
     WHERE enabled = 1 AND ats_platform IS NOT NULL AND ats_platform != ''
-      AND (ats_platform = 'jsonld' OR (slug IS NOT NULL AND slug != ''))
-  `).all();
+  `).all().filter(hasScanCoordinates);
 }
 
 function contentHash(job) {

@@ -1,0 +1,8 @@
+{
+  "total": 3,
+  "jobPostings": [
+    { "title": "DevOps Engineer", "externalPath": "/job/India-Bangalore/DevOps-Engineer_R-100", "locationsText": "India, Bangalore", "postedOn": "Posted 3 Days Ago", "bulletFields": ["R-100"] },
+    { "title": "Site Reliability Engineer", "externalPath": "/job/2-Locations/SRE_R-101", "locationsText": "2 Locations", "postedOn": "Posted Today", "bulletFields": ["R-101"] },
+    { "title": "Cloud Consultant", "externalPath": "/job/Remote-Brazil/Cloud-Consultant_R-102", "locationsText": "Remote Brazil", "postedOn": "Posted 30+ Days Ago", "bulletFields": ["R-102"] }
+  ]
+}
