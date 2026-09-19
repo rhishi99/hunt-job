@@ -34,16 +34,12 @@
   "evaluation": {
     "minimumApplyScore": 4.0,
     "dimensions": [
-      "salary_alignment",
-      "tech_stack_compatibility",
-      "company_culture_fit",
-      "growth_opportunities",
-      "location_remote",
-      "team_dynamics",
-      "product_market_fit",
-      "work_life_balance",
-      "career_progression",
-      "dealbreaker_compliance"
+      "skill_fit",
+      "seniority_fit",
+      "location_fit",
+      "salary_fit",
+      "role_scope",
+      "freshness"
     ]
   },
   "dashboard": {

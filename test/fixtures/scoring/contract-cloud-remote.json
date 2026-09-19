@@ -1,0 +1,30 @@
+{
+  "name": "contract-cloud-remote",
+  "jobText": "Cloud Infrastructure Engineer (Contract) — Remote\n\nWe're hiring a Cloud Infrastructure Engineer on a 6-month contract, fully remote for candidates based anywhere.\n\nResponsibilities:\n- Manage cloud infrastructure on AWS and GCP\n- Build CI/CD pipelines using CircleCI\n- Containerize services with Docker\n- Support Terraform-based provisioning\n\nRequirements:\n- 4+ years of experience in cloud infrastructure or DevOps\n- Experience with AWS or GCP\n- Experience with Docker\n- Familiarity with Terraform\n\nThis is a contract engagement with a defined statement of work; day-to-day you will implement infrastructure changes designed by the platform architecture team.",
+  "expected": {
+    "role_title": { "value": "Cloud Infrastructure Engineer", "evidence": "Cloud Infrastructure Engineer (Contract) — Remote" },
+    "seniority": { "value": "mid", "evidence": "4+ years of experience in cloud infrastructure or DevOps" },
+    "years_required": { "min": 4, "max": null, "evidence": "4+ years of experience in cloud infrastructure or DevOps" },
+    "must_have_skills": [
+      { "value": "AWS", "evidence": "Experience with AWS or GCP" },
+      { "value": "GCP", "evidence": "Experience with AWS or GCP" },
+      { "value": "Docker", "evidence": "Experience with Docker" },
+      { "value": "Terraform", "evidence": "Familiarity with Terraform" }
+    ],
+    "nice_to_have_skills": [],
+    "responsibilities": [
+      "Manage cloud infrastructure on AWS and GCP",
+      "Build CI/CD pipelines using CircleCI",
+      "Containerize services with Docker",
+      "Support Terraform-based provisioning"
+    ],
+    "location": { "mode": "remote", "cities": [], "countries": [], "evidence": "fully remote for candidates based anywhere" },
+    "salary": { "min": null, "max": null, "currency": null, "period": null, "evidence": null },
+    "employment_type": { "value": "contract", "evidence": "We're hiring a Cloud Infrastructure Engineer on a 6-month contract, fully remote for candidates based anywhere." },
+    "signals": {
+      "night_shift": false, "rotational_shift": false, "on_call": false, "support_queue": false, "presales": false,
+      "evidence": {}
+    },
+    "role_nature": { "value": "engineering_ownership", "evidence": "day-to-day you will implement infrastructure changes designed by the platform architecture team." }
+  }
+}

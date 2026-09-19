@@ -1,7 +1,13 @@
 import 'dotenv/config';
-import { generateJSON } from './aiClient.js';
+import { readFileSync } from 'fs';
+import { getActiveProviderName, getMinimumApplyScore } from './aiClient.js';
 import { createLogger } from './logger.js';
 import { getDb } from './db.js';
+import { ensureJobRow, sha256 } from './pipeline/identity.js';
+import { extractFacts } from './scoring/extract.js';
+import { validateExtraction } from './scoring/validate.js';
+import { scoreEvaluation, ensureScoreVersion } from './scoring/score.js';
+import { buildNarrative } from './scoring/narrative.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -9,6 +15,10 @@ const log = createLogger('jobEvaluator');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const dataDir = path.join(__dirname, '../../data');
+const settings = JSON.parse(readFileSync(path.join(__dirname, '../../config/settings.json'), 'utf-8'));
+
+// Extraction validity below this retries once on the 'heavy' tier (§3.2).
+const EXTRACTION_VALIDITY_RETRY_FLOOR = 0.6;
 
 const FETCH_TIMEOUT_MS = 30000;
 const BROWSER_UA =
@@ -173,6 +183,39 @@ function formatSalaryRange(salary) {
   return `${currency}${min} - ${currency}${max}${unit ? ' ' + unit : ''}`;
 }
 
+function isUrlLike(value) {
+  return typeof value === 'string' && /^https?:\/\//i.test(value.trim());
+}
+
+// §2.4: reuse key is scoped to exactly the profile fields the scorer reads —
+// changing an unrelated profile field (name, phone, summary...) must not
+// invalidate every cached evaluation.
+function computeProfileHash(profile) {
+  const relevant = {
+    archetypes: profile?.archetypes ?? null,
+    rules: profile?.rules ?? null,
+    techStack: profile?.techStack ?? null,
+    skillGroups: profile?.skillGroups ?? null,
+    salary: profile?.salary ?? null,
+    yearsOfExperience: profile?.yearsOfExperience ?? null,
+  };
+  return sha256(JSON.stringify(relevant));
+}
+
+// B-26: dimension keys are canonical — read from settings.json evaluation.dimensions
+// (score.js's six component names) instead of whatever a model happened to name
+// them, so bars/comparisons line up across evaluations regardless of provider.
+function buildDimensions(componentScores) {
+  const keys = settings.evaluation?.dimensions || Object.keys(componentScores);
+  const dimensions = {};
+  for (const key of keys) {
+    const v = componentScores[key];
+    if (v == null) continue;
+    dimensions[key] = Math.round((1 + 4 * v) * 10) / 10; // 0..1 -> 1..5 scale, matching the legacy dimension bars
+  }
+  return dimensions;
+}
+
 class JobEvaluator {
   constructor() {
     // kept for backward compat (tests/callers may reference this path); no longer used for I/O
@@ -237,42 +280,131 @@ Return ONLY valid JSON, no markdown fences.`;
     };
   }
 
-  async evaluate(jobInput, profile) {
-    log.op('evaluate_start', { input: jobInput.slice(0, 100) });
+  /**
+   * Scoring v2 (docs/fable51-answers.md §3): resolve job text -> reuse an
+   * existing evaluation for the same (job_id, content_hash, profile_hash,
+   * score_version) unless `fresh` (§2.4, B-18) -> else extract (the only LLM
+   * call) -> validate -> score -> narrative, and persist the v5 evaluations
+   * columns. `ensureJobRow` does the DB-first lookup by url/apply_url/
+   * canonical_url before ever fetching (B-25) — a job already in the `jobs`
+   * table is scored straight from its stored `description`.
+   *
+   * @param {string} jobInput - a URL or pasted job description text
+   * @param {object} profile
+   * @param {{fresh?: boolean, db?: import('better-sqlite3').Database}} [opts]
+   */
+  async evaluate(jobInput, profile, opts = {}) {
+    const db = opts.db || getDb();
+    const fresh = !!opts.fresh;
+    log.op('evaluate_start', { input: jobInput.slice(0, 100), fresh });
 
-    const { jobText, fetched, sourceType } = await resolveJobText(jobInput);
-    log.op('evaluate_source', { fetched, sourceType });
+    const jobId = await ensureJobRow(db, jobInput);
+    const jobRow = db.prepare('SELECT * FROM jobs WHERE id = ?').get(jobId);
+    if (!jobRow) throw new Error(`evaluate: no jobs row for id ${jobId}`);
 
-    const evaluationPrompt = JobEvaluator.buildEvaluationPrompt(jobText, profile);
+    const jobText = assertLongEnough(jobRow.description, 'Stored job description');
+    const contentHash = jobRow.content_hash || sha256(jobText);
+    const profileHash = computeProfileHash(profile);
+    const scoreVersionRow = ensureScoreVersion(db);
+    const scoreVersion = scoreVersionRow.version;
+    const weights = JSON.parse(scoreVersionRow.weights);
+    const minimumApplyScore = getMinimumApplyScore();
 
-    // B-04: no more silent score-0 fallback on parse failure — generateJSON
-    // throws LLMParseError (after one repair retry), and it propagates to the
-    // CLI/flow caller instead of a junk evaluation getting persisted.
-    const { data: evaluation } = await generateJSON(evaluationPrompt, { taskType: 'heavy', maxTokens: 2048 });
-    const savedJob = await this.saveEvaluatedJob(jobInput, evaluation, profile);
-    log.op('evaluate_done', { score: evaluation.overallScore, recommendation: evaluation.recommendation });
+    if (!fresh) {
+      const reused = db
+        .prepare(
+          `SELECT * FROM evaluations WHERE job_id = ? AND content_hash = ? AND profile_hash = ? AND score_version = ?
+           ORDER BY evaluated_at DESC LIMIT 1`
+        )
+        .get(jobId, contentHash, profileHash, scoreVersion);
+      if (reused) {
+        log.op('evaluate_reused', { jobId, evaluationId: reused.id });
+        return { evaluation: JSON.parse(reused.evaluation), id: reused.id, url: reused.url, jobId, reused: true };
+      }
+    }
 
-    return { evaluation, id: savedJob.id, url: savedJob.url };
-  }
+    let { facts } = await extractFacts(jobText, { taskType: 'light' });
+    let validated = validateExtraction(facts, jobText, profile);
+    if (validated.extractionValidity < EXTRACTION_VALIDITY_RETRY_FLOOR) {
+      try {
+        const retry = await extractFacts(jobText, { taskType: 'heavy' });
+        const retryValidated = validateExtraction(retry.facts, jobText, profile);
+        if (retryValidated.extractionValidity >= validated.extractionValidity) {
+          validated = retryValidated;
+        }
+      } catch (e) {
+        log.op('evaluate_retry_extract_failed', { error: e.message });
+      }
+    }
+    const lowConfidence = validated.extractionValidity < EXTRACTION_VALIDITY_RETRY_FLOOR;
 
-  async saveEvaluatedJob(jobUrl, evaluation, profile) {
-    const job = {
-      id: `job_${Date.now()}`,
-      url: jobUrl,
-      evaluation,
-      profile: {
-        archetypes: profile.archetypes,
-        salaryRange: profile.salary
-      },
-      evaluatedAt: new Date().toISOString()
+    const scored = scoreEvaluation({
+      facts: validated.facts,
+      profile,
+      skillCoverage: validated.skillCoverage,
+      weights,
+      postedAt: jobRow.posted_at,
+      minimumApplyScore,
+    });
+
+    const narrative = buildNarrative({
+      facts: validated.facts,
+      skillCoverage: validated.skillCoverage,
+      vetoed: scored.vetoed,
+      vetoReason: scored.vetoReason,
+      score: scored.score,
+      coverage: scored.coverage,
+    });
+
+    const evaluation = {
+      overallScore: scored.score,
+      coverage: scored.coverage,
+      dimensions: buildDimensions(scored.componentScores),
+      matches: narrative.matches,
+      mismatches: narrative.mismatches,
+      reasoning: narrative.reasoning,
+      recommendation: scored.recommendation,
+      extractionValidity: validated.extractionValidity,
+      lowConfidence,
+      vetoed: scored.vetoed,
+      vetoReason: scored.vetoReason,
+      scoreVersion,
     };
 
-    getDb().prepare(`
-      INSERT INTO evaluations (id, url, evaluation, profile, evaluated_at)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(job.id, job.url, JSON.stringify(job.evaluation), JSON.stringify(job.profile), job.evaluatedAt);
+    const evaluationId = `eval_${jobId}_${scoreVersion}_${Date.now()}`;
+    const evaluatedAt = new Date().toISOString();
+    const url = jobRow.url || (isUrlLike(jobInput) ? jobInput : null);
+    const providerName = getActiveProviderName();
 
-    return job;
+    // OR REPLACE: `--fresh` re-scores under the exact same (job_id, content_hash,
+    // profile_hash, score_version) key the reuse lookup above would otherwise have
+    // returned — that key is UNIQUE, so a fresh re-score replaces the prior row for
+    // that key instead of colliding with it. Cross-key history (a changed JD, a new
+    // score_version) is untouched; only an identical-key re-score is overwritten.
+    db.prepare(
+      `INSERT OR REPLACE INTO evaluations (
+        id, url, evaluation, profile, evaluated_at,
+        job_id, content_hash, profile_hash, model, extraction, score, score_version, recommendation
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ).run(
+      evaluationId,
+      url,
+      JSON.stringify(evaluation),
+      JSON.stringify({ archetypes: profile.archetypes, salaryRange: profile.salary }),
+      evaluatedAt,
+      jobId,
+      contentHash,
+      profileHash,
+      providerName,
+      JSON.stringify(validated.facts),
+      scored.score,
+      scoreVersion,
+      scored.recommendation
+    );
+
+    log.op('evaluate_done', { score: scored.score, recommendation: scored.recommendation, jobId });
+
+    return { evaluation, id: evaluationId, url, jobId, reused: false };
   }
 
   async getJobById(jobId) {

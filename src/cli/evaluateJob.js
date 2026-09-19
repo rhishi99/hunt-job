@@ -10,15 +10,18 @@ const jobEvaluator = new JobEvaluator();
 const profileManager = new ProfileManager();
 
 async function evaluateJob() {
-  const jobUrl = process.argv[2];
+  const rawArgs = process.argv.slice(2);
+  const fresh = rawArgs.includes('--fresh');
+  const jobUrl = rawArgs.find(a => a !== '--fresh');
 
   if (!jobUrl) {
     console.error(chalk.red('Error: Please provide a job URL'));
-    console.log('Usage: npm run evaluate-job -- <job-url>');
+    console.log('Usage: npm run evaluate-job -- <job-url> [--fresh]');
     process.exit(1);
   }
 
   console.log(chalk.cyan.bold('\n📊 Evaluating job posting...\n'));
+  if (fresh) console.log(chalk.gray('  --fresh: bypassing evaluation reuse, re-scoring from scratch\n'));
 
   const profile = await profileManager.loadProfile();
   if (!profile) {
@@ -26,7 +29,7 @@ async function evaluateJob() {
     process.exit(1);
   }
 
-  const jobData = await jobEvaluator.evaluate(jobUrl, profile);
+  const jobData = await jobEvaluator.evaluate(jobUrl, profile, { fresh });
   const evaluation = jobData.evaluation;
   const jobId = jobData.id;
 

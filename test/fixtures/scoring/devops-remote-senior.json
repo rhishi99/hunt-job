@@ -1,0 +1,33 @@
+{
+  "name": "devops-remote-senior",
+  "jobText": "Senior DevOps Engineer — Remote (India)\n\nWe are looking for a Senior DevOps Engineer to join our growing platform team. This is a full-time, remote position open to candidates anywhere in India.\n\nResponsibilities:\n- Design and operate our AWS infrastructure across multiple environments\n- Build and maintain CI/CD pipelines using GitHub Actions\n- Manage Kubernetes clusters running our microservices\n- Write and maintain Terraform modules for infrastructure as code\n- Partner with engineering teams to improve deployment reliability\n\nRequirements:\n- 8+ years of experience in DevOps or Site Reliability roles\n- Strong hands-on experience with AWS\n- Production experience with Kubernetes\n- Experience writing Terraform for infrastructure as code\n- Experience with CI/CD pipelines\n\nNice to have:\n- Experience with Python scripting\n- Familiarity with Datadog or similar observability tools\n\nThis role owns the platform end to end — you will drive infrastructure decisions, not just execute a backlog handed to you by another team.",
+  "expected": {
+    "role_title": { "value": "Senior DevOps Engineer", "evidence": "Senior DevOps Engineer" },
+    "seniority": { "value": "senior", "evidence": "Senior DevOps Engineer" },
+    "years_required": { "min": 8, "max": null, "evidence": "8+ years of experience in DevOps or Site Reliability roles" },
+    "must_have_skills": [
+      { "value": "AWS", "evidence": "Strong hands-on experience with AWS" },
+      { "value": "Kubernetes", "evidence": "Production experience with Kubernetes" },
+      { "value": "Terraform", "evidence": "Experience writing Terraform for infrastructure as code" },
+      { "value": "CI/CD", "evidence": "Experience with CI/CD pipelines" }
+    ],
+    "nice_to_have_skills": [
+      { "value": "Python", "evidence": "Experience with Python scripting" },
+      { "value": "Datadog", "evidence": "Familiarity with Datadog or similar observability tools" }
+    ],
+    "responsibilities": [
+      "Design and operate our AWS infrastructure across multiple environments",
+      "Build and maintain CI/CD pipelines using GitHub Actions",
+      "Manage Kubernetes clusters running our microservices",
+      "Write and maintain Terraform modules for infrastructure as code"
+    ],
+    "location": { "mode": "remote", "cities": [], "countries": ["India"], "evidence": "full-time, remote position open to candidates anywhere in India" },
+    "salary": { "min": null, "max": null, "currency": null, "period": null, "evidence": null },
+    "employment_type": { "value": "full-time", "evidence": "full-time, remote position open to candidates anywhere in India" },
+    "signals": {
+      "night_shift": false, "rotational_shift": false, "on_call": false, "support_queue": false, "presales": false,
+      "evidence": {}
+    },
+    "role_nature": { "value": "engineering_ownership", "evidence": "This role owns the platform end to end — you will drive infrastructure decisions, not just execute a backlog handed to you by another team." }
+  }
+}

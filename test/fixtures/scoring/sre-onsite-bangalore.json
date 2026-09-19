@@ -1,0 +1,30 @@
+{
+  "name": "sre-onsite-bangalore",
+  "jobText": "Senior Site Reliability Engineer — Bangalore (Onsite)\n\nJoin our infrastructure team as a Senior Site Reliability Engineer based out of our Bangalore office. This is a full-time onsite role.\n\nWhat you'll do:\n- Own production reliability for our core services running on AWS\n- Build and maintain CI/CD pipelines with Jenkins\n- Operate Kubernetes clusters and Docker-based deployments\n- Automate infrastructure provisioning with Ansible\n\nWhat we're looking for:\n- 10+ years of experience in SRE, DevOps, or infrastructure engineering\n- Deep experience with AWS\n- Strong Kubernetes and Docker experience\n- Experience with Ansible for configuration management\n\nYou will be part of an on-call rotation covering production incidents.\n\nThis is a hands-on engineering ownership role — you'll drive the reliability roadmap for your services, not just respond to tickets.",
+  "expected": {
+    "role_title": { "value": "Senior Site Reliability Engineer", "evidence": "Senior Site Reliability Engineer" },
+    "seniority": { "value": "senior", "evidence": "Senior Site Reliability Engineer" },
+    "years_required": { "min": 10, "max": null, "evidence": "10+ years of experience in SRE, DevOps, or infrastructure engineering" },
+    "must_have_skills": [
+      { "value": "AWS", "evidence": "Deep experience with AWS" },
+      { "value": "Kubernetes", "evidence": "Strong Kubernetes and Docker experience" },
+      { "value": "Docker", "evidence": "Strong Kubernetes and Docker experience" },
+      { "value": "Ansible", "evidence": "Experience with Ansible for configuration management" }
+    ],
+    "nice_to_have_skills": [],
+    "responsibilities": [
+      "Own production reliability for our core services running on AWS",
+      "Build and maintain CI/CD pipelines with Jenkins",
+      "Operate Kubernetes clusters and Docker-based deployments",
+      "Automate infrastructure provisioning with Ansible"
+    ],
+    "location": { "mode": "onsite", "cities": ["Bangalore"], "countries": ["India"], "evidence": "Senior Site Reliability Engineer — Bangalore (Onsite)" },
+    "salary": { "min": null, "max": null, "currency": null, "period": null, "evidence": null },
+    "employment_type": { "value": "full-time", "evidence": "This is a full-time onsite role." },
+    "signals": {
+      "night_shift": false, "rotational_shift": false, "on_call": true, "support_queue": false, "presales": false,
+      "evidence": { "on_call": "You will be part of an on-call rotation covering production incidents." }
+    },
+    "role_nature": { "value": "engineering_ownership", "evidence": "This is a hands-on engineering ownership role — you'll drive the reliability roadmap for your services, not just respond to tickets." }
+  }
+}

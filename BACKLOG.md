@@ -25,13 +25,13 @@ Answered-but-not-built items. Each was verified in code by the reviewing session
 | B-15 | `scan --new` means "new this run", `list --new` means "first seen <48h" | `cli/scanPortals.js:31-35` hardcodes `firstSeenAt: null`. | A#Q8 | open |
 | B-16 | No post-fill audit of still-empty required fields | add one shared audit in `autoFill/index.js` after the adapter runs (never touches submit). | D#Q8 | open |
 | B-17 | `applications.evaluation_score` / `recommendation` never written | `db.js:70-71`, insert at `flows/applyFlow.js:142`. Fix: snapshot score at apply time. | D#Q9 | open |
-| B-18 | Same job scored again on every run | measured: 17 `evaluations` rows for 9 URLs. Stop-gap: reuse latest evaluation for same URL unless `--fresh`. Real key design → Fable T3. | E#Q3 | open |
+| B-18 | Same job scored again on every run | measured: 17 `evaluations` rows for 9 URLs. Stop-gap: reuse latest evaluation for same URL unless `--fresh`. Real key design → Fable T3. | E#Q3 | done |
 | B-19 | `hunt` evaluates nothing, though `AGENTS.md:16` says "scan + evaluate" | `cli/hunt.js:35` `evaluateJobs()` never called; banner cites dead `data/evaluated-jobs.json`. Fix docs now; real loop → Fable T1. | E#Q5 | open |
 | B-20 | Pipeline e2e test not in CI; `test:e2e` runs the dashboard smoke test instead | `package.json:17`; `scripts/e2e-test.js` stubs AI (free). Fix: add `test:pipeline` and run it in `.github/workflows/test.yml`. | E#Q6 | open |
 | B-21 | "Full workflow" ignores the 4.0 threshold and opens the apply browser for "Skip" jobs | `flows/scanFlow.js:237-241` and `flows/browseFlow.js:102-106` (duplicated). Fix: confirm below `minimumApplyScore`. | E#Q7 | open |
 | B-22 | Dead code: second SQLite cache + dead entry class | `core/jobCache.js` (only `scanFlow.js` uses it; `query.js` covers it), `src/index.js` `CareerOpsAgent` (zero references). | E#Q8 | open |
 | B-23 | Scores not reproducible; threshold hardcoded | `settings.json` `temperature` / `minimumApplyScore` never read; `aiClient.js` passes no temperature; `>= 4.0` in `evaluateJob.js:33`, `evaluateFlow.js:75`, `huntFlow.js:56`, `applyFlow.js:186`. | B#Q1 | done |
 | B-24 | Provider health is sticky for the process; Gemini 429 sleeps 30–90 s before failover | `aiClient.js:230-243` boolean health; `aiClient.js:69-75` sleep. Fix: timed cooldown; fail over first, sleep last. | B#Q4, B#Q11 | done |
-| B-25 | `evaluate <url>` re-fetches the page even when `jobs.description` is stored | `jobEvaluator.js:128-164` never reads DB. Fix: DB lookup by `url`/`apply_url` first. | B#Q6 | open |
-| B-26 | Dimension keys differ per model → broken bars/comparisons | `jobEvaluator.js:197-213`; canonical keys from `settings.json` `evaluation.dimensions`. | B#Q9 | open |
+| B-25 | `evaluate <url>` re-fetches the page even when `jobs.description` is stored | `jobEvaluator.js:128-164` never reads DB. Fix: DB lookup by `url`/`apply_url` first. | B#Q6 | done |
+| B-26 | Dimension keys differ per model → broken bars/comparisons | `jobEvaluator.js:197-213`; canonical keys from `settings.json` `evaluation.dimensions`. | B#Q9 | done |
 | B-27 | Scanner has not run since 2026-09-03 | measured `max(companies.last_ok_at)`; no hunt/gig scheduled task installed. Owner call: run `scripts/install-gig-schedule.ps1` or not. | pass 3 | open |

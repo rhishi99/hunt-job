@@ -72,6 +72,9 @@ async function main() {
             case 'audit':
                 await runScript('src/cli/auditPortals.js', args.slice(1));
                 break;
+            case 'eval-models':
+                await runScript('src/cli/evalModels.js', args.slice(1));
+                break;
             case 'resume':
                 await runScript('src/cli/generateResume.js', args.slice(1));
                 break;
@@ -139,7 +142,8 @@ USAGE:
 
 COMMANDS:
   hunt --archetype <name>      Single-command full workflow
-  evaluate <url>              Evaluate a job posting
+  evaluate <url>              Evaluate a job posting [--fresh to bypass reuse]
+  eval-models                 Cross-provider extraction agreement report (makes real LLM calls)
   scan --archetype <name>     LIVE scan of company ATS boards (populates the DB)
   list [filters]              INSTANT browse of already-scanned jobs (no network)
   gigs [filters]              Part-time / contract hunt across ALL profile archetypes

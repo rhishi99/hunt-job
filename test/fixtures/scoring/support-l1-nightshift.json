@@ -1,0 +1,31 @@
+{
+  "name": "support-l1-nightshift",
+  "jobText": "L1 Support Engineer — Night Shift (Rotational)\n\nWe are hiring an L1 Support Engineer for our 24x7 support desk. This role works a rotational night shift covering our global ticket queue.\n\nResponsibilities:\n- Monitor and triage incoming support tickets\n- Escalate unresolved issues to L2/L3 teams\n- Follow runbooks to restore service for common incidents\n- Maintain shift handover notes\n\nRequirements:\n- 1-2 years of experience in a technical support role\n- Basic Linux troubleshooting skills\n- Willingness to work a rotational night shift\n\nThis is an entry-level, ticket-queue role with a defined escalation path — you will not own infrastructure decisions.",
+  "expected": {
+    "role_title": { "value": "L1 Support Engineer", "evidence": "L1 Support Engineer" },
+    "seniority": { "value": "junior", "evidence": "1-2 years of experience in a technical support role" },
+    "years_required": { "min": 1, "max": 2, "evidence": "1-2 years of experience in a technical support role" },
+    "must_have_skills": [
+      { "value": "Linux", "evidence": "Basic Linux troubleshooting skills" }
+    ],
+    "nice_to_have_skills": [],
+    "responsibilities": [
+      "Monitor and triage incoming support tickets",
+      "Escalate unresolved issues to L2/L3 teams",
+      "Follow runbooks to restore service for common incidents",
+      "Maintain shift handover notes"
+    ],
+    "location": { "mode": "unstated", "cities": [], "countries": [], "evidence": null },
+    "salary": { "min": null, "max": null, "currency": null, "period": null, "evidence": null },
+    "employment_type": { "value": "unstated", "evidence": null },
+    "signals": {
+      "night_shift": true, "rotational_shift": true, "on_call": false, "support_queue": true, "presales": false,
+      "evidence": {
+        "night_shift": "This role works a rotational night shift covering our global ticket queue.",
+        "rotational_shift": "Willingness to work a rotational night shift",
+        "support_queue": "We are hiring an L1 Support Engineer for our 24x7 support desk."
+      }
+    },
+    "role_nature": { "value": "support", "evidence": "This is an entry-level, ticket-queue role with a defined escalation path — you will not own infrastructure decisions." }
+  }
+}
