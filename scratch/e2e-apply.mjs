@@ -1,0 +1,13 @@
+import 'dotenv/config';
+import { autoFillApplication } from '../src/core/autoFill/index.js';
+import ProfileManager from '../src/core/profileManager.js';
+import { resolveJobInput } from '../src/core/jobDocs.js';
+import { getDb } from '../src/core/db.js';
+const url = process.argv[2];
+const profile = await new ProfileManager().loadProfile();
+const r = await resolveJobInput(url, { db: getDb() });
+const res = await autoFillApplication(url, null, profile, r.jobText, { jobId: r.jobId });
+await res.page.waitForTimeout(2500);
+await res.page.screenshot({ path: 'scratch/apply-filled.png', fullPage: true });
+console.log(JSON.stringify({ platform: res.platformName, target: res.targetUrl, filled: res.filled, skipped: res.skipped, uploaded: res.uploaded, emptyRequired: res.emptyRequired, resume: res.fieldValues.resumePath }, null, 1));
+await res.browser.close();

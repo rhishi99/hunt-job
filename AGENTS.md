@@ -86,7 +86,7 @@ Greenhouse/Lever/Ashby/SmartRecruiters (200+ in the registry)**. No TTL cache �
 - **PowerShell Service Manager:** `.\hunt-job.ps1` (commands: `start`, `stop`, `restart`, `status`, `scan`, `list`, `test`, `e2e`, `dashboard`, `watch`)
 - **Browser E2E Testing:** `node huntjob_e2e_test_standalone.mjs` or `npm run test:e2e` (see [BROWSER_HARNESS.md](BROWSER_HARNESS.md))
 - **Product & Design Specs:** [PRODUCT.md](PRODUCT.md) and [DESIGN.md](DESIGN.md)
-- **Agent Skills:** Local-only design/UX skills under `.agents/skills/` (`ui-ux-pro-max`, `emil-design-eng`, `impeccable`), pinned in `skills-lock.json`. Both are gitignored — not part of the product; install locally if needed.
+- **Agent Skills:** Local-only design/UX skills under `.agents/skills/` (`ui-ux-pro-max`, `emil-design-eng`, `impeccable`, `vibe-ui-ux`), pinned in `skills-lock.json`. Both are gitignored — not part of the product; install locally if needed.
 - **Change & Milestone Roadmap:** `change_bug_tracker/ROADMAP.json`
 
 ## More
