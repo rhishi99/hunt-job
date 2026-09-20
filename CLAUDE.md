@@ -473,3 +473,13 @@ Context: Maximize work done per token to stay within budget constraints.
 4. **Graphify:** Use `graphify` only when its output is reused across the task — never one-shot.
 5. **Filtered Runs:** Always use filtered runs for testing and linting (e.g., `rtk pytest`, `rtk lint`), never raw.
 6. **Subagent Delegation:** Delegate broad multi-step exploration or documentation reading to a subagent (e.g., `invoke_subagent` in Antigravity) so the main thread context only processes the compressed result. You can summon Grok (via `C:\Users\HP\.grok\bin\grok.exe`) when needed for Stitch with HTML creation tasks. Keep subagent count low (1-3 max).
+
+## graphify
+
+This project has a graphify knowledge graph at graphify-out/.
+
+Rules:
+- Before answering architecture or codebase questions, read graphify-out/GRAPH_REPORT.md for god nodes and community structure
+- If graphify-out/wiki/index.md exists, navigate it instead of reading raw files
+- For cross-module "how does X relate to Y" questions, prefer `graphify query "<question>"`, `graphify path "<A>" "<B>"`, or `graphify explain "<concept>"` over grep — these traverse the graph's EXTRACTED + INFERRED edges instead of scanning files
+- After modifying code files in this session, run `graphify update .` to keep the graph current (AST-only, no API cost)
