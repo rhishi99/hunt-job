@@ -117,6 +117,7 @@ export async function autoFillApplication(jobUrl, applyUrl, profile, jobContext 
     generateAIContent: true,
     jobId: opts.jobId || null,
     jobUrl: jobUrl || applyUrl || null,
+    resumePath: opts.resumePath || null,
   });
 
   if (fieldValues.resumePath) {

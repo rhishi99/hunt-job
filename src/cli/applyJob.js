@@ -11,9 +11,13 @@ import { getDb, closeDb } from '../core/db.js';
 import { applyToJob } from './flows/applyFlow.js';
 
 async function main() {
-  const url = process.argv[2];
+  const args = process.argv.slice(2);
+  const ri = args.indexOf('--resume');
+  const resumePath = ri >= 0 ? args[ri + 1] : null;
+  if (ri >= 0) args.splice(ri, 2);
+  const url = args[0];
   if (!url || url.startsWith('-')) {
-    console.error(chalk.red('Usage: node hunt-job.js apply <job-url>'));
+    console.error(chalk.red('Usage: node hunt-job.js apply <job-url> [--resume <file.pdf>]'));
     process.exit(1);
   }
 
@@ -36,6 +40,7 @@ async function main() {
     company: row?.company || 'Unknown',
     location: row?.location || null,
     description: row?.description || '',
+    resumePath,
   };
 
   const jobContext = job.description

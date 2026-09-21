@@ -9,6 +9,7 @@
 import { pathToFileURL } from 'url';
 import { getDb } from '../db.js';
 import { jobMatchesArchetype, isIndiaLocation } from './normalize.js';
+import { isTargetJob } from './providers/websearch.js';
 
 const DAY = 86400000;
 const HOUR = 3600000;
@@ -39,13 +40,18 @@ export function filterJobs(jobs, opts = {}) {
     // the provider told us nothing, so it can't be claimed as a match.
     if (wantedTypes && !wantedTypes.includes(j.employmentType)) return false;
 
+    // Search-discovered LinkedIn stubs are noisy: hide rows that miss the senior/city target.
+    // Rows saved before the ingest filter existed get cleaned up here too.
+    if ((j.source || j.ats_platform) === 'linkedin-search' && !isTargetJob(j)) return false;
+
     const loc = (j.location || '').toLowerCase();
     if (location) {
       if (!loc.includes(location.toLowerCase())) return false;
     } else if (remote) {
       if (!/\bremote\b|\banywhere\b|\bworldwide\b/.test(loc)) return false;
     } else if (!allLocations) {
-      if (!isIndiaLocation(j.location)) return false;
+      // India, or remote anywhere. On-site abroad (relocation) stays hidden.
+      if (!isIndiaLocation(j.location) && !/\bremote\b|\bwork from home\b/.test(loc)) return false;
     }
 
     if (company && !(j.company || '').toLowerCase().includes(company.toLowerCase())) return false;

@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { NORMALIZED_JOB_KEYS } from '../../src/core/scan/normalize.js';
 import {
-  parse, parseDdgHtml, parseGoogleJson, parseResultTitle, canonicalLinkedInUrl, buildQueries, MAX_QUERIES,
+  parse, parseDdgHtml, parseGoogleJson, parseResultTitle, canonicalLinkedInUrl, buildQueries, MAX_QUERIES, isTargetJob, buildTargetQueries,
 } from '../../src/core/scan/providers/websearch.js';
 
 const dir = path.dirname(fileURLToPath(import.meta.url));
@@ -49,6 +49,25 @@ describe('websearch provider', () => {
     expect(jobs).toHaveLength(1);
     expect(jobs[0].employer).toBe('Initech');
     expect(parseGoogleJson(null)).toEqual([]);
+  });
+
+  test('isTargetJob: senior+ DevOps in the four cities, 10+ years', () => {
+    const ok = { title: 'Senior DevOps Engineer', location: 'Pune Division, Maharashtra, India', snippet: '' };
+    expect(isTargetJob(ok)).toBe(true);
+    expect(isTargetJob({ ...ok, title: 'DevOps Architect', location: null })).toBe(true); // unknown location passes
+    expect(isTargetJob({ ...ok, snippet: '8-12 years of experience' })).toBe(true);
+    expect(isTargetJob({ ...ok, title: 'Fresher Junior DevOps Engineer' })).toBe(false);
+    expect(isTargetJob({ ...ok, title: 'DevOps Engineer' })).toBe(false); // not senior
+    expect(isTargetJob({ ...ok, location: 'Kuala Lumpur, Malaysia' })).toBe(false); // relocation
+    expect(isTargetJob({ ...ok, location: 'Remote - Ireland' })).toBe(true); // remote abroad is fine
+    expect(isTargetJob({ ...ok, snippet: '5+ years experience' })).toBe(false);
+    expect(isTargetJob({ ...ok, title: 'גיוס Senior DevOps' })).toBe(false); // non-Latin
+  });
+
+  test('target queries: 4 titles x 4 cities', () => {
+    const qs = buildTargetQueries();
+    expect(qs).toHaveLength(20);
+    expect(qs[0]).toBe('site:linkedin.com/jobs/view "Senior DevOps Engineer" Pune');
   });
 
   test('query builder caps volume', () => {

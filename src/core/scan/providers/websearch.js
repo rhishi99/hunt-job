@@ -44,6 +44,42 @@ export function buildQueries(archetypes = [], max = MAX_QUERIES) {
   return qs.slice(0, max);
 }
 
+// Target: senior-and-up DevOps roles with 10+ years, in four cities.
+export const TARGET_TITLES = ['Senior DevOps Engineer', 'Lead DevOps Engineer', 'DevOps Architect', 'DevOps Manager'];
+export const TARGET_CITIES = ['Pune', 'Mumbai', 'Bangalore', 'Hyderabad', 'Remote'];
+export const MIN_YEARS = 10;
+const MAX_TARGET_QUERIES = TARGET_TITLES.length * TARGET_CITIES.length;
+
+const SENIOR_RE = /\b(senior|sr\.?|lead|principal|staff|architect|manager|head|director)\b/i;
+const JUNIOR_RE = /\b(fresher|freshers|junior|jr\.?|intern|internship|trainee|graduate|entry[- ]level|associate)\b/i;
+const CITY_RE = /\b(remote|work from home|wfh|pune|mumbai|navi mumbai|thane|bangalore|bengaluru|hyderabad|secunderabad)\b/i;
+
+/** One query per title x city (16), so results are already scoped before filtering. Pure. */
+export function buildTargetQueries(titles = TARGET_TITLES, cities = TARGET_CITIES, max = MAX_TARGET_QUERIES) {
+  const qs = [];
+  for (const t of titles) for (const c of cities) qs.push(`site:linkedin.com/jobs/view "${t}" ${c}`);
+  return qs.slice(0, max);
+}
+
+/**
+ * Pure: does a search hit fit the target? Title must be senior+ and not junior;
+ * a stated location must be one of the four cities or remote, anywhere in the
+ * world (on-site abroad, e.g. Malaysia, fails; unknown location passes because
+ * the query itself was city-scoped); if the snippet states years of experience,
+ * the highest number stated must reach MIN_YEARS ("8-12 years" passes, "5+" fails).
+ * Also drops non-Latin titles (e.g. Hebrew/Arabic pages).
+ */
+export function isTargetJob({ title, location, snippet } = {}) {
+  const t = String(title || '');
+  if (!t || /[^\u0000-ɏ -⁯]/.test(t)) return false;
+  if (JUNIOR_RE.test(t) || !SENIOR_RE.test(t)) return false;
+  if (location && !CITY_RE.test(location)) return false;
+  const years = [...String(snippet || '').matchAll(/(\d{1,2})\s*(?:\+|-\s*\d{1,2}|to\s*\d{1,2})?\s*(?:years|yrs)/gi)]
+    .flatMap(m => m[0].match(/\d{1,2}/g).map(Number));
+  if (years.length && Math.max(...years) < MIN_YEARS) return false;
+  return true;
+}
+
 /** https://in.linkedin.com/jobs/view/senior-dev-at-acme-3812345678?x=1 -> https://www.linkedin.com/jobs/view/3812345678. Null if not a job view URL. */
 export function canonicalLinkedInUrl(raw) {
   let u;
@@ -134,7 +170,7 @@ export function hasGoogleCreds(env = process.env) {
 }
 
 export async function fetchJobs(companyRef = {}) {
-  const queries = buildQueries(companyRef.archetypes || []);
+  const queries = buildTargetQueries();
   const useGoogle = hasGoogleCreds();
   const hits = [];
   let ok = 0;
@@ -158,7 +194,7 @@ export async function fetchJobs(companyRef = {}) {
     }
   }
   if (queries.length && !ok) throw lastErr; // every query failed: real error, not "0 jobs"
-  const jobs = parse(hits, companyRef);
+  const jobs = parse(hits, companyRef).filter(j => isTargetJob({ title: j.title, location: j.location, snippet: j.description }));
   jobs.partial = true; // search results can't prove absence
   return jobs;
 }

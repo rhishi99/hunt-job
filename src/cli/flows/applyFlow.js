@@ -21,7 +21,7 @@ export async function runAutoFill(job, profile, jobContext) {
     job.applyUrl || null,
     profile,
     jobContext || '',
-    { jobId: job.id || null }
+    { jobId: job.id || null, resumePath: job.resumePath || null }
   );
 
   showAutoFillReport(result);

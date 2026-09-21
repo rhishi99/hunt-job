@@ -5,6 +5,8 @@
  * before the browser opens.
  */
 
+import fs from 'fs';
+import path from 'path';
 import { getActiveClient } from '../aiClient.js';
 import { getDb } from '../db.js';
 import { findJobDocument } from '../jobDocs.js';
@@ -27,6 +29,9 @@ export function findJobResumePdf({ jobId = null, url = null, db = null } = {}) {
 // ── Custom-question answers (B-30) ────────────────────────────────────────────
 
 const str = v => (v == null ? '' : String(v).trim());
+// Last-resort default resume: drop your PDF here and every apply run attaches it.
+const DEFAULT_RESUME = 'data/default-resume.pdf';
+const existingFile =p => (p && fs.existsSync(path.resolve(String(p))) ? path.resolve(String(p)) : null);
 
 /**
  * Personal facts for application questions, from the profile's
@@ -203,7 +208,12 @@ export async function buildFieldValues(profile, jobContext = '', options = {}) {
     summary:          '',
 
     // Resume path (for file upload)
-    resumePath:       options.resumePath || findJobResumePdf({ jobId: options.jobId, url: options.jobUrl, db: options.db }) || '',
+    // Order: --resume flag, this job's own PDF, profile `resumePath`, data/default-resume.pdf.
+    resumePath:       existingFile(options.resumePath)
+                      || findJobResumePdf({ jobId: options.jobId, url: options.jobUrl, db: options.db })
+                      || existingFile(profile.resumePath)
+                      || existingFile(DEFAULT_RESUME)
+                      || '',
   };
 
   if (generateAIContent) {

@@ -216,6 +216,11 @@ export async function runGreenhouseAdapter(page, fieldValues) {
     skipped.push(...custom.unanswered.map(l => `question (needs your answer): ${l}`));
   }
 
+  // Upload the resume FIRST: Greenhouse parses it and pre-fills fields, and our
+  // profile values then overwrite/complete whatever the parser got wrong or missed.
+  const uploaded = await uploadResume(page, fieldValues.resumePath);
+  if (uploaded) await page.waitForTimeout(3000);
+
   await fillFields(page);
 
   // Attempt iframe fallback if very few fields filled
@@ -233,8 +238,6 @@ export async function runGreenhouseAdapter(page, fieldValues) {
       }
     } catch {}
   }
-
-  const uploaded = await uploadResume(page, fieldValues.resumePath);
 
   return { filled, skipped, uploaded };
 }
